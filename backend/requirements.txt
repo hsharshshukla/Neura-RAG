@@ -1,0 +1,10 @@
+fastapi
+sqlmodel
+uvicorn
+python-multipart
+pytesseract
+python-dotenv
+openai
+jose
+jwt
+# PyMuPDF, pillow, pytesseract, python-docx, PyPDF2, langchain
