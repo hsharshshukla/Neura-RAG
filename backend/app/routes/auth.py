@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
+
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -52,7 +53,9 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_session)
 ):
+
     user = db.exec(select(User).where(User.email == email)).first()
+    print("user details ------",user)
     if not user or not pwd_context.verify(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 

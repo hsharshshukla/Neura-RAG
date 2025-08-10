@@ -24,11 +24,14 @@ const Signup = () => {
       params.append('password', password);
       if (name) params.append('name', name);
 
-      const res = await secureAxios().post('/auth/signup', params, {
+      const res = await secureAxios.post('/auth/signup', params, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
+
+
+      
 
       localStorage.setItem('email', res.data.email);
       localStorage.setItem('tier', res.data.tier);
@@ -39,7 +42,25 @@ const Signup = () => {
         window.location.href = '/chat';
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.detail || "Signup failed");
+      const data = err?.response?.data;
+
+      let message = "Login failed";
+      if (typeof data === "string") {
+        message = data;
+      } else if (data?.detail) {
+        if (Array.isArray(data.detail)) {
+          // Pydantic validation errors -> join all messages
+          message = data.detail.map(e => e.msg || JSON.stringify(e)).join(", ");
+        } else if (typeof data.detail === "string") {
+          message = data.detail;
+        }
+      } else if (err?.message) {
+        message = err.message;
+      }
+    
+      console.error("Login failed:", data || err);
+      setError(message); 
+
     }
   };
 

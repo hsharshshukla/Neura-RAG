@@ -20,29 +20,29 @@ function App() {
           <Route
             path="/chat"
             element={
-              // <ProtectedRoute>
-              //   <Chat />
-              // </ProtectedRoute>
-              <Chat />
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+              // <Chat />
             }
           />
           <Route
             path="/profile"
             element={
-              // <ProtectedRoute>
-              //   <Profile />
-              // </ProtectedRoute>
-              <Profile />
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+              // <Profile />
             }
           />
           
           <Route
             path="/settings"
             element={
-              // <ProtectedRoute>
-              //   <Settings />
-              // </ProtectedRoute>
-              <Settings />
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+              // <Settings />
             }
           />
         </Routes>

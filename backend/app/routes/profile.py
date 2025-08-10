@@ -4,6 +4,7 @@ from app.db import get_session
 from app.models import User,ChatSession,Upload
 from app.deps.auth_dependency import get_current_user
 from datetime import datetime
+from sqlalchemy import func
 
 router = APIRouter(prefix="/api/v1/user", tags=["user"])
 
@@ -15,14 +16,14 @@ def get_profile(
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         return { "error": "User not found" }
-
+    
     files_uploaded = db.exec(
-    select(Upload).where(Upload.user_email == user.email)
-    ).count()
+    select(func.count(Upload.id)).where(Upload.user_email == user.email)
+    ).one()
 
     chats_created = db.exec(
-        select(ChatSession).where(ChatSession.user_email == user.email)
-    ).count()
+        select(func.count(ChatSession.id)).where(ChatSession.user_id == user.id)
+    ).one()
 
     return {
         "name": user.name or "Neura User",

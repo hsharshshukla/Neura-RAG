@@ -10,10 +10,10 @@ class ChatSessionOut(BaseModel):
         orm_mode = True
 
 class ChatMessageOut(BaseModel):
-    id: int
+    # id: int
     role: str
     content: str
-    timestamp: datetime
+    # timestamp: datetime
 
     class Config:
         orm_mode = True

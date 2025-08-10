@@ -6,9 +6,10 @@ const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const email = localStorage.getItem('email');
-
-    if (!email) {
+    // const email = localStorage.getItem('email');
+    // if (!email) {
+    const token  = localStorage.getItem('token');
+    if(!token){
       navigate('/login');
     } else {
       setChecking(false);
