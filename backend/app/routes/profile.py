@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models import User,ChatSession,Upload
-from app.deps.auth_dependency import get_current_user
+from app.deps.auth import get_current_user
 from datetime import datetime
 from sqlalchemy import func
 

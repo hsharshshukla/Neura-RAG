@@ -1,135 +1,215 @@
+// src/pages/signup.jsx
 import React, { useState } from 'react';
-import secureAxios from '../utils/secureAxios'; // or use 'axios' if you prefer
+import secureAxios from '../utils/secureAxios';
 
-const Signup = () => {
+export default function Signup() {
+  const TOS_VERSION = "2025-08-01";
+  const PRIVACY_VERSION = "2025-08-01";
+
+  const [agree, setAgree] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const register = async () => {
+  const strength = () => {
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[a-z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return s;
+  };
+
+  const submit = async () => {
     setError('');
-    setSuccess('');
+    if (!name.trim()) return setError('Please enter your name');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError('Enter a valid email');
+    if (pw !== pw2) return setError('Passwords do not match');
+    if (strength() < 3) return setError('Use a stronger password (min 8 chars incl. mix)');
+    if (!agree) { setError("Please accept Terms & Privacy to continue."); return; }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
+    setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append('email', email);
-      params.append('password', password);
-      if (name) params.append('name', name);
+      params.append('email', email.trim().toLowerCase());
+      params.append('password', pw);
+      params.append('name', name.trim());
+      params.append('agree', String(agree));
+      params.append('marketingOptIn', String(marketingOptIn));
+      params.append('tosVersion', TOS_VERSION);
+      params.append('privacyVersion', PRIVACY_VERSION);
 
       const res = await secureAxios.post('/auth/signup', params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-
-      
-
-      localStorage.setItem('email', res.data.email);
-      localStorage.setItem('tier', res.data.tier);
-      localStorage.setItem('token', res.data.access_token);
-
-      setSuccess("Registration successful! Redirecting to chat...");
-      setTimeout(() => {
+      if (res.data?.access_token) {
+        localStorage.setItem('email', res.data.email || email.trim().toLowerCase());
+        localStorage.setItem('tier', res.data.tier || 'free');
+        localStorage.setItem('token', res.data.access_token);
         window.location.href = '/chat';
-      }, 1500);
+        return;
+      }
+      window.location.href = '/login';
     } catch (err) {
       const data = err?.response?.data;
-
-      let message = "Login failed";
-      if (typeof data === "string") {
-        message = data;
-      } else if (data?.detail) {
-        if (Array.isArray(data.detail)) {
-          // Pydantic validation errors -> join all messages
-          message = data.detail.map(e => e.msg || JSON.stringify(e)).join(", ");
-        } else if (typeof data.detail === "string") {
-          message = data.detail;
-        }
-      } else if (err?.message) {
-        message = err.message;
-      }
-    
-      console.error("Login failed:", data || err);
-      setError(message); 
-
+      let message = 'Signup failed';
+      if (typeof data === 'string') message = data;
+      else if (data?.detail) {
+        if (Array.isArray(data.detail)) message = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+        else if (typeof data.detail === 'string') message = data.detail;
+      } else if (err?.message) message = err.message;
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const strengthVal = strength();
+  const strengthLabel = ['Too weak', 'Weak', 'Okay', 'Good', 'Strong', 'Very strong'][strengthVal];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded px-8 py-6 w-full max-w-md">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Create Your Neura Account</h2>
-
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
-            {error}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-teal-500 to-indigo-500" />
+            <h1 className="text-xl font-semibold tracking-tight">Create your Neura account</h1>
           </div>
-        )}
-        {success && (
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-            {success}
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
+              {error}
+            </div>
+          )}
+
+          <label className="block text-sm text-gray-700 mb-1">Full Name</label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Your name"
+            className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            maxLength={80}
+            autoComplete="name"
+          />
+
+          <label className="block text-sm text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            autoComplete="email"
+          />
+
+          <label className="block text-sm text-gray-700 mb-1">Password</label>
+          <div className="relative mb-2">
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={pw}
+              onChange={e => setPw(e.target.value)}
+              placeholder="••••••••"
+              className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(s => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+            >
+              {showPw ? 'Hide' : 'Show'}
+            </button>
           </div>
-        )}
 
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Full Name (optional)"
-          className="w-full p-2 mb-4 border rounded"
-        />
+          <div className="mb-3">
+            <div className="w-full h-2 rounded bg-gray-200 overflow-hidden">
+              <div
+                className="h-2 transition-all"
+                style={{
+                  width: `${(strengthVal / 5) * 100}%`,
+                  background:
+                    strengthVal >= 4
+                      ? '#16a34a'
+                      : strengthVal >= 3
+                      ? '#22c55e'
+                      : strengthVal >= 2
+                      ? '#f59e0b'
+                      : '#ef4444',
+                }}
+              />
+            </div>
+            <div className="text-xs text-gray-500 mt-1">{strengthLabel}</div>
+          </div>
 
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full p-2 mb-4 border rounded"
-        />
+          <label className="block text-sm text-gray-700 mb-1">Confirm Password</label>
+          <div className="relative mb-4">
+            <input
+              type={showPw2 ? 'text' : 'password'}
+              value={pw2}
+              onChange={e => setPw2(e.target.value)}
+              placeholder="••••••••"
+              className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              autoComplete="new-password"
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw2(s => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+            >
+              {showPw2 ? 'Hide' : 'Show'}
+            </button>
+          </div>
 
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full p-2 mb-4 border rounded"
-        />
+          <label className="flex items-start gap-2 text-sm mt-3">
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(e)=>setAgree(e.target.checked)}
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" className="text-teal-600 underline">Terms of Service</a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" className="text-teal-600 underline">Privacy Policy</a>.
+              {/* <Link to="/privacy" className="text-teal-600 hover:underline">Privacy</Link> */}
+            </span>
+          </label>
 
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={e => setConfirmPassword(e.target.value)}
-          placeholder="Confirm Password"
-          className="w-full p-2 mb-4 border rounded"
-        />
+          <label className="flex items-start gap-2 text-xs mt-2 text-gray-600">
+            <input
+              type="checkbox"
+              checked={marketingOptIn}
+              onChange={(e)=>setMarketingOptIn(e.target.checked)}
+            />
+            <span>Send me product updates and tips (optional).</span>
+          </label>
 
-        <button
-          onClick={register}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Register
-        </button>
+          <button
+            onClick={submit}
+            disabled={loading || !agree}
+            className={`w-full mt-4 py-2.5 rounded-xl text-white shadow ${loading || !agree ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-95'} bg-gradient-to-r from-teal-500 to-indigo-500`}
+          >
+            {loading ? 'Creating account…' : 'Create Account'}
+          </button>
 
-        <div className="text-center mt-4">
-          <span className="text-sm text-gray-600">
+          <div className="text-center mt-4 text-sm text-gray-600">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-600 hover:underline">
-              Login
-            </a>
-          </span>
+            <a href="/login" className="text-teal-600 hover:underline">Login</a>
+          </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default Signup;
+

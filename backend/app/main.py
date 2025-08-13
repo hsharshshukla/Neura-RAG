@@ -3,10 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, chat, upload, billing, profile, auth_oauth   # NEW
-
-# ...
-
+from app.routes import auth, chat, upload, billing, profile, auth_oauth , search, settings as settings_routes
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
@@ -34,6 +31,8 @@ app.include_router(upload.router)
 app.include_router(billing.router)
 app.include_router(profile.router)
 app.include_router(auth_oauth.router)  # NEW
+app.include_router(search.router)
+app.include_router(settings_routes.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -48,40 +47,4 @@ async def log_requests(request: Request, call_next):
     logging.info(f"📤 {response.status_code}")
     return response
 
-
-# from fastapi import FastAPI
-# from fastapi.middleware.cors import CORSMiddleware
-# from app.routes import auth, chat, upload, billing,profile
-# from fastapi import FastAPI, Request
-# import logging
-# from app.routes import upload
-
-# logging.basicConfig(level=logging.INFO)
-
-# app = FastAPI()
-
-# app.include_router(auth.router)
-# app.include_router(chat.router)
-# app.include_router(upload.router)
-# app.include_router(billing.router)
-# app.include_router(profile.router)
-# app.include_router(upload.router)
-
-
-# # 👇 Allow frontend (React) to talk to this backend
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:3000","http://127.0.0.1:3000"],  # React dev server
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# print("REqeeust izzz -- ",Request)
-# @app.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     logging.info(f"📥 Incoming request: {request.method} {request.url}")
-#     response = await call_next(request)
-#     logging.info(f"📤 Response status: {response.status_code}")
-#     return response
 

@@ -1,132 +1,150 @@
-import React, { useState } from 'react';
+// pages/Settings.jsx
+import React, { useEffect, useState } from 'react';
+import secureAxios from '../utils/secureAxios';
 
-const Settings = () => {
-  const [name, setName] = useState('Tanya Sharma');
-  const [email, setEmail] = useState(localStorage.getItem('email') || 'demo@user.com');
+export default function SettingsPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState(localStorage.getItem('email') || '');
+  const [tier, setTier] = useState(localStorage.getItem('tier') || 'free');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const handleUpdateProfile = () => {
-    setMessage('✅ Profile updated (dummy)');
-    // TODO: Wire to backend
-  };
+  // load profile
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await secureAxios.get('/user/me');
+        if (data?.email) setEmail(data.email);
+        if (data?.name != null) { setName(data.name); localStorage.setItem('name', data.name || ''); }
+        if (data?.tier) setTier(data.tier);
+      } catch {}
+    })();
+  }, []);
 
-  const handleChangePassword = () => {
-    if (newPassword !== confirmPassword) {
-      setMessage('❌ Passwords do not match');
-      return;
+  const saveProfile = async () => {
+    const n = (name || '').trim();
+    if (!n) { setMessage('❌ Name cannot be empty'); return; }
+    setBusy(true); setMessage('');
+    try {
+      const { data } = await secureAxios.patch('/user/me', { name: n });
+      setName(data?.name || n);
+      localStorage.setItem('name', data?.name || n);
+      setMessage('✅ Profile updated');
+    } catch {
+      setMessage('❌ Failed to update profile');
+    } finally {
+      setBusy(false);
     }
-    setMessage('✅ Password changed (dummy)');
-    // TODO: Wire to backend
   };
 
-  const handleDeleteAccount = () => {
-    const confirmed = window.confirm('Are you sure you want to delete your account? This cannot be undone.');
-    if (confirmed) {
-      setMessage('✅ Account deleted (dummy)');
-      // TODO: Wire to backend
+  const changePassword = async () => {
+    if (!newPassword || newPassword !== confirmPassword) {
+      setMessage('❌ Passwords do not match'); return;
+    }
+    setBusy(true); setMessage('');
+    try {
+      await secureAxios.post('/auth/change-password', { newPassword });
+      setMessage('✅ Password changed. You may need to sign in again on other devices.');
+      setNewPassword(''); setConfirmPassword('');
+    } catch {
+      setMessage('❌ Failed to change password');
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleLogoutAll = () => {
-    setMessage('✅ Logged out from all devices (dummy)');
-    // TODO: Wire to backend
+  const logoutAll = async () => {
+    if (!confirm('Log out from all devices?')) return;
+    setBusy(true); setMessage('');
+    try {
+      await secureAxios.post('/auth/logout-all');
+      localStorage.removeItem('token');
+      setMessage('✅ Logged out from all devices');
+      window.location.href = '/login';
+    } catch {
+      setMessage('❌ Failed to logout everywhere');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 flex justify-center">
-      <div className="bg-white rounded shadow-md p-6 w-full max-w-2xl space-y-8">
-        <h2 className="text-2xl font-bold text-center">Account Settings</h2>
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
-        {message && (
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded">
-            {message}
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Account</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Name</label>
+            <input
+              value={name || '—'}
+              readOnly
+              disabled
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-gray-600"
+            />
           </div>
-        )}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Email</label>
+            <input
+              value={email || '—'}
+              readOnly
+              disabled
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-gray-600"
+            />
+          </div>
+          {/* <div>
+            <label className="block text-sm text-gray-600 mb-1">Name</label>
+            <input
+              value={name}
+              onChange={(e)=>setName(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3"
+              placeholder="Your name"
+              maxLength={80}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Email</label>
+            <input
+              value={email}
+              disabled
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-gray-500"
+            />
+          </div> */}
+        </div>
+        
+      </div>
 
-        {/* Update Name + Email */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Update Profile</h3>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Full Name"
-            className="w-full p-2 border rounded mb-3"
-          />
-          <input
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full p-2 border rounded mb-3"
-          />
-          <button
-            onClick={handleUpdateProfile}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Save Changes
-          </button>
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Security</h2>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">New Password</label>
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 p-3" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Confirm Password</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 p-3" />
+          </div>
+          <div className="flex items-end">
+            <button onClick={changePassword} disabled={busy} className="w-full bg-gradient-to-r from-teal-500 to-indigo-500 text-white px-4 py-2 rounded-xl shadow disabled:opacity-60">
+              {busy ? 'Working…' : 'Update Password'}
+            </button>
+          </div>
         </div>
 
-        {/* Change Password */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Change Password</h3>
-          <input
-            type="password"
-            placeholder="New Password"
-            value={newPassword}
-            onChange={e => setNewPassword(e.target.value)}
-            className="w-full p-2 border rounded mb-3"
-          />
-          <input
-            type="password"
-            placeholder="Confirm New Password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            className="w-full p-2 border rounded mb-3"
-          />
-          <button
-            onClick={handleChangePassword}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Update Password
+        <div className="mt-4">
+          <button onClick={logoutAll} disabled={busy} className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            {busy ? 'Working…' : 'Logout from all devices'}
           </button>
-        </div>
-
-        {/* Logout All Devices */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Logout from All Devices</h3>
-          <button
-            onClick={handleLogoutAll}
-            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-          >
-            Logout Everywhere
-          </button>
-        </div>
-        <br/>
-        {/* Delete Account */}
-        <div>
-          <h3 className="text-lg font-semibold mb-2 text-red-600">Danger Zone</h3>
-          <button
-            onClick={handleDeleteAccount}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Delete My Account
-          </button>
-        </div>
-
-        {/* Coming Soon (Disabled Features) */}
-        <div className="border-t pt-6 text-gray-400">
-          <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-          <ul className="space-y-2 text-sm">
-            <li>🛠 Billing settings</li>
-            <li>🌗 Dark mode</li>
-            <li>🔔 Notification preferences</li>
-          </ul>
         </div>
       </div>
+
+      {message && <div className="bg-green-100 text-green-700 px-4 py-2 rounded">{message}</div>}
     </div>
   );
-};
+}
 
-export default Settings;
+

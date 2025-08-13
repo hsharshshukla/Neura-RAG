@@ -1,13 +1,19 @@
 // src/utils/secureAxios.js
 import axios from 'axios';
+import { ENV } from "../config/env";
 
-const API_BASE = import.meta?.env?.VITE_API_BASE || 'http://127.0.0.1:8000';
+// const API_BASE = import.meta?.env?.VITE_API_BASE || 'http://127.0.0.1:8000';
 
-const secureAxios = axios.create({
-  baseURL: `${API_BASE}/api/v1`,
-  withCredentials: false, // using Authorization header instead of cookies
-  // Don't set a global Content-Type; let Axios set it (JSON, form, multipart, etc.)
-});
+// const secureAxios = axios.create({
+//   // baseURL: `${API_BASE}/api/v1`,
+//   baseURL:   API_BASE, 
+//   withCredentials: false, // using Authorization header instead of cookies
+//   // Don't set a global Content-Type; let Axios set it (JSON, form, multipart, etc.)
+// });
+const API_BASE =
+  (window.__API_BASE__ || process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000') + '/api/v1';
+
+const secureAxios = axios.create({ baseURL: API_BASE, withCredentials: false });
 
 secureAxios.interceptors.request.use((config) => {
   if (!config.url) {

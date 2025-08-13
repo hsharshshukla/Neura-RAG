@@ -6,7 +6,9 @@ from typing import Optional, Tuple
 from fastapi import UploadFile, HTTPException
 from app.utils.redaction import redact_source_identity
 from app.utils.sanitizer import sanitize_text_for_embedding
-from app.utils.text import preprocess_text_from_txt, ocr_image  # keep your helpers
+from app.parsers.txt_parser import preprocess_text_from_txt
+from app.parsers.ocr_parser import ocr_image
+# from app.utils.text import preprocess_text_from_txt, ocr_image  # keep your helpers
 
 # Optional parsers (import errors become helpful HTTP 400s)
 def _parse_pdf(data: bytes) -> str:

@@ -1,140 +1,157 @@
-// src/pages/login.jsx
+// pages/Login.jsx
 import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
+import { ENV } from '../config/env'; // 👈 new
+import TopBar from "../components/TopBar";
 
-const API_BASE = import.meta?.env?.VITE_API_BASE || 'http://127.0.0.1:8000';
-const GOOGLE_ENABLED = (import.meta?.env?.VITE_GOOGLE_ENABLED === '1');
-const APPLE_ENABLED  = (import.meta?.env?.VITE_APPLE_ENABLED === '1');
+// Strip trailing /api/v1 from API_BASE_URL for SSO redirects
+const API_ROOT = (ENV.API_BASE_URL || '').replace(/\/api\/v1\/?$/, '');
+const GOOGLE_ENABLED = !!ENV.GOOGLE_ENABLED;
+const APPLE_ENABLED  = !!ENV.APPLE_ENABLED;
 
-const Login = () => {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const login = async () => {
+  const submit = async () => {
+    setError('');
+    if (!email.trim() || !password) {
+      setError('Please enter email and password');
+      return;
+    }
+    setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append('email', email);
+      params.append('email', email.trim());
       params.append('password', password);
-
       const res = await secureAxios.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-
+      
       if (res.data?.access_token) {
-        localStorage.setItem('email', res.data.email || email);
-        localStorage.setItem('tier', res.data.tier || 'free');
+        // ✅ remember if re-consent is needed
+        if (res.data.needs_reconsent) {
+          localStorage.setItem('needs_reconsent', '1');
+        } else {
+          localStorage.removeItem('needs_reconsent');
+        }
+      
+        localStorage.setItem('email', res.data.email || email.trim());
+        localStorage.setItem('tier',  res.data.tier  || 'free');
         localStorage.setItem('token', res.data.access_token);
         window.location.href = '/chat';
       } else {
         setError('Invalid login response');
       }
+      
+
     } catch (err) {
       const data = err?.response?.data;
       let message = 'Login failed';
-      if (typeof data === 'string') {
-        message = data;
-      } else if (data?.detail) {
-        if (Array.isArray(data.detail)) {
-          message = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
-        } else if (typeof data.detail === 'string') {
-          message = data.detail;
-        }
-      } else if (err?.message) {
-        message = err.message;
-      }
-      console.error('Login failed:', data || err);
+      if (typeof data === 'string') message = data;
+      else if (data?.detail) {
+        if (Array.isArray(data.detail)) message = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+        else if (typeof data.detail === 'string') message = data.detail;
+      } else if (err?.message) message = err.message;
       setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Keep handlers (they won't render unless flags enabled)
-  const goGoogle = () => {
-    window.location.href = `${API_BASE}/api/v1/auth/google/start`;
-  };
-  const goApple = () => {
-    window.location.href = `${API_BASE}/api/v1/auth/apple/start`;
-  };
-
+  const goGoogle = () => { window.location.href = `${API_ROOT}/api/v1/auth/google/start`; };
+  const goApple  = () => { window.location.href = `${API_ROOT}/api/v1/auth/apple/start`; };
   const showSSO = GOOGLE_ENABLED || APPLE_ENABLED;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded px-8 py-6 w-full max-w-md">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Login to Neura</h2>
-
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
-            {error}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-teal-500 to-indigo-500" />
+            <h1 className="text-xl font-semibold tracking-tight">Login to Neura</h1>
           </div>
-        )}
 
-        {/* Email / Password */}
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full p-2 mb-3 border rounded"
-          autoComplete="email"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full p-2 mb-4 border rounded"
-          autoComplete="current-password"
-        />
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>
+          )}
 
-        <button
-          onClick={login}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Login
-        </button>
+          <label className="block text-sm text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            autoComplete="email"
+          />
 
-        {/* Divider & Social buttons (hidden unless flags enabled) */}
-        {showSSO && (
-          <>
-            <div className="flex items-center my-4">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="px-3 text-xs text-gray-500">or</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
+          <label className="block text-sm text-gray-700 mb-1">Password</label>
+          <div className="relative mb-4">
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              autoComplete="current-password"
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(s => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+            >
+              {showPw ? 'Hide' : 'Show'}
+            </button>
+          </div>
 
-            {GOOGLE_ENABLED && (
-              <button
-                onClick={goGoogle}
-                className="w-full border rounded py-2 hover:bg-gray-50 mb-2"
-              >
-                Continue with Google
-              </button>
-            )}
+          <div className="flex items-center justify-between mb-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input type="checkbox" className="rounded" onChange={(e)=>{
+                if(e.target.checked){ localStorage.setItem('remember', '1'); }
+                else { localStorage.removeItem('remember'); }
+              }} />
+              Remember me
+            </label>
+            <a href="#" className="text-teal-600 hover:underline">Forgot password?</a>
+          </div>
 
-            {APPLE_ENABLED && (
-              <button
-                onClick={goApple}
-                className="w-full border rounded py-2 hover:bg-gray-50"
-              >
-                Continue with Apple
-              </button>
-            )}
-          </>
-        )}
+          <button
+            onClick={submit}
+            disabled={loading}
+            className={`w-full py-2.5 rounded-xl text-white shadow ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-95'} bg-gradient-to-r from-teal-500 to-indigo-500`}
+          >
+            {loading ? 'Signing in…' : 'Login'}
+          </button>
 
-        {/* Register Link */}
-        <div className="text-center mt-4">
-          <span className="text-sm text-gray-600">
+          {showSSO && (
+            <>
+              <div className="flex items-center my-4">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="px-3 text-xs text-gray-500">or</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              {GOOGLE_ENABLED && (
+                <button onClick={goGoogle} className="w-full border rounded-xl py-2 hover:bg-gray-50 mb-2">Continue with Google</button>
+              )}
+              {APPLE_ENABLED && (
+                <button onClick={goApple} className="w-full border rounded-xl py-2 hover:bg-gray-50">Continue with Apple</button>
+              )}
+            </>
+          )}
+
+          <div className="text-center mt-4 text-sm text-gray-600">
             Don’t have an account?{' '}
-            <a href="/signup" className="text-blue-600 hover:underline">
-              Register
-            </a>
-          </span>
+            <a href="/signup" className="text-teal-600 hover:underline">Register</a>
+          </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default Login;

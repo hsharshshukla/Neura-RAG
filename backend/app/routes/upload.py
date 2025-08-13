@@ -7,7 +7,7 @@ import uuid
 
 from app.db import get_session
 from app.models import User, ChatSession
-from app.deps.auth_dependency import get_current_user
+from app.deps.auth import get_current_user
 from app.utils.logger import log_event
 from app.vector_store import embed_and_store
 from app.parsers.parser import parse_and_clean_bytes  # central parser (txt/md/pdf/docx/pptx/xlsx/csv/json/jpg/png)

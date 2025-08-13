@@ -27,6 +27,14 @@ class User(SQLModel, table=True):
     tier: str = "free"
     name: Optional[str] = None  
     created_at: datetime = Field(default_factory=datetime.utcnow)  
+    token_version: int = Field(default=0)
+    tos_version: Optional[str] = None
+    tos_accepted_at: Optional[datetime] = None
+    privacy_version: Optional[str] = None
+    privacy_accepted_at: Optional[datetime] = None
+    marketing_opt_in: bool = Field(default=False)
+    consent_ip: Optional[str] = None
+    consent_ua: Optional[str] = None
 
 class UploadedFile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

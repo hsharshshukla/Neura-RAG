@@ -1,12 +1,52 @@
+# app/deps/auth.py
+import os
 from fastapi import Depends, HTTPException, Header
 from jose import JWTError, jwt
+from sqlmodel import Session, select
+from app.db import get_session
+from app.models import User
 
-SECRET_KEY = "supersecretkey"
-ALGORITHM = "HS256"
+SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
+ALGORITHM = os.getenv("JWT_ALG", "HS256")
 
-def get_current_user(token: str = Header(..., alias="Authorization")):
+def get_current_user(
+    authorization: str = Header(None, alias="Authorization"),
+    db: Session = Depends(get_session),
+) -> str:
+    # Expect "Bearer <token>"
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    token = authorization.split(" ", 1)[1]
+
+    # Decode JWT
     try:
-        payload = jwt.decode(token.replace("Bearer ", ""), SECRET_KEY, algorithms=[ALGORITHM])
-        return payload["sub"]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    email = payload.get("sub")
+    token_ver = int(payload.get("ver", 0))
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token: sub missing")
+
+    # Look up the user
+    user = db.exec(select(User).where(User.email == email)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # Enforce logout-all/password-change by version check
+    if (user.token_version or 0) != token_ver:
+        raise HTTPException(status_code=401, detail="Token revoked; please log in again")
+
+    # Return email string because your routes expect it
+    return email
+
+
+# Optional: if some routes want the full User object
+def get_current_user_obj(
+    authorization: str = Header(None, alias="Authorization"),
+    db: Session = Depends(get_session),
+) -> User:
+    email = get_current_user(authorization, db)
+    user = db.exec(select(User).where(User.email == email)).first()
+    return user
