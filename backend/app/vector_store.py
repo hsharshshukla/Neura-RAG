@@ -5,17 +5,25 @@ from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import os
+import math
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
-CHROMA_DIR = "vector_store"
+# Resolve a stable absolute directory for Chroma persistence.
+# You can override with VECTOR_STORE_DIR in backend/.env
+CHROMA_DIR = os.getenv(
+    "VECTOR_STORE_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vector_store"))
+)
+
 embeddings = OpenAIEmbeddings()
 
 def _normalize_metadata(md: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Ensure consistent types for metadata stored in Chroma."""
     md = (md or {}).copy()
-    # We store session_id as string for consistent filtering later
+    # Store session_id as string for consistent filtering later
     if "session_id" in md and md["session_id"] is not None:
         md["session_id"] = str(md["session_id"])
     return md
@@ -35,7 +43,6 @@ def _build_chroma_where(
         clauses.append({"user_email": user_email})
 
     if extra_filters:
-        # normalize types, e.g., ensure session_id is a string
         ef = _normalize_metadata(extra_filters)
         for k, v in ef.items():
             clauses.append({k: v})
@@ -77,9 +84,56 @@ def query_user_docs(
     Query Chroma with an optional user scope and extra filters (e.g., session_id).
     """
     vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-
-    # Only include user_email when filter_by_user is True (free tier behavior)
     where = _build_chroma_where(user_email if filter_by_user else None, extra_filters)
-
     # LangChain passes this 'filter' through to Chroma's 'where'
     return vectordb.similarity_search(question, k=top_k, filter=where)
+
+# -----------------------
+# Admin dashboard helpers
+# -----------------------
+
+def _fmt_bytes(n: int) -> str:
+    if n <= 0:
+        return "0 B"
+    units = ["B", "KB", "MB", "GB", "TB"]
+    i = int(math.floor(math.log(n, 1024)))
+    p = 1024 ** i
+    s = round(n / p, 2)
+    return f"{s} {units[i]}"
+
+def get_vector_stats() -> Dict[str, str]:
+    """
+    Returns a coarse storage summary for the admin dashboard:
+    - approximate file count (Chunks)
+    - total on-disk size (Storage)
+    - latest modification time under the vector dir (Last Reindex)
+    """
+    base = os.path.abspath(CHROMA_DIR)
+    total_size = 0
+    total_files = 0
+    last_mtime = 0
+
+    if os.path.isdir(base):
+        for root, _, files in os.walk(base):
+            for f in files:
+                total_files += 1
+                fp = os.path.join(root, f)
+                try:
+                    st = os.stat(fp)
+                    total_size += st.st_size
+                    if st.st_mtime > last_mtime:
+                        last_mtime = int(st.st_mtime)
+                except Exception:
+                    # ignore unreadable files
+                    pass
+
+    return {
+        "Chunks": f"~{total_files}",
+        "Storage": _fmt_bytes(total_size),
+        "Last Reindex": (
+            datetime.utcfromtimestamp(last_mtime).isoformat() + "Z"
+            if last_mtime else "n/a"
+        ),
+    }
+
+

@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, chat, upload, billing, profile, auth_oauth , search, settings as settings_routes
+from app.routes import auth, chat, upload, billing, profile, auth_oauth , search, settings as settings_routes,admin, auth_password  # your new reset routes
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
@@ -24,6 +24,7 @@ app.add_middleware(
 )
 
 
+
 # ✅ Routers (no duplicates)
 app.include_router(auth.router)
 app.include_router(chat.router)
@@ -33,6 +34,8 @@ app.include_router(profile.router)
 app.include_router(auth_oauth.router)  # NEW
 app.include_router(search.router)
 app.include_router(settings_routes.router)
+app.include_router(admin.router)
+app.include_router(auth_password.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

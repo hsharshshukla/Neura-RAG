@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
 import { ENV } from '../config/env'; // 👈 new
 import TopBar from "../components/TopBar";
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Strip trailing /api/v1 from API_BASE_URL for SSO redirects
 const API_ROOT = (ENV.API_BASE_URL || '').replace(/\/api\/v1\/?$/, '');
@@ -15,6 +16,8 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const submit = async () => {
     setError('');
@@ -27,27 +30,36 @@ export default function Login() {
       const params = new URLSearchParams();
       params.append('email', email.trim());
       params.append('password', password);
+  
       const res = await secureAxios.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-      
-      if (res.data?.access_token) {
-        // ✅ remember if re-consent is needed
-        if (res.data.needs_reconsent) {
-          localStorage.setItem('needs_reconsent', '1');
-        } else {
-          localStorage.removeItem('needs_reconsent');
-        }
-      
-        localStorage.setItem('email', res.data.email || email.trim());
-        localStorage.setItem('tier',  res.data.tier  || 'free');
-        localStorage.setItem('token', res.data.access_token);
-        window.location.href = '/chat';
-      } else {
+  
+      const data = res.data || {};
+      const token = data.token || data.access_token;
+      if (!token) {
         setError('Invalid login response');
+        return;
       }
-      
-
+  
+      if (data.needs_reconsent) localStorage.setItem('needs_reconsent', '1');
+      else localStorage.removeItem('needs_reconsent');
+  
+      localStorage.setItem('token', token);
+      localStorage.setItem('email', data.email || data.user?.email || email.trim());
+      localStorage.setItem('name',  data.name  || data.user?.name  || '');
+      const role = (data.role || data.user?.role || 'user').toLowerCase();
+      localStorage.setItem('role', role);
+      const tier = (data.tier || data.user?.tier || 'free').toLowerCase();
+      localStorage.setItem('tier', tier);
+      localStorage.setItem('plan', tier === 'pro' ? 'Pro' : 'Free');
+  
+      // send back to original page (e.g., /admin) or default to /chat
+      const urlParams = new URLSearchParams(location.search);
+      const nextFromQuery = urlParams.get('next');
+      const fromState = location.state?.from?.pathname;
+      const dest = fromState || nextFromQuery || '/chat';
+      navigate(dest, { replace: true });
     } catch (err) {
       const data = err?.response?.data;
       let message = 'Login failed';
@@ -61,6 +73,8 @@ export default function Login() {
       setLoading(false);
     }
   };
+    
+
 
   const goGoogle = () => { window.location.href = `${API_ROOT}/api/v1/auth/google/start`; };
   const goApple  = () => { window.location.href = `${API_ROOT}/api/v1/auth/apple/start`; };
@@ -118,7 +132,8 @@ export default function Login() {
               }} />
               Remember me
             </label>
-            <a href="#" className="text-teal-600 hover:underline">Forgot password?</a>
+            <a href="/forgot" className="text-blue-600 hover:underline">Forgot password?</a>
+
           </div>
 
           <button

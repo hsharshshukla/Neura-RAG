@@ -136,17 +136,6 @@ const openItem = (item) => {
   }
 };
 
-
-  // const openItem = (item) => {
-  //   if (!item) return;
-  //   if (item.kind === "chat") {
-  //     window.location.href = `/chat/${item.data.chat_id}`;
-  //   } else {
-  //     window.location.href = `/chat/${item.data.chat_id || sessionId}`;
-  //   }
-  //   onClose?.();
-  // };
-
   if (!open) return null;
 
   return (

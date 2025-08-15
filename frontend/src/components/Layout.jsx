@@ -22,23 +22,3 @@ export default function Layout({ children }) {
   );
 }
 
-
-// import React from 'react';
-// import { useLocation } from 'react-router-dom';
-// import TopBar from './TopBar';
-// import ConsentBanner from './ConsentBanner'; 
-
-// const Layout = ({ children }) => {
-//   const location = useLocation();
-//   const hideTopBar = ['/login', '/signup'].includes(location.pathname);
-
-//   return (
-//     <div className="min-h-screen flex flex-col">
-//       {!hideTopBar && <TopBar />}
-//       {!hideTopBar && <ConsentBanner />}{/* ✅ show banner only when logged in pages */}
-//       <main className="flex-grow">{children}</main>
-//     </div>
-//   );
-// };
-
-// export default Layout;

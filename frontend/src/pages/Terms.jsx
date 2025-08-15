@@ -5,7 +5,7 @@ export default function Terms() {
   return (
     <div className="max-w-3xl mx-auto p-6 prose">
       <h1>Terms of Service — Neura</h1>
-      <p><strong>Effective:</strong> August 12, 2025 &nbsp; | &nbsp; <strong>Version:</strong> 1.1</p>
+      <p><strong>Effective:</strong> August 12, 2025 &nbsp; | &nbsp; <strong>Version:</strong> 1.2</p>
 
       <h2>1. Acceptance</h2>
       <p>By creating an account or using Neura (the “Service”), you agree to these Terms. If you do not agree, do not use the Service.</p>
@@ -42,23 +42,38 @@ export default function Terms() {
       <h2>9. Billing</h2>
       <p>Free and paid tiers exist. Payments are processed by Lemon Squeezy. Fees are non-refundable unless required by law. Subscriptions renew unless cancelled before renewal.</p>
 
-      <h2>10. Disclaimers & Liability</h2>
+      <h2>10. Information Retention</h2>
+      <p>
+        If you close your account or remove content, we follow internal processes to remove that information from active user-facing systems.
+        In some circumstances, certain information may be retained for a period of time for legitimate business or legal purposes, such as:
+      </p>
+      <ul>
+        <li>Meeting applicable legal, regulatory, or compliance requirements.</li>
+        <li>Maintaining the safety, security, and integrity of our Services, including the prevention of fraud, abuse, or harmful activity.</li>
+        <li>Preserving operational records necessary for business continuity and service improvement.</li>
+        <li>Supporting research and development using aggregated or de-identified data.</li>
+      </ul>
+      <p>
+        Information stored in backup or archival systems may persist until those systems are replaced or overwritten in the ordinary course of operations.
+      </p>
+
+      <h2>11. Disclaimers & Liability</h2>
       <p>Service provided “AS IS”. We disclaim all warranties. To the maximum extent allowed by law, we are not liable for any indirect, incidental, special, or consequential damages. Our total liability will not exceed fees you paid in the prior three months (or ₹0 on the free tier).</p>
 
-      <h2>11. Indemnity</h2>
+      <h2>12. Indemnity</h2>
       <p>You agree to indemnify and hold Neura harmless from claims arising out of your content or use.</p>
 
-      <h2>12. Termination</h2>
+      <h2>13. Termination</h2>
       <p>We may suspend or terminate accounts for any reason, including policy violations.</p>
 
-      <h2>13. Changes</h2>
+      <h2>14. Changes</h2>
       <p>We may update these Terms. Continued use after updates constitutes acceptance.</p>
 
       <h2>Contact</h2>
       <p>legal@neura.com</p>
 
       <footer className="text-sm text-gray-500 mt-8">
-        Legal Version: <strong>2025-08-01</strong>
+        Legal Version: <strong>2025-08-15</strong>
       </footer>
     </div>
   );

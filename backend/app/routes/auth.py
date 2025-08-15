@@ -96,7 +96,7 @@ def signup(
     })
 
     token = create_access_token(user)
-    return {"email": user.email, "tier": user.tier, "name": user.name or "", "access_token": token}
+    return {"email": user.email, "tier": user.tier, "name": user.name or "","role": getattr(user, "role", "user"),  "access_token": token,"token":token}
 
 @router.post("/login")
 def login(
@@ -119,8 +119,10 @@ def login(
         "email": user.email,
         "tier": user.tier,
         "name": user.name or "",
+        "role": getattr(user, "role", "user"),
         "access_token": token,
         "needs_reconsent": needs_reconsent,
+        "token":token
     }
 
 @router.post("/change-password")
@@ -181,208 +183,8 @@ def accept_terms(
 
     return {"ok": True}
 
-
-# from fastapi import APIRouter, Form, Depends, HTTPException
-# from sqlmodel import Session, select
-# from app.models import User
-# from app.db import get_session
-# from jose import jwt
-# from datetime import datetime, timedelta
-# # from passlib.context import CryptContext
-# from pydantic import BaseModel, Field
-# from app.deps.auth import get_current_user  # ✅ use your dependency
-# from app.utils.security import get_password_hash, verify_password
-# from fastapi import APIRouter, Form, Depends, HTTPException, Request
-# from app.utils.security import get_password_hash, verify_password  
-# import os
-
-
-# CURRENT_TOS_VERSION = os.getenv("TOS_VERSION", "2025-08-01")
-# CURRENT_PRIVACY_VERSION = os.getenv("PRIVACY_VERSION", "2025-08-01")
-
-# router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
-# SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
-# ALGORITHM = os.getenv("JWT_ALG", "HS256")
-# ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
-
-
-# # ----- helpers -----
-
-# def create_access_token(user: User, expires_in: int = ACCESS_TOKEN_EXPIRE_SECONDS) -> str:
-#     from datetime import datetime, timedelta
-#     exp = datetime.utcnow() + timedelta(seconds=expires_in)
-#     ver = getattr(user, "token_version", 0) or 0
-#     payload = {"sub": user.email, "ver": ver, "exp": exp}
-#     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-# # ----- models -----
-# class ChangePasswordIn(BaseModel):
-#     newPassword: str = Field(min_length=6, max_length=256)
-
-# # ----- routes -----
-
-# # ✅ REGISTER
-# # @router.post("/signup")
-# # def signup(
-# #     email: str = Form(...),
-# #     password: str = Form(...),
-# #     name: str = Form(None),
-# #     db: Session = Depends(get_session)
-# # ):
-# #     existing = db.exec(select(User).where(User.email == email)).first()
-# #     if existing:
-# #         raise HTTPException(status_code=400, detail="Email already registered")
-
-# #     # hashed_password = pwd_context.hash(password)
-# #     hashed_password = get_password_hash(password)   # ← put this here
-
-    
-# #     user = User(
-# #         email=email,
-# #         password=hashed_password,
-# #         tier="free",
-# #         name=name or email.split("@")[0].capitalize(),
-# #         created_at=datetime.utcnow(),   # token_version defaults to 0
-# #     )
-# #     db.add(user)
-# #     db.commit()
-# #     db.refresh(user)
-
-# #     token = create_access_token(user)
-# #     return {"email": user.email, "tier": user.tier, "name": user.name or "", "access_token": token}
-# @router.post("/signup")
-# def signup(
-#     request: Request,
-#     email: str = Form(...),
-#     password: str = Form(...),
-#     name: str = Form(None),
-#     agree: bool = Form(False),
-#     marketingOptIn: bool = Form(False),
-#     tosVersion: str = Form(None),
-#     privacyVersion: str = Form(None),
-#     db: Session = Depends(get_session),
-# ):
-#     if not agree:
-#         raise HTTPException(status_code=400, detail="You must accept the Terms to create an account.")
-
-#     existing = db.exec(select(User).where(User.email == email)).first()
-#     if existing:
-#         raise HTTPException(status_code=400, detail="Email already registered")
-
-#     user = User(
-#         email=email,
-#         password=get_password_hash(password),
-#         tier="free",
-#         name=(name or email.split("@")[0].capitalize()),
-#         created_at=datetime.utcnow(),
-#         token_version=0,
-#         tos_version=tosVersion or CURRENT_TOS_VERSION,
-#         privacy_version=privacyVersion or CURRENT_PRIVACY_VERSION,
-#         tos_accepted_at=datetime.utcnow(),
-#         marketing_opt_in=bool(marketingOptIn),
-#         consent_ip=request.client.host if request.client else None,
-#         consent_ua=request.headers.get("user-agent"),
-#     )
-#     db.add(user); db.commit(); db.refresh(user)
-
-#     token = create_access_token(user)
-#     return {"email": user.email, "tier": user.tier, "name": user.name or "", "access_token": token}
-
-
-# # ✅ LOGIN
-# # @router.post("/login")
-# # def login(
-# #     email: str = Form(...),
-# #     password: str = Form(...),
-# #     db: Session = Depends(get_session)
-# # ):
-# #     user = db.exec(select(User).where(User.email == email)).first()
-# #     # if not user or not pwd_context.verify(password, user.password):
-# #     #     raise HTTPException(status_code=401, detail="Invalid credentials")
-
-# #     # login:
-# #     if not user or not verify_password(password, user.password):   # ← put this here
-# #         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-
-# #     token = create_access_token(user)
-# #     return {"email": user.email, "tier": user.tier, "name": user.name or "", "access_token": token}
-# @router.post("/login")
-# def login(
-#     email: str = Form(...),
-#     password: str = Form(...),
-#     db: Session = Depends(get_session)
-# ):
-#     user = db.exec(select(User).where(User.email == email)).first()
-#     if not user or not verify_password(password, user.password):
-#         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-#     needs_reconsent = (
-#         (user.tos_version or "") != CURRENT_TOS_VERSION
-#         or (user.privacy_version or "") != CURRENT_PRIVACY_VERSION
-#     )
-
-#     token = create_access_token(user)
-#     return {
-#         "email": user.email,
-#         "tier": user.tier,
-#         "name": user.name or "",
-#         "access_token": token,
-#         "needs_reconsent": needs_reconsent,
-#     }
-
-
-
-# # ✅ CHANGE PASSWORD (invalidates all existing tokens)
-# @router.post("/change-password")
-# def change_password(
-#     payload: ChangePasswordIn,
-#     user_email: str = Depends(get_current_user),
-#     db: Session = Depends(get_session),
-# ):
-#     user = db.exec(select(User).where(User.email == user_email)).first()
-#     if not user:
-#         raise HTTPException(status_code=401, detail="User not found")
-
-#     user.password = get_password_hash(payload.newPassword)
-    
-#     user.token_version = (user.token_version or 0) + 1  # 🔒 revoke all current tokens
-#     db.add(user)
-#     db.commit()
-#     return {"ok": True}
-
-# # ✅ LOGOUT FROM ALL DEVICES (also invalidates all existing tokens)
-# @router.post("/logout-all")
-# def logout_all(
-#     user_email: str = Depends(get_current_user),
-#     db: Session = Depends(get_session),
-# ):
-#     user = db.exec(select(User).where(User.email == user_email)).first()
-#     if not user:
-#         raise HTTPException(status_code=401, detail="User not found")
-
-#     user.token_version = (user.token_version or 0) + 1  # 🔒 revoke all current tokens
-#     db.add(user)
-#     db.commit()
-#     return {"ok": True}
-
-
-# @router.post("/accept-terms")
-# def accept_terms(
-#     request: Request,
-#     user_email: str = Depends(get_current_user),
-#     db: Session = Depends(get_session),
-# ):
-#     user = db.exec(select(User).where(User.email == user_email)).first()
-#     if not user:
-#         raise HTTPException(status_code=401, detail="User not found")
-
-#     user.tos_version = CURRENT_TOS_VERSION
-#     user.privacy_version = CURRENT_PRIVACY_VERSION
-#     user.tos_accepted_at = datetime.utcnow()
-#     user.consent_ip = request.client.host if request.client else None
-#     user.consent_ua = request.headers.get("user-agent")
-#     db.add(user); db.commit()
-#     return {"ok": True}
+# add inside backend/app/routes/auth.py
+@router.get("/whoami")
+def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
+    user = db.exec(select(User).where(User.email == user_email)).first()
+    return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier}

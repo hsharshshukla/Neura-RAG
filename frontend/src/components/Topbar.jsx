@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchCommand from "./SearchCommand";
+import { isLoggedIn, isAdmin, logout as authLogout } from "../utils/auth";
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -14,13 +15,8 @@ const TopBar = () => {
   const btnRef = useRef(null);
 
   // ---- Auth & route state ----
-  const authToken =
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token");
-
   const authedEmail = localStorage.getItem("email") || "";
-  const isAuthed = Boolean(authToken || authedEmail);
+  const isAuthed = isLoggedIn();
 
   const plan = (localStorage.getItem("plan") || "Free").trim();
   const onChatPage = location.pathname.startsWith("/chat");
@@ -64,15 +60,9 @@ const TopBar = () => {
   }, [menuOpen]);
 
   const handleLogout = () => {
-    // ✅ Requirement #1: redirect to Home after logout
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("token");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("email");
-    localStorage.removeItem("name");
-    localStorage.removeItem("plan");
+    authLogout();       // clears token, email, plan, role, legacy keys
     setMenuOpen(false);
-    navigate("/"); // was "/login"
+    navigate("/");      // ✅ back to Home after logout
   };
 
   const initials = (() => {
@@ -135,7 +125,18 @@ const TopBar = () => {
           <div className="justify-self-end flex items-center gap-3">
             {isAuthed ? (
               <>
+                {/* ⬇️ Show Admin entry only if role === 'admin' */}
+                {isAdmin() && (
+                  <button
+                    onClick={() => navigate("/admin")}
+                    className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    Admin
+                  </button>
+                )}
+
                 <PlanPill />
+
                 <div className="relative">
                   <button
                     ref={btnRef}
@@ -189,7 +190,7 @@ const TopBar = () => {
                 </div>
               </>
             ) : onSignup ? (
-              // ✅ Requirement #2: on /signup show only "Login"
+              // on /signup show only "Login"
               <button
                 onClick={() => navigate("/login")}
                 className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -197,7 +198,7 @@ const TopBar = () => {
                 Login
               </button>
             ) : onLogin ? (
-              // ✅ Requirement #3: on /login show only "Register"
+              // on /login show only "Register"
               <button
                 onClick={() => navigate("/signup")}
                 className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -246,4 +247,6 @@ const TopBar = () => {
 };
 
 export default TopBar;
+
+
 

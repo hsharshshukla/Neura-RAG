@@ -1,8 +1,9 @@
-# app/deps/auth.py
+# backend/app/deps/auth.py
 import os
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException, Header, status
 from jose import JWTError, jwt
 from sqlmodel import Session, select
+
 from app.db import get_session
 from app.models import User
 
@@ -13,36 +14,35 @@ def get_current_user(
     authorization: str = Header(None, alias="Authorization"),
     db: Session = Depends(get_session),
 ) -> str:
-    # Expect "Bearer <token>"
+    """
+    Validates Bearer JWT and returns the user's email (lowercased).
+    Enforces token_version so logout-all / password-change invalidates old tokens.
+    """
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-    token = authorization.split(" ", 1)[1]
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
 
-    # Decode JWT
+    token = authorization.split(" ", 1)[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
-    email = payload.get("sub")
+    email = (payload.get("sub") or "").lower()
     token_ver = int(payload.get("ver", 0))
-    if not email:
-        raise HTTPException(status_code=401, detail="Invalid token: sub missing")
 
-    # Look up the user
+    if not email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: sub missing")
+
     user = db.exec(select(User).where(User.email == email)).first()
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    # Enforce logout-all/password-change by version check
-    if (user.token_version or 0) != token_ver:
-        raise HTTPException(status_code=401, detail="Token revoked; please log in again")
+    if int(user.token_version or 0) != token_ver:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked; please log in again")
 
-    # Return email string because your routes expect it
     return email
 
 
-# Optional: if some routes want the full User object
 def get_current_user_obj(
     authorization: str = Header(None, alias="Authorization"),
     db: Session = Depends(get_session),
