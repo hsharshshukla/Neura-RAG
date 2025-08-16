@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Form, Depends, HTTPException, Request
+# app/routes/auth.py
+from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, status, Cookie
 from sqlmodel import Session, select
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -20,6 +21,13 @@ SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
 ALGORITHM = os.getenv("JWT_ALG", "HS256")
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
 
+# Cookie settings (dev-friendly defaults)
+ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
+COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None     # e.g. "example.com" in prod
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"  # false for http://127.0.0.1
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")  # 'lax' | 'strict' | 'none'
+COOKIE_PATH = "/"
+
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 # ---- helpers ----
@@ -28,6 +36,25 @@ def create_access_token(user: User, expires_in: int = ACCESS_TOKEN_EXPIRE_SECOND
     ver = (user.token_version or 0)
     payload = {"sub": user.email, "ver": ver, "exp": exp}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def set_auth_cookie(response: Response, token: str):
+    response.set_cookie(
+        key=ACCESS_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
+        path=COOKIE_PATH,
+        domain=COOKIE_DOMAIN,
+    )
+
+def clear_auth_cookie(response: Response):
+    response.delete_cookie(
+        key=ACCESS_COOKIE_NAME,
+        path=COOKIE_PATH,
+        domain=COOKIE_DOMAIN,
+    )
 
 def client_ip(request: Request) -> str:
     xff = request.headers.get("x-forwarded-for")
@@ -44,6 +71,7 @@ class ChangePasswordIn(BaseModel):
 @router.post("/signup")
 def signup(
     request: Request,
+    response: Response,
     email: str = Form(...),
     password: str = Form(...),
     name: Optional[str] = Form(None),
@@ -53,13 +81,9 @@ def signup(
     privacyVersion: Optional[str] = Form(None),
     db: Session = Depends(get_session),
 ):
-    # normalize
     email_norm = (email or "").strip().lower()
-
     if not agree:
         raise HTTPException(status_code=400, detail="You must accept the Terms & Privacy to create an account.")
-
-    # prevent spoofing by requiring exact server versions
     if tosVersion != CURRENT_TOS_VERSION or privacyVersion != CURRENT_PRIVACY_VERSION:
         raise HTTPException(status_code=400, detail="Legal version mismatch. Please refresh and try again.")
 
@@ -78,14 +102,13 @@ def signup(
         tos_version=CURRENT_TOS_VERSION,
         privacy_version=CURRENT_PRIVACY_VERSION,
         tos_accepted_at=now,
-        privacy_accepted_at=now,              # ⬅️ stamp privacy as well
+        privacy_accepted_at=now,
         marketing_opt_in=bool(marketingOptIn),
         consent_ip=client_ip(request),
         consent_ua=request.headers.get("user-agent"),
     )
     db.add(user); db.commit(); db.refresh(user)
 
-    # audit log
     log_event("CONSENT_RECORDED", {
         "email": user.email,
         "ip": user.consent_ip,
@@ -96,10 +119,12 @@ def signup(
     })
 
     token = create_access_token(user)
-    return {"email": user.email, "tier": user.tier, "name": user.name or "","role": getattr(user, "role", "user"),  "access_token": token,"token":token}
+    set_auth_cookie(response, token)
+    return {"email": user.email, "tier": user.tier, "name": user.name or "", "role": getattr(user, "role", "user")}
 
 @router.post("/login")
 def login(
+    response: Response,
     email: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_session)
@@ -115,15 +140,19 @@ def login(
     )
 
     token = create_access_token(user)
+    set_auth_cookie(response, token)
     return {
         "email": user.email,
         "tier": user.tier,
         "name": user.name or "",
         "role": getattr(user, "role", "user"),
-        "access_token": token,
         "needs_reconsent": needs_reconsent,
-        "token":token
     }
+
+@router.post("/logout")
+def logout(response: Response):
+    clear_auth_cookie(response)
+    return {"ok": True}
 
 @router.post("/change-password")
 def change_password(
@@ -136,12 +165,13 @@ def change_password(
         raise HTTPException(status_code=401, detail="User not found")
 
     user.password = get_password_hash(payload.newPassword)
-    user.token_version = (user.token_version or 0) + 1  # revoke all tokens
+    user.token_version = (user.token_version or 0) + 1
     db.add(user); db.commit()
     return {"ok": True}
 
 @router.post("/logout-all")
 def logout_all(
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
@@ -151,6 +181,7 @@ def logout_all(
 
     user.token_version = (user.token_version or 0) + 1
     db.add(user); db.commit()
+    clear_auth_cookie(response)
     return {"ok": True}
 
 @router.post("/accept-terms")
@@ -183,8 +214,39 @@ def accept_terms(
 
     return {"ok": True}
 
-# add inside backend/app/routes/auth.py
+# ✅ Soft session probe for the FE (never 401)
+@router.get("/me")
+def me(
+    access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
+    db: Session = Depends(get_session),
+):
+    if not access_token:
+        return {"authenticated": False}
+
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return {"authenticated": False}
+
+    email = (payload.get("sub") or "").lower()
+    ver = int(payload.get("ver", 0))
+    if not email:
+        return {"authenticated": False}
+
+    user = db.exec(select(User).where(User.email == email)).first()
+    if not user or int(user.token_version or 0) != ver:
+        return {"authenticated": False}
+
+    return {
+        "authenticated": True,
+        "email": user.email,
+        "role": getattr(user, "role", "user"),
+        "tier": user.tier,
+        "name": user.name or "",
+    }
+
+# Legacy helper (still hard-auth)
 @router.get("/whoami")
 def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
     user = db.exec(select(User).where(User.email == user_email)).first()
-    return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier}
+    return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier, "name": user.name or ""}

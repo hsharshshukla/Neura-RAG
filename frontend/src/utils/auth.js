@@ -1,29 +1,45 @@
 // src/utils/auth.js
+/**
+ * Client-side auth helpers using a simple 'authed' flag.
+ * We broadcast 'auth-changed' so the UI (TopBar, etc.) updates instantly.
+ */
+const AUTH_FLAG = 'authed';
 
-const TOKEN_KEYS = ['token', 'authToken', 'access_token'];
-
-export const getToken = () => {
-  for (const k of TOKEN_KEYS) {
-    const v = localStorage.getItem(k);
-    if (v) return v;
-  }
-  return '';
+export const markAuthed = () => {
+  try { localStorage.setItem(AUTH_FLAG, '1'); } catch {}
+  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
 };
 
-export const setToken = (token) => {
-  if (!token) return;
-  localStorage.setItem('token', token);
-  TOKEN_KEYS.filter(k => k !== 'token').forEach(k => localStorage.removeItem(k));
+export const clearAuthed = () => {
+  try { localStorage.removeItem(AUTH_FLAG); } catch {}
+  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
 };
 
-export const getRole    = () => (localStorage.getItem('role') || 'user').toLowerCase();
-export const setRole    = (role) => role && localStorage.setItem('role', role);
-export const getEmail   = () => localStorage.getItem('email') || '';
-export const getPlan    = () => localStorage.getItem('plan') || 'Free';
-export const isLoggedIn = () => Boolean(getToken() || getEmail());
-export const isAdmin    = () => getRole() === 'admin';
-export const isAuthed   = isLoggedIn; // back-compat
+export const isLoggedIn = () => {
+  try { return localStorage.getItem(AUTH_FLAG) === '1'; } catch { return false; }
+};
+
+export const getRole = () => {
+  try { return (localStorage.getItem('role') || 'user').toLowerCase(); } catch { return 'user'; }
+};
+
+export const isAdmin = () => getRole() === 'admin';
 
 export const logout = () => {
-  [...TOKEN_KEYS, 'email', 'name', 'plan', 'tier', 'role', 'needs_reconsent'].forEach(k => localStorage.removeItem(k));
+  try {
+    // legacy + profile keys
+    localStorage.removeItem('token');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('role');
+    localStorage.removeItem('tier');
+    localStorage.removeItem('plan');
+    localStorage.removeItem('active_chat_id');
+  } catch {}
+  clearAuthed(); // also dispatches 'auth-changed'
+};
+
+// ---- Legacy shim so older code that imports getToken still compiles ----
+export const getToken = () => {
+  try { return localStorage.getItem('token') || ''; } catch { return ''; }
 };

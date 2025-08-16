@@ -1,9 +1,9 @@
-// pages/Login.jsx
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
-import { ENV } from '../config/env'; // 👈 new
-import TopBar from "../components/TopBar";
+import { ENV } from '../config/env';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { markAuthed } from '../utils/auth';
 
 // Strip trailing /api/v1 from API_BASE_URL for SSO redirects
 const API_ROOT = (ENV.API_BASE_URL || '').replace(/\/api\/v1\/?$/, '');
@@ -30,31 +30,29 @@ export default function Login() {
       const params = new URLSearchParams();
       params.append('email', email.trim());
       params.append('password', password);
-  
+
       const res = await secureAxios.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-  
+
       const data = res.data || {};
-      const token = data.token || data.access_token;
-      if (!token) {
-        setError('Invalid login response');
-        return;
-      }
-  
+
+      // Backend sets HttpOnly cookie. We keep lightweight profile + a stable 'authed' flag.
       if (data.needs_reconsent) localStorage.setItem('needs_reconsent', '1');
       else localStorage.removeItem('needs_reconsent');
-  
-      localStorage.setItem('token', token);
-      localStorage.setItem('email', data.email || data.user?.email || email.trim());
-      localStorage.setItem('name',  data.name  || data.user?.name  || '');
-      const role = (data.role || data.user?.role || 'user').toLowerCase();
+
+      localStorage.setItem('email', data.email || email.trim());
+      localStorage.setItem('name',  data.name  || '');
+      const role = (data.role || 'user').toLowerCase();
+      const tier = (data.tier || 'free').toLowerCase();
       localStorage.setItem('role', role);
-      const tier = (data.tier || data.user?.tier || 'free').toLowerCase();
       localStorage.setItem('tier', tier);
       localStorage.setItem('plan', tier === 'pro' ? 'Pro' : 'Free');
-  
-      // send back to original page (e.g., /admin) or default to /chat
+
+      // ✅ mark authed (no need to store access token in localStorage)
+      markAuthed();
+
+      // Navigate back to original page or /chat
       const urlParams = new URLSearchParams(location.search);
       const nextFromQuery = urlParams.get('next');
       const fromState = location.state?.from?.pathname;
@@ -73,8 +71,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-    
-
 
   const goGoogle = () => { window.location.href = `${API_ROOT}/api/v1/auth/google/start`; };
   const goApple  = () => { window.location.href = `${API_ROOT}/api/v1/auth/apple/start`; };
@@ -133,7 +129,6 @@ export default function Login() {
               Remember me
             </label>
             <a href="/forgot" className="text-blue-600 hover:underline">Forgot password?</a>
-
           </div>
 
           <button
@@ -169,4 +164,3 @@ export default function Login() {
     </div>
   );
 }
-

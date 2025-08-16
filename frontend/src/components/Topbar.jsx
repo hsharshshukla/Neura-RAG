@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchCommand from "./SearchCommand";
 import { isLoggedIn, isAdmin, logout as authLogout } from "../utils/auth";
+import secureAxios from "../utils/secureAxios";
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -10,14 +11,44 @@ const TopBar = () => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [authed, setAuthed] = useState(isLoggedIn()); // seed from local flag
 
   const menuRef = useRef(null);
   const btnRef = useRef(null);
 
+  // Soft verify once; /auth/me returns {authenticated:false} (no 401s)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await secureAxios.get('/auth/me');
+        if (!mounted) return;
+        if (!data?.authenticated) {
+          authLogout();
+          setAuthed(false);
+        } else {
+          setAuthed(true);
+        }
+      } catch {
+        // ignore network errors; keep current flag
+      }
+    })();
+
+    const onAuthChanged = () => setAuthed(isLoggedIn());
+    window.addEventListener('auth-changed', onAuthChanged);
+    return () => {
+      mounted = false;
+      window.removeEventListener('auth-changed', onAuthChanged);
+    };
+  }, []);
+
+  // ✅ Also re-check on every route change (covers redirect after login)
+  useEffect(() => {
+    setAuthed(isLoggedIn());
+  }, [location.pathname]);
+
   // ---- Auth & route state ----
   const authedEmail = localStorage.getItem("email") || "";
-  const isAuthed = isLoggedIn();
-
   const plan = (localStorage.getItem("plan") || "Free").trim();
   const onChatPage = location.pathname.startsWith("/chat");
   const onLogin = location.pathname === "/login";
@@ -59,10 +90,12 @@ const TopBar = () => {
     };
   }, [menuOpen]);
 
-  const handleLogout = () => {
-    authLogout();       // clears token, email, plan, role, legacy keys
+  const handleLogout = async () => {
+    try { await secureAxios.post('/auth/logout'); } catch {}
+    authLogout();       // clears local state and dispatches 'auth-changed'
     setMenuOpen(false);
-    navigate("/");      // ✅ back to Home after logout
+    setAuthed(false);
+    navigate("/");      // back to Home
   };
 
   const initials = (() => {
@@ -92,7 +125,7 @@ const TopBar = () => {
         <div className="grid grid-cols-[auto,1fr,auto] items-center h-14 w-full">
           {/* LEFT: Brand */}
           <button
-            onClick={() => navigate(isAuthed ? "/chat" : "/")}
+            onClick={() => navigate(authed ? "/chat" : "/")}
             className="justify-self-start flex items-center gap-2"
             aria-label="Go to Home/Chat"
           >
@@ -118,14 +151,14 @@ const TopBar = () => {
               </div>
             </div>
           ) : (
-            <div /> // keep grid balance
+            <div />
           )}
 
           {/* RIGHT: Auth-aware + route-aware controls */}
           <div className="justify-self-end flex items-center gap-3">
-            {isAuthed ? (
+            {authed ? (
               <>
-                {/* ⬇️ Show Admin entry only if role === 'admin' */}
+                {/* Admin link if role === 'admin' */}
                 {isAdmin() && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -162,19 +195,13 @@ const TopBar = () => {
                       </div>
                       <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
                       <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          navigate("/profile");
-                        }}
+                        onClick={() => { setMenuOpen(false); navigate("/profile"); }}
                         className="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       >
                         👤 View Profile
                       </button>
                       <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          navigate("/settings");
-                        }}
+                        onClick={() => { setMenuOpen(false); navigate("/settings"); }}
                         className="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       >
                         ⚙️ Settings
@@ -190,7 +217,6 @@ const TopBar = () => {
                 </div>
               </>
             ) : onSignup ? (
-              // on /signup show only "Login"
               <button
                 onClick={() => navigate("/login")}
                 className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -198,7 +224,6 @@ const TopBar = () => {
                 Login
               </button>
             ) : onLogin ? (
-              // on /login show only "Register"
               <button
                 onClick={() => navigate("/signup")}
                 className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -206,7 +231,6 @@ const TopBar = () => {
                 Register
               </button>
             ) : (
-              // Default public pages (e.g., Home)
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate("/login")}
@@ -247,6 +271,3 @@ const TopBar = () => {
 };
 
 export default TopBar;
-
-
-
