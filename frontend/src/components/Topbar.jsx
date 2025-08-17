@@ -1,6 +1,6 @@
 // src/components/TopBar.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import SearchCommand from "./SearchCommand";
 import { isLoggedIn, isAdmin, logout as authLogout } from "../utils/auth";
 import secureAxios from "../utils/secureAxios";
@@ -159,14 +159,24 @@ const TopBar = () => {
             {authed ? (
               <>
                 {/* Admin link if role === 'admin' */}
-                {isAdmin() && (
+                {/* {isAdmin() && (
                   <button
                     onClick={() => navigate("/admin")}
                     className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                   >
                     Admin
                   </button>
+                )} */}
+
+                {isAdmin() && (
+                  <Link
+                    to="/admin"
+                    className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    Admin
+                  </Link>
                 )}
+
 
                 <PlanPill />
 

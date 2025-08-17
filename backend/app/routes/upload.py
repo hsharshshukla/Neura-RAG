@@ -13,7 +13,6 @@ from app.vector_store import embed_and_store
 from app.parsers.parser import parse_and_clean_bytes  # central parser (txt/md/pdf/docx/pptx/xlsx/csv/json/jpg/png)
 from app.storage.storage import get_storage  # NEW
 
-
 router = APIRouter(prefix="/api/v1", tags=["upload"])
 
 ALLOWED_EXTS = {
@@ -38,7 +37,7 @@ async def upload_file(
 ):
     """
     Upload a file, parse & sanitize, and embed into vector store with
-    MINIMAL metadata (no filename). We only keep session scoping + a random doc_id.
+    MINIMAL metadata (no filename). We keep session scoping + a random doc_id.
     """
     try:
         # 1) Auth
@@ -69,7 +68,7 @@ async def upload_file(
 
         # 🔹 Persist original file to storage (opaque path, no name leaks)
         storage = get_storage()
-        doc_id, storage_uri = storage.save(
+        persisted_doc_id, storage_uri = storage.save(
             user_id=user.id,
             session_id=session_id,
             filename=original_name,  # only used to keep extension; NOT stored as-is
@@ -83,7 +82,6 @@ async def upload_file(
             raise HTTPException(status_code=400, detail="No extractable text found.")
 
         # 5) Minimal metadata (NO filename)
-        # Keep only what’s required for routing/filtering; doc_id is opaque
         doc_id = str(uuid.uuid4())
         embed_and_store(
             user_email=user_email,
@@ -91,19 +89,10 @@ async def upload_file(
             metadata={
                 "session_id": str(session_id),
                 "doc_id": doc_id,
-                # DO NOT include: filename, path, owner names, etc.
+                # NO filename/path/PII in metadata
             },
         )
 
-        # 6) Analytics (redacted; no filename)
-        # log_event("upload", {
-        #     "user": user_email,
-        #     "session_id": session_id,
-        #     "doc_id": doc_id,
-        #     "size_bytes": len(raw),
-        #     "content_type": getattr(file, "content_type", None),
-        #     "chars_indexed": len(text),
-        # })
         log_event("upload", {
             "user": user_email,
             "session_id": session_id,
@@ -113,7 +102,6 @@ async def upload_file(
             "content_type": getattr(file, "content_type", None),
             "chars_indexed": len(text),
         })
-
 
         return {
             "ok": True,

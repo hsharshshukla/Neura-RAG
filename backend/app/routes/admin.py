@@ -24,8 +24,9 @@ class EmailIn(BaseModel):
     email: EmailStr
 
 class SetTierIn(BaseModel):
+    # ✅ allow mini (Mini+)
     email: EmailStr
-    tier: Literal["free", "pro"]  # extend later if you add more
+    tier: Literal["free", "mini", "pro"]
 
 # ---------- helpers ----------
 def _count_where(db: Session, model, *conds) -> int:
@@ -42,7 +43,8 @@ def _active_users_24h(db: Session) -> int:
     try:
         sess_map = {s.id: s.user_id for s in db.exec(select(ChatSession)).all()}
         emails = set()
-        msgs = db.exec(select(ChatMessage).where(ChatMessage.timestamp >= day_ago)).all()
+        # 🔧 use created_at (not timestamp)
+        msgs = db.exec(select(ChatMessage).where(ChatMessage.created_at >= day_ago)).all()
         for msg in msgs or []:
             uid = sess_map.get(msg.session_id)
             if uid:
@@ -86,7 +88,8 @@ def metrics(db: Session = Depends(get_session)) -> Dict[str, Any]:
 
     # queries in last 24h (prefer ChatMessage, fallback to Chat)
     try:
-        queries_24h = _count_where(db, ChatMessage, ChatMessage.timestamp >= day_ago)
+        # 🔧 use created_at (not timestamp)
+        queries_24h = _count_where(db, ChatMessage, ChatMessage.created_at >= day_ago)
     except Exception:
         try:
             queries_24h = _count_where(db, Chat, Chat.created_at >= day_ago)
@@ -100,8 +103,10 @@ def metrics(db: Session = Depends(get_session)) -> Dict[str, Any]:
 
     try:
         pro_users = _count_where(db, User, User.tier == "pro")
+        mini_users = _count_where(db, User, User.tier == "mini")
+        free_users = _count_where(db, User, User.tier == "free")
     except Exception:
-        pro_users = 0
+        pro_users = mini_users = free_users = 0
 
     free_to_pro = round((pro_users / total_users) * 100, 1) if total_users else 0.0
 
@@ -109,6 +114,12 @@ def metrics(db: Session = Depends(get_session)) -> Dict[str, Any]:
         "active_users_24h": active_users_24h,
         "uploads_24h": uploads_24h,
         "queries_24h": queries_24h,
+        "total_users": total_users,
+        "tiers": {
+            "free": free_users,
+            "mini": mini_users,
+            "pro": pro_users,
+        },
         "free_to_pro": free_to_pro,
     }
 
@@ -216,8 +227,18 @@ def sessions(limit: int = 20, db: Session = Depends(get_session)):
 @router.get("/billing/stats")
 def billing_stats(db: Session = Depends(get_session)):
     pro = _count_where(db, User, User.tier == "pro")
+    mini = _count_where(db, User, User.tier == "mini")
+    free = _count_where(db, User, User.tier == "free")
     total = _count_where(db, User)
-    return {"Active Pro": pro, "MRR": "$0", "Failed Payments": 0, "Total Users": total}
+    # You can compute MRR once billing is wired
+    return {
+        "Active Pro": pro,
+        "Active Mini": mini,
+        "Active Free": free,
+        "MRR": "$0",
+        "Failed Payments": 0,
+        "Total Users": total,
+    }
 
 @router.get("/billing/webhooks")
 def billing_webhooks():
@@ -272,7 +293,7 @@ def set_tier(
     user = db.exec(select(User).where(User.email == email)).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    user.tier = payload.tier
+    user.tier = payload.tier  # ✅ accepts free | mini | pro
     db.add(user); db.commit(); db.refresh(user)
     log_event("ADMIN_SET_TIER", {"actor": admin.email, "target": email, "tier": user.tier})
     return {"ok": True, "user": {"email": user.email, "role": user.role, "tier": user.tier}}

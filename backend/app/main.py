@@ -11,7 +11,7 @@ from app.routes import (
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
-# ✅ CORS first (use one host consistently: either localhost or 127.0.0.1)
+# ✅ CORS (use one host consistently: either localhost or 127.0.0.1)
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -29,7 +29,8 @@ app.add_middleware(
 )
 
 # ✅ Routers
-app.include_router(auth.router)
+app.include_router(auth.router)        # /api/v1/auth/*
+app.include_router(auth.alias)         # /api/v1/me  (soft alias)
 app.include_router(chat.router)
 app.include_router(upload.router)
 app.include_router(billing.router)
@@ -40,9 +41,7 @@ app.include_router(settings_routes.router)
 app.include_router(admin.router)
 app.include_router(auth_password.router)
 
-# (Optional) add health for quick checks without CORS drama
+# (Optional) quick health
 @app.get("/health")
 def health():
     return {"ok": True}
-
-

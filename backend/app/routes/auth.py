@@ -1,5 +1,5 @@
 # app/routes/auth.py
-from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, status, Cookie
+from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie, status
 from sqlmodel import Session, select
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
@@ -23,12 +23,15 @@ ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
 
 # Cookie settings (dev-friendly defaults)
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
-COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None     # e.g. "example.com" in prod
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"  # false for http://127.0.0.1
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")  # 'lax' | 'strict' | 'none'
+COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 COOKIE_PATH = "/"
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+# A soft alias router for FE calls that use /api/v1/me
+alias = APIRouter(prefix="/api/v1", tags=["auth"])
 
 # ---- helpers ----
 def create_access_token(user: User, expires_in: int = ACCESS_TOKEN_EXPIRE_SECONDS) -> str:
@@ -50,11 +53,7 @@ def set_auth_cookie(response: Response, token: str):
     )
 
 def clear_auth_cookie(response: Response):
-    response.delete_cookie(
-        key=ACCESS_COOKIE_NAME,
-        path=COOKIE_PATH,
-        domain=COOKIE_DOMAIN,
-    )
+    response.delete_cookie(key=ACCESS_COOKIE_NAME, path=COOKIE_PATH, domain=COOKIE_DOMAIN)
 
 def client_ip(request: Request) -> str:
     xff = request.headers.get("x-forwarded-for")
@@ -66,7 +65,7 @@ def client_ip(request: Request) -> str:
 class ChangePasswordIn(BaseModel):
     newPassword: str = Field(min_length=6, max_length=256)
 
-# ---- routes ----
+# ---- routes (authn) ----
 
 @router.post("/signup")
 def signup(
@@ -214,9 +213,10 @@ def accept_terms(
 
     return {"ok": True}
 
-# ✅ Soft session probe for the FE (never 401)
+# ---------- Soft session probe (never 401) ----------
+# FE calls this on load. If unauthenticated, return {authenticated: False}.
 @router.get("/me")
-def me(
+def soft_me(
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):
@@ -245,8 +245,36 @@ def me(
         "name": user.name or "",
     }
 
-# Legacy helper (still hard-auth)
+# ---------- Strict identity (401 if not logged in) ----------
 @router.get("/whoami")
 def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
     user = db.exec(select(User).where(User.email == user_email)).first()
     return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier, "name": user.name or ""}
+
+# ---------- Soft alias at /api/v1/me for components that call '/me' ----------
+@alias.get("/me")
+def soft_me_alias(
+    access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
+    db: Session = Depends(get_session),
+):
+    # Delegate to the same behavior as soft_me
+    if not access_token:
+        return {"authenticated": False}
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return {"authenticated": False}
+    email = (payload.get("sub") or "").lower()
+    ver = int(payload.get("ver", 0))
+    if not email:
+        return {"authenticated": False}
+    user = db.exec(select(User).where(User.email == email)).first()
+    if not user or int(user.token_version or 0) != ver:
+        return {"authenticated": False}
+    return {
+        "authenticated": True,
+        "email": user.email,
+        "role": getattr(user, "role", "user"),
+        "tier": user.tier,
+        "name": user.name or "",
+    }

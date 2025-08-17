@@ -1,46 +1,58 @@
 // src/components/AdminRoute.jsx
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import secureAxios from '../utils/secureAxios';
-import { isLoggedIn, isAdmin } from '../utils/auth';
+import { markAuthed, clearAuthed } from '../utils/auth';
 
 const AdminRoute = ({ children }) => {
   const [checking, setChecking] = useState(true);
-  const [allow, setAllow] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      // Quick local check first
-      if (!isLoggedIn()) {
-        if (mounted) { setAllow(false); setChecking(false); }
-        return;
-      }
+    let alive = true;
 
+    (async () => {
       try {
-        // Soft verify cookie session (no 401 spam; backend /auth/me returns authenticated:false)
+        // Cookie-based check: 200 returns profile, 401 means not logged in
         const { data } = await secureAxios.get('/auth/me');
-        if (!mounted) return;
-        if (!data?.authenticated) {
-          setAllow(false);
-        } else {
-          const role = (data.role || localStorage.getItem('role') || 'user').toLowerCase();
-          setAllow(role === 'admin' || isAdmin());
+        if (!alive) return;
+
+        // Persist minimal profile for UI (role/tier/name/email)
+        markAuthed({
+          email: data.email || '',
+          name:  data.name  || '',
+          role:  data.role  || 'user',
+          tier:  data.tier  || 'free',
+        });
+
+        // Only admins allowed here
+        if ((data.role || '').toLowerCase() !== 'admin') {
+          navigate('/chat', { replace: true });
+          return;
         }
+
+        setChecking(false);
       } catch {
-        // Network error: fall back to local role only
-        setAllow(isAdmin());
-      } finally {
-        if (mounted) setChecking(false);
+        // 401 or network -> bounce to login, preserving "next"
+        clearAuthed();
+        const next = location.pathname + location.search;
+        navigate('/login?next=' + encodeURIComponent(next), { replace: true });
       }
     })();
-    return () => { mounted = false; };
-  }, []);
 
-  if (checking) return <div className="p-6 text-gray-500">Checking admin access…</div>;
-  if (!allow) return <Navigate to="/login" replace />;
+    return () => { alive = false; };
+  }, [navigate, location]);
 
-  return children;
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-gray-500 animate-pulse text-lg">Checking admin access…</div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 };
 
 export default AdminRoute;

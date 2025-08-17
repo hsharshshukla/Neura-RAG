@@ -1,14 +1,8 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
-import { ENV } from '../config/env';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { markAuthed } from '../utils/auth';
-
-// Strip trailing /api/v1 from API_BASE_URL for SSO redirects
-const API_ROOT = (ENV.API_BASE_URL || '').replace(/\/api\/v1\/?$/, '');
-const GOOGLE_ENABLED = !!ENV.GOOGLE_ENABLED;
-const APPLE_ENABLED  = !!ENV.APPLE_ENABLED;
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -31,26 +25,24 @@ export default function Login() {
       params.append('email', email.trim());
       params.append('password', password);
 
+      // Cookie-based login: server sets HttpOnly cookie + returns profile
       const res = await secureAxios.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
       const data = res.data || {};
 
-      // Backend sets HttpOnly cookie. We keep lightweight profile + a stable 'authed' flag.
+      // Optional: reconsent flag for UI
       if (data.needs_reconsent) localStorage.setItem('needs_reconsent', '1');
       else localStorage.removeItem('needs_reconsent');
 
-      localStorage.setItem('email', data.email || email.trim());
-      localStorage.setItem('name',  data.name  || '');
-      const role = (data.role || 'user').toLowerCase();
-      const tier = (data.tier || 'free').toLowerCase();
-      localStorage.setItem('role', role);
-      localStorage.setItem('tier', tier);
-      localStorage.setItem('plan', tier === 'pro' ? 'Pro' : 'Free');
-
-      // ✅ mark authed (no need to store access token in localStorage)
-      markAuthed();
+      // Persist minimal profile so UI/topbar/admin can read role/tier
+      markAuthed({
+        email: data.email || email.trim(),
+        name:  data.name  || '',
+        role:  (data.role || 'user'),
+        tier:  (data.tier || 'free'),
+      });
 
       // Navigate back to original page or /chat
       const urlParams = new URLSearchParams(location.search);
@@ -72,9 +64,9 @@ export default function Login() {
     }
   };
 
-  const goGoogle = () => { window.location.href = `${API_ROOT}/api/v1/auth/google/start`; };
-  const goApple  = () => { window.location.href = `${API_ROOT}/api/v1/auth/apple/start`; };
-  const showSSO = GOOGLE_ENABLED || APPLE_ENABLED;
+  // SSO redirects are same-origin now (proxied by FE)
+  const goGoogle = () => { window.location.href = `/api/v1/auth/google/start`; };
+  const goApple  = () => { window.location.href = `/api/v1/auth/apple/start`; };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -86,7 +78,9 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
+              {error}
+            </div>
           )}
 
           <label className="block text-sm text-gray-700 mb-1">Email</label>
@@ -139,21 +133,14 @@ export default function Login() {
             {loading ? 'Signing in…' : 'Login'}
           </button>
 
-          {showSSO && (
-            <>
-              <div className="flex items-center my-4">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="px-3 text-xs text-gray-500">or</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-              {GOOGLE_ENABLED && (
-                <button onClick={goGoogle} className="w-full border rounded-xl py-2 hover:bg-gray-50 mb-2">Continue with Google</button>
-              )}
-              {APPLE_ENABLED && (
-                <button onClick={goApple} className="w-full border rounded-xl py-2 hover:bg-gray-50">Continue with Apple</button>
-              )}
-            </>
-          )}
+          {/* If/when SSO is enabled, keep these. They will work through the proxy. */}
+          {/* <div className="flex items-center my-4">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="px-3 text-xs text-gray-500">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+          <button onClick={goGoogle} className="w-full border rounded-xl py-2 hover:bg-gray-50 mb-2">Continue with Google</button>
+          <button onClick={goApple} className="w-full border rounded-xl py-2 hover:bg-gray-50">Continue with Apple</button> */}
 
           <div className="text-center mt-4 text-sm text-gray-600">
             Don’t have an account?{' '}

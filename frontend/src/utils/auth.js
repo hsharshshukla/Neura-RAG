@@ -1,45 +1,53 @@
 // src/utils/auth.js
-/**
- * Client-side auth helpers using a simple 'authed' flag.
- * We broadcast 'auth-changed' so the UI (TopBar, etc.) updates instantly.
- */
+import secureAxios from './secureAxios';
+
 const AUTH_FLAG = 'authed';
 
-export const markAuthed = () => {
-  try { localStorage.setItem(AUTH_FLAG, '1'); } catch {}
-  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
-};
-
-export const clearAuthed = () => {
-  try { localStorage.removeItem(AUTH_FLAG); } catch {}
-  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
-};
-
-export const isLoggedIn = () => {
-  try { return localStorage.getItem(AUTH_FLAG) === '1'; } catch { return false; }
-};
-
-export const getRole = () => {
-  try { return (localStorage.getItem('role') || 'user').toLowerCase(); } catch { return 'user'; }
-};
-
-export const isAdmin = () => getRole() === 'admin';
-
-export const logout = () => {
+// Persist minimal profile for UI and broadcast an auth change
+export function markAuthed(profile = {}) {
   try {
-    // legacy + profile keys
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
-    localStorage.removeItem('name');
-    localStorage.removeItem('role');
-    localStorage.removeItem('tier');
-    localStorage.removeItem('plan');
-    localStorage.removeItem('active_chat_id');
+    localStorage.setItem(AUTH_FLAG, '1');
+    if (profile.email != null) localStorage.setItem('email', profile.email || '');
+    if (profile.name  != null) localStorage.setItem('name',  profile.name  || '');
+    if (profile.role  != null) localStorage.setItem('role',  String(profile.role || 'user').toLowerCase());
+    if (profile.tier  != null) {
+      const tier = String(profile.tier || 'free').toLowerCase();
+      localStorage.setItem('tier', tier);
+      localStorage.setItem('plan', tier === 'pro' ? 'Pro' : 'Free');
+    }
   } catch {}
-  clearAuthed(); // also dispatches 'auth-changed'
-};
+  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
+}
+
+export function clearAuthed() {
+  try {
+    [
+      AUTH_FLAG,
+      'token', 'email', 'name', 'role', 'tier', 'plan',
+      'active_chat_id', 'needs_reconsent'
+    ].forEach(k => localStorage.removeItem(k));
+  } catch {}
+  try { window.dispatchEvent(new Event('auth-changed')); } catch {}
+}
+
+export async function logout() {
+  try { await secureAxios.post('/auth/logout'); } catch {}
+  clearAuthed();
+}
+
+export function isLoggedIn() {
+  try { return localStorage.getItem(AUTH_FLAG) === '1' || !!localStorage.getItem('email'); }
+  catch { return false; }
+}
+
+export function getRole() {
+  try { return (localStorage.getItem('role') || 'user').toLowerCase(); }
+  catch { return 'user'; }
+}
+
+export function isAdmin() { return getRole() === 'admin'; }
 
 // ---- Legacy shim so older code that imports getToken still compiles ----
-export const getToken = () => {
+export function getToken() {
   try { return localStorage.getItem('token') || ''; } catch { return ''; }
-};
+}
