@@ -48029,3 +48029,9 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-19 13:38:45,814 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
 2025-08-19 13:38:53,499 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
 2025-08-19 13:38:53,668 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'summarize the uploaded the documents', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Cloud Editions (CE)', 'Aviator AI', 'Service Management Aviator', 'OpenText Analytics Cloud', 'OpenText Business Network Cloud', 'OpenText Cybersecurity Cloud', 'OpenText Observability & Service Management Cloud', 'OpenText DevOps Cloud', 'OpenText Experience Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 14:18:56,523 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
