@@ -24,7 +24,7 @@ python-pptx
 sqlmodel
 uvicorn[standard]
 boto3
-pydantic[email]`
+pydantic[email]
 
 
 # fastapi
