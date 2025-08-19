@@ -47654,3 +47654,378 @@ WHERE user.tier = ?
 FROM user 
 WHERE user.tier = ?
 2025-08-17 19:09:17,866 - [cached since 273.9s ago] ('free',)
+2025-08-18 18:42:51,193 - BEGIN (implicit)
+2025-08-18 18:42:51,218 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:51,218 - [generated in 0.00130s] ('viruj8151@gmail.com',)
+2025-08-18 18:42:51,233 - BEGIN (implicit)
+2025-08-18 18:42:51,234 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:51,234 - [cached since 0.01741s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,203 - BEGIN (implicit)
+2025-08-18 18:42:53,203 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,204 - [cached since 1.987s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,213 - BEGIN (implicit)
+2025-08-18 18:42:53,213 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,213 - [cached since 1.996s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,231 - BEGIN (implicit)
+2025-08-18 18:42:53,231 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,232 - [cached since 2.015s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,233 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,233 - [cached since 2.016s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,235 - SELECT chatsession.id, chatsession.user_id, chatsession.title, chatsession.created_at 
+FROM chatsession
+2025-08-18 18:42:53,235 - [generated in 0.00033s] ()
+2025-08-18 18:42:53,237 - SELECT chatmessage.id, chatmessage.session_id, chatmessage.user_id, chatmessage.role, chatmessage.content, chatmessage.created_at, chatmessage.timestamp 
+FROM chatmessage 
+WHERE chatmessage.created_at >= ?
+2025-08-18 18:42:53,237 - [generated in 0.00028s] ('2025-08-17 13:12:53.234753',)
+2025-08-18 18:42:53,242 - SELECT count(*) AS count_1 
+FROM upload 
+WHERE upload.created_at >= ?
+2025-08-18 18:42:53,243 - [generated in 0.00053s] ('2025-08-17 13:12:53.234753',)
+2025-08-18 18:42:53,245 - SELECT count(*) AS count_1 
+FROM chatmessage 
+WHERE chatmessage.created_at >= ?
+2025-08-18 18:42:53,246 - [generated in 0.00054s] ('2025-08-17 13:12:53.234753',)
+2025-08-18 18:42:53,247 - SELECT count(*) AS count_1 
+FROM user
+2025-08-18 18:42:53,247 - [generated in 0.00023s] ()
+2025-08-18 18:42:53,248 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,248 - [generated in 0.00029s] ('pro',)
+2025-08-18 18:42:53,249 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,249 - [cached since 0.001035s ago] ('mini',)
+2025-08-18 18:42:53,249 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,250 - [cached since 0.00175s ago] ('free',)
+2025-08-18 18:42:53,257 - BEGIN (implicit)
+2025-08-18 18:42:53,258 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,258 - [cached since 2.041s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,259 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:53,259 - [cached since 2.043s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:53,260 - SELECT chatsession.id, chatsession.user_id, chatsession.title, chatsession.created_at 
+FROM chatsession
+2025-08-18 18:42:53,261 - [cached since 0.026s ago] ()
+2025-08-18 18:42:53,262 - SELECT chatmessage.id, chatmessage.session_id, chatmessage.user_id, chatmessage.role, chatmessage.content, chatmessage.created_at, chatmessage.timestamp 
+FROM chatmessage 
+WHERE chatmessage.created_at >= ?
+2025-08-18 18:42:53,262 - [cached since 0.02536s ago] ('2025-08-17 13:12:53.260780',)
+2025-08-18 18:42:53,263 - SELECT count(*) AS count_1 
+FROM upload 
+WHERE upload.created_at >= ?
+2025-08-18 18:42:53,263 - [cached since 0.02037s ago] ('2025-08-17 13:12:53.260780',)
+2025-08-18 18:42:53,263 - SELECT count(*) AS count_1 
+FROM chatmessage 
+WHERE chatmessage.created_at >= ?
+2025-08-18 18:42:53,263 - [cached since 0.01828s ago] ('2025-08-17 13:12:53.260780',)
+2025-08-18 18:42:53,264 - SELECT count(*) AS count_1 
+FROM user
+2025-08-18 18:42:53,264 - [cached since 0.01709s ago] ()
+2025-08-18 18:42:53,264 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,265 - [cached since 0.01666s ago] ('pro',)
+2025-08-18 18:42:53,265 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,265 - [cached since 0.01721s ago] ('mini',)
+2025-08-18 18:42:53,266 - SELECT count(*) AS count_1 
+FROM user 
+WHERE user.tier = ?
+2025-08-18 18:42:53,266 - [cached since 0.01774s ago] ('free',)
+2025-08-18 18:42:55,405 - BEGIN (implicit)
+2025-08-18 18:42:55,405 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:55,405 - [cached since 4.189s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:55,412 - BEGIN (implicit)
+2025-08-18 18:42:55,413 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:55,413 - [cached since 4.196s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,229 - BEGIN (implicit)
+2025-08-18 18:42:57,231 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:57,231 - [cached since 6.014s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,233 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:57,234 - [cached since 6.016s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,235 - SELECT count(upload.id) AS count_1 
+FROM upload 
+WHERE upload.user_email = ?
+2025-08-18 18:42:57,235 - [generated in 0.00026s] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,236 - SELECT count(chatsession.id) AS count_1 
+FROM chatsession 
+WHERE chatsession.user_id = ?
+2025-08-18 18:42:57,236 - [generated in 0.00017s] (9,)
+2025-08-18 18:42:57,244 - BEGIN (implicit)
+2025-08-18 18:42:57,245 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:57,245 - [cached since 6.028s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,246 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:57,246 - [cached since 6.029s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,247 - SELECT count(upload.id) AS count_1 
+FROM upload 
+WHERE upload.user_email = ?
+2025-08-18 18:42:57,247 - [cached since 0.01226s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:57,248 - SELECT count(chatsession.id) AS count_1 
+FROM chatsession 
+WHERE chatsession.user_id = ?
+2025-08-18 18:42:57,248 - [cached since 0.0119s ago] (9,)
+2025-08-18 18:42:59,910 - BEGIN (implicit)
+2025-08-18 18:42:59,911 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,911 - [cached since 8.695s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,917 - BEGIN (implicit)
+2025-08-18 18:42:59,918 - BEGIN (implicit)
+2025-08-18 18:42:59,918 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,921 - [cached since 8.704s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,922 - SELECT chatmessage.id, chatmessage.session_id, chatmessage.user_id, chatmessage.role, chatmessage.content, chatmessage.created_at, chatmessage.timestamp 
+FROM chatmessage 
+WHERE chatmessage.session_id = ? ORDER BY chatmessage.id
+2025-08-18 18:42:59,923 - BEGIN (implicit)
+2025-08-18 18:42:59,923 - [generated in 0.00075s] (22,)
+2025-08-18 18:42:59,923 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,924 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,924 - [cached since 8.708s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,925 - [cached since 8.708s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,928 - SELECT chatsession.id, chatsession.user_id, chatsession.title, chatsession.created_at 
+FROM chatsession 
+WHERE chatsession.user_id = ? ORDER BY chatsession.created_at DESC
+2025-08-18 18:42:59,928 - [generated in 0.00054s] (9,)
+2025-08-18 18:42:59,946 - BEGIN (implicit)
+2025-08-18 18:42:59,946 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,946 - [cached since 8.73s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,948 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:42:59,948 - [cached since 8.731s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:42:59,949 - SELECT chatsession.id, chatsession.user_id, chatsession.title, chatsession.created_at 
+FROM chatsession 
+WHERE chatsession.user_id = ? ORDER BY chatsession.created_at DESC
+2025-08-18 18:42:59,949 - [cached since 0.0214s ago] (9,)
+2025-08-18 18:42:59,953 - BEGIN (implicit)
+2025-08-18 18:42:59,954 - SELECT chatmessage.id, chatmessage.session_id, chatmessage.user_id, chatmessage.role, chatmessage.content, chatmessage.created_at, chatmessage.timestamp 
+FROM chatmessage 
+WHERE chatmessage.session_id = ? ORDER BY chatmessage.id
+2025-08-18 18:42:59,954 - [cached since 0.03151s ago] (22,)
+2025-08-18 18:43:03,019 - BEGIN (implicit)
+2025-08-18 18:43:03,021 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:43:03,022 - [cached since 11.8s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:43:03,029 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:43:03,029 - [cached since 11.81s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:43:04,736 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-18 18:43:07,518 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-18 18:43:09,450 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 18:43:09,471 - INSERT INTO chatmessage (session_id, user_id, role, content, created_at, timestamp) VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+2025-08-18 18:43:09,472 - [generated in 0.00016s (insertmanyvalues) 1/2 (ordered; batch not supported)] (22, 9, 'user', 'hello', '2025-08-18 13:13:09.469906', datetime.datetime(2025, 8, 18, 13, 13, 9, 469906))
+2025-08-18 18:43:09,473 - INSERT INTO chatmessage (session_id, user_id, role, content, created_at, timestamp) VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+2025-08-18 18:43:09,473 - [insertmanyvalues 2/2 (ordered; batch not supported)] (22, 9, 'assistant', 'Summary:\nHello! How can I assist you with OpenText products today? If you have a specific question about any OpenText solution, please let me know.', '2025-08-18 13:13:09.469906', datetime.datetime(2025, 8, 18, 13, 13, 9, 469906))
+2025-08-18 18:43:09,474 - COMMIT
+2025-08-18 18:43:09,479 - BEGIN (implicit)
+2025-08-18 18:43:09,481 - SELECT user.id AS user_id, user.email AS user_email, user.password AS user_password, user.tier AS user_tier, user.role AS user_role, user.name AS user_name, user.created_at AS user_created_at, user.token_version AS user_token_version, user.tos_version AS user_tos_version, user.tos_accepted_at AS user_tos_accepted_at, user.privacy_version AS user_privacy_version, user.privacy_accepted_at AS user_privacy_accepted_at, user.marketing_opt_in AS user_marketing_opt_in, user.consent_ip AS user_consent_ip, user.consent_ua AS user_consent_ua 
+FROM user 
+WHERE user.id = ?
+2025-08-18 18:43:09,481 - [generated in 0.00046s] (9,)
+2025-08-18 18:43:09,482 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'hello', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['Aviator AI', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-18 18:43:17,506 - BEGIN (implicit)
+2025-08-18 18:43:17,507 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:43:17,507 - [cached since 26.29s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:43:17,509 - SELECT user.id, user.email, user.password, user.tier, user.role, user.name, user.created_at, user.token_version, user.tos_version, user.tos_accepted_at, user.privacy_version, user.privacy_accepted_at, user.marketing_opt_in, user.consent_ip, user.consent_ua 
+FROM user 
+WHERE user.email = ?
+2025-08-18 18:43:17,509 - [cached since 26.29s ago] ('viruj8151@gmail.com',)
+2025-08-18 18:43:18,388 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-18 18:43:29,628 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 18:43:29,649 - INSERT INTO chatmessage (session_id, user_id, role, content, created_at, timestamp) VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+2025-08-18 18:43:29,650 - [cached since 20.18s ago (insertmanyvalues) 1/2 (ordered; batch not supported)] (22, 9, 'user', 'archivelink', '2025-08-18 13:13:29.644200', datetime.datetime(2025, 8, 18, 13, 13, 29, 644200))
+2025-08-18 18:43:29,652 - INSERT INTO chatmessage (session_id, user_id, role, content, created_at, timestamp) VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+2025-08-18 18:43:29,653 - [insertmanyvalues 2/2 (ordered; batch not supported)] (22, 9, 'assistant', '### Summary\nArchiveLink is an interface used to connect OpenText content management systems with SAP systems for archiving and document management.  ... (1842 characters truncated) ... rchiveLink operations.\n\nFor specific configuration steps or troubleshooting, refer to the OpenText and SAP documentation relevant to your versions.', '2025-08-18 13:13:29.644200', datetime.datetime(2025, 8, 18, 13, 13, 29, 644200))
+2025-08-18 18:43:29,654 - COMMIT
+2025-08-18 18:43:29,665 - BEGIN (implicit)
+2025-08-18 18:43:29,666 - SELECT user.id AS user_id, user.email AS user_email, user.password AS user_password, user.tier AS user_tier, user.role AS user_role, user.name AS user_name, user.created_at AS user_created_at, user.token_version AS user_token_version, user.tos_version AS user_tos_version, user.tos_accepted_at AS user_tos_accepted_at, user.privacy_version AS user_privacy_version, user.privacy_accepted_at AS user_privacy_accepted_at, user.marketing_opt_in AS user_marketing_opt_in, user.consent_ip AS user_consent_ip, user.consent_ua AS user_consent_ua 
+FROM user 
+WHERE user.id = ?
+2025-08-18 18:43:29,667 - [cached since 20.19s ago] (9,)
+2025-08-18 18:43:29,668 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'archivelink', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Device and Data Protection']}}
+2025-08-18 23:50:25,751 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-18 23:50:54,605 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-18 23:50:56,638 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-18 23:51:11,033 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 11:54:16,478 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 11:54:57,211 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 11:55:00,703 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 11:55:04,674 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 12:24:34,553 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 12:24:58,228 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 12:24:59,831 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 12:25:05,485 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 12:25:05,658 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 21, 'question': 'opentext product list', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['Aviator AI', 'Experience Aviator', 'Service Management Aviator', 'OpenText Business Network Cloud', 'OpenText Observability & Service Management Cloud', 'OpenText Experience Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 12:25:56,951 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 98, in upload_file
+    _ensure_tables(db)
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 46, in _ensure_tables
+    db.exec("""
+  File "D:\Neura\venv\Lib\site-packages\sqlmodel\orm\session.py", line 66, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2149, in _execute_internal
+    statement = coercions.expect(roles.StatementRole, statement)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 395, in expect
+    resolved = impl._literal_coercion(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 621, in _literal_coercion
+    return self._text_coercion(element, argname, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 614, in _text_coercion
+    return _no_text_coercion(element, argname)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 584, in _no_text_coercion
+    raise exc_cls(
+sqlalchemy.exc.ArgumentError: Textual SQL expression '\n        CREATE TABLE IF ...' should be explicitly declared as text('\n        CREATE TABLE IF ...')
+2025-08-19 12:26:02,200 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 98, in upload_file
+    _ensure_tables(db)
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 46, in _ensure_tables
+    db.exec("""
+  File "D:\Neura\venv\Lib\site-packages\sqlmodel\orm\session.py", line 66, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2149, in _execute_internal
+    statement = coercions.expect(roles.StatementRole, statement)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 395, in expect
+    resolved = impl._literal_coercion(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 621, in _literal_coercion
+    return self._text_coercion(element, argname, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 614, in _text_coercion
+    return _no_text_coercion(element, argname)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\coercions.py", line 584, in _no_text_coercion
+    raise exc_cls(
+sqlalchemy.exc.ArgumentError: Textual SQL expression '\n        CREATE TABLE IF ...' should be explicitly declared as text('\n        CREATE TABLE IF ...')
+2025-08-19 12:43:21,439 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 12:43:49,865 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 12:43:52,441 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 12:43:57,536 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 12:43:57,855 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'opentext product list', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['Aviator AI', 'Experience Aviator', 'Service Management Aviator', 'OpenText Business Network Cloud', 'OpenText Observability & Service Management Cloud', 'OpenText Experience Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 12:44:09,231 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 173, in upload_file
+    blob_row = db.exec(
+               ^^^^^^^^
+TypeError: Session.exec() takes 2 positional arguments but 3 were given
+2025-08-19 12:44:16,042 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 173, in upload_file
+    blob_row = db.exec(
+               ^^^^^^^^
+TypeError: Session.exec() takes 2 positional arguments but 3 were given
+2025-08-19 12:44:22,006 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 173, in upload_file
+    blob_row = db.exec(
+               ^^^^^^^^
+TypeError: Session.exec() takes 2 positional arguments but 3 were given
+2025-08-19 12:44:30,736 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 173, in upload_file
+    blob_row = db.exec(
+               ^^^^^^^^
+TypeError: Session.exec() takes 2 positional arguments but 3 were given
+2025-08-19 13:15:53,707 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 13:16:12,160 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 13:16:15,787 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:16:25,454 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 13:16:25,626 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'product list', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['Aviator AI', 'OpenText Analytics Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 13:16:42,576 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:16:43,225 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': 'ebaf909e87d0cd1dee5ec44c09cf6ca93c7e2a418c54c248170b4078e4df3671', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\3c767f9f-a3e3-4ade-83e7-973b2294bc3f.docx', 'size_bytes': 37855, 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ext': '.docx', 'duplicate': False, 'chars_indexed': 2351}
+2025-08-19 13:16:50,756 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:16:51,478 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '3d32615b63f8017efec48399520b2c9006fc958dfe5becdd7954485bafeac8d2', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\8fdff653-a63b-4d40-be0f-663dec2230b1.xlsx', 'size_bytes': 8857, 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'ext': '.xlsx', 'duplicate': False, 'chars_indexed': 5080}
+2025-08-19 13:17:00,653 - UPLOAD_NONTEXT | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '6c25e4b0e45ad2cf03e547d240e19fc3da68d349722956dd63211185a1e867f4', 'size_bytes': 214442, 'mime': 'application/pdf', 'ext': '.pdf'}
+2025-08-19 13:17:00,829 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '6c25e4b0e45ad2cf03e547d240e19fc3da68d349722956dd63211185a1e867f4', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\d31c601f-9be2-455a-98a5-abdb83b5ff33.pdf', 'size_bytes': 214442, 'mime': 'application/pdf', 'ext': '.pdf', 'duplicate': False, 'chars_indexed': 0}
+2025-08-19 13:17:09,422 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:17:09,633 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '39defa2db06fc7d45644677212989b0b7e7c6469557d5b78341e95cf7f23e55d', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\fcc0afa0-2adc-4cf5-be5e-a532c26d0763.jpg', 'size_bytes': 200009, 'mime': 'image/jpeg', 'ext': '.jpg', 'duplicate': False, 'chars_indexed': 27}
+2025-08-19 13:17:21,265 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:17:21,476 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '2090188b9f94d65e1ab8e8b11cc15c44699c1329008f2d164ef250838e41786e', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\42fe2736-333d-4db8-988b-4b9e776e56c2.json', 'size_bytes': 1781, 'mime': 'application/json', 'ext': '.json', 'duplicate': False, 'chars_indexed': 546}
+2025-08-19 13:17:30,132 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:17:30,349 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '216470650d1afe765ee2058ebc71198f433d7151c4eb4acd33d8266ca9a8fcfa', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\d4eeacd0-0ff0-496b-8a7f-9c688fbc599b.txt', 'size_bytes': 419, 'mime': 'text/plain', 'ext': '.txt', 'duplicate': False, 'chars_indexed': 321}
+2025-08-19 13:38:44,496 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 13:38:45,814 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 13:38:53,499 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 13:38:53,668 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'summarize the uploaded the documents', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Cloud Editions (CE)', 'Aviator AI', 'Service Management Aviator', 'OpenText Analytics Cloud', 'OpenText Business Network Cloud', 'OpenText Cybersecurity Cloud', 'OpenText Observability & Service Management Cloud', 'OpenText DevOps Cloud', 'OpenText Experience Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}

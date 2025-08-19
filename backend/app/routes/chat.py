@@ -23,12 +23,15 @@ ANSWER_POLICY = os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context").lower()
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
+
 class ChatIn(BaseModel):
     message: str
     session_id: Optional[int] = None
 
+
 class RenameIn(BaseModel):
     title: str
+
 
 def _title_from_text(text: str) -> str:
     if not text:
@@ -36,17 +39,19 @@ def _title_from_text(text: str) -> str:
     s = " ".join(text.strip().split())
     return (s[:60] + "…") if len(s) > 60 else s
 
+
 def _today_user_chat_count(db: Session, user_id: int) -> int:
     start = datetime.combine(date.today(), datetime.min.time())
-    end   = datetime.combine(date.today(), datetime.max.time())
+    end = datetime.combine(date.today(), datetime.max.time())
     return db.exec(
         select(func.count(ChatMessage.id)).where(
             ChatMessage.user_id == user_id,
             ChatMessage.role == "user",
             ChatMessage.created_at >= start,
-            ChatMessage.created_at <= end
+            ChatMessage.created_at <= end,
         )
     ).one()
+
 
 @router.get("/sessions", response_model=List[ChatSessionOut])
 def get_sessions(
@@ -62,6 +67,7 @@ def get_sessions(
         .order_by(ChatSession.created_at.desc())
     ).all()
 
+
 @router.get("/{session_id}", response_model=List[ChatMessageOut])
 def get_chat_messages(session_id: int, db: Session = Depends(get_session)):
     return db.exec(
@@ -69,6 +75,7 @@ def get_chat_messages(session_id: int, db: Session = Depends(get_session)):
         .where(ChatMessage.session_id == session_id)
         .order_by(ChatMessage.id)
     ).all()
+
 
 @router.patch("/{session_id}/title")
 def rename_chat_session(
@@ -95,6 +102,7 @@ def rename_chat_session(
     db.commit()
     return {"ok": True, "title": new_title}
 
+
 @router.post("")
 def ask(
     payload: ChatIn,
@@ -116,7 +124,7 @@ def ask(
         if used >= limit:
             raise HTTPException(
                 status_code=429,
-                detail=f"Daily chat limit reached for your plan ({limit}/day). Upgrade to Mini+ or Pro for unlimited."
+                detail=f"Daily chat limit reached for your plan ({limit}/day). Upgrade to Mini+ or Pro for unlimited.",
             )
 
     # --- Ensure a session exists ---
@@ -163,8 +171,8 @@ def ask(
         import re
         q_tokens = re.findall(r"[A-Za-z0-9]{3,}", q.lower())
         stop = {
-            "how","what","when","where","which","please","help","issue","error","problem",
-            "setup","set","configure","configuration","config","steps","guide","doc","docs"
+            "how", "what", "when", "where", "which", "please", "help", "issue", "error", "problem",
+            "setup", "set", "configure", "configuration", "config", "steps", "guide", "doc", "docs",
         }
         q_terms = [t for t in q_tokens if len(t) >= 4 and t not in stop]
         if not q_terms:
@@ -237,37 +245,44 @@ def ask(
                     "Please ask an OpenText question or upload relevant documentation."
                 )
 
-    # --- Persist messages: set BOTH created_at and timestamp to satisfy NOT NULL
+    # --- Persist messages
     now = datetime.utcnow()
-    db.add(ChatMessage(
-        session_id=session_id,
-        user_id=user.id,
-        role="user",
-        content=message,
-        created_at=now,
-        timestamp=now,          # <-- important
-    ))
-    db.add(ChatMessage(
-        session_id=session_id,
-        user_id=user.id,
-        role="assistant",
-        content=ai,
-        created_at=now,
-        timestamp=now,          # <-- important
-    ))
+    db.add(
+        ChatMessage(
+            session_id=session_id,
+            user_id=user.id,
+            role="user",
+            content=message,
+            created_at=now,
+            # timestamp omitted -> DB/model default will fill
+        )
+    )
+    db.add(
+        ChatMessage(
+            session_id=session_id,
+            user_id=user.id,
+            role="assistant",
+            content=ai,
+            created_at=now,
+            # timestamp omitted -> DB/model default will fill
+        )
+    )
     db.commit()
 
-    log_event("chat", {
-        "user": user_email,
-        "tier": user.tier,
-        "session_id": session_id,
-        "question": message,
-        "chunks_used": len(chunks),
-        "grounded": grounded,
-        "model": model_name,
-        "policy": os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context"),
-        "ctx_present": bool(context_text),
-        "scope": {"ctx": scope_hits_ctx},
-    })
+    log_event(
+        "chat",
+        {
+            "user": user_email,
+            "tier": user.tier,
+            "session_id": session_id,
+            "question": message,
+            "chunks_used": len(chunks),
+            "grounded": grounded,
+            "model": model_name,
+            "policy": os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context"),
+            "ctx_present": bool(context_text),
+            "scope": {"ctx": scope_hits_ctx},
+        },
+    )
 
     return {"response": ai, "session_id": session_id}

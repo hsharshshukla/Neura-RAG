@@ -30,3 +30,8 @@ pytesseract
 authlib 
 python-jose[cryptography] 
 python-dotenv
+psycopg[binary]
+python-dotenv
+pytest 
+pytest-asyncio 
+httpx
