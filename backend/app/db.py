@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import os
-from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy import create_engine
+from sqlmodel import SQLModel, Session
 
 # --- Load .env in dev (safe to ignore if not installed) ---
 try:
@@ -37,13 +38,14 @@ if _is_sqlite(DATABASE_URL) and not ALLOW_SQLITE:
 
 # Optional toggles via env
 ECHO_SQL = os.getenv("SQL_ECHO", "").lower() in ("1", "true", "yes")
-POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "5"))
-MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "2"))
+MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "5"))
 
 # Create the engine (Supabase requires SSL; you already include sslmode=require in the URL)
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,   # protect against stale connections
+    pool_recycle=300,  
     pool_size=POOL_SIZE,
     max_overflow=MAX_OVERFLOW,
     echo=ECHO_SQL,
@@ -55,33 +57,3 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-
-# # import os
-# # from sqlmodel import create_engine, Session
-
-# # # Always resolve to the absolute path of chatbot.db within app folder
-# # DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "chatbot.db"))
-# # DATABASE_URL = f"sqlite:///{DB_PATH}"
-# # engine = create_engine(DATABASE_URL, echo=True)
-
-# # def get_session():
-# #     return Session(engine)
-
-
-# # app/db.py
-# from sqlmodel import SQLModel, create_engine
-# import os
-
-# DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data.db")
-
-# engine = create_engine(
-#     DATABASE_URL,
-#     pool_pre_ping=True,
-#     pool_size=5,
-#     max_overflow=10,
-#     future=True,
-# )
-# def get_session():
-#     from sqlmodel import Session
-#     with Session(engine) as session:
-#         yield session
