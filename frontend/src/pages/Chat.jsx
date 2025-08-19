@@ -109,7 +109,7 @@ const Chat = () => {
   const [chat, setChat] = useState([]);
   const [chatsList, setChatsList] = useState([]);
   const chatEndRef = useRef(null);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); // 🔑 governs send availability
   const [activeChatId, setActiveChatId] = useState(null);
 
   // rename UI state
@@ -152,7 +152,7 @@ const Chat = () => {
   const fetchChats = async () => {
     try {
       const res = await secureAxios.get('/chat/sessions');
-      const sorted = reorderWithActiveTop(res.data || [], activeChatId);
+    const sorted = reorderWithActiveTop(res.data || [], activeChatId);
       setChatsList(sorted);
     } catch (err) {
       console.error('Failed to fetch chats', err);
@@ -205,7 +205,7 @@ const Chat = () => {
   // ---- Send a message ----
   const send = async () => {
     const text = message.trim();
-    if (!text) return;
+    if (!text || isTyping) return; // 🔑 guard double-send during response
 
     setIsTyping(true);
     setChat(prev => [...prev, { role: 'user', content: text }]);
@@ -233,7 +233,7 @@ const Chat = () => {
     } catch (err) {
       console.error('Send failed:', err);
     } finally {
-      setIsTyping(false);
+      setIsTyping(false); // 🔑 re-enable sending
     }
   };
 
@@ -553,7 +553,10 @@ const Chat = () => {
               })}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="max-w-[75%] p-3 rounded-2xl bg-white border border-gray-100 text-gray-500 italic">
+                  <div
+                    className="max-w-[75%] p-3 rounded-2xl bg-white border border-gray-100 text-gray-500 italic"
+                    aria-live="polite"
+                  >
                     Neura is thinking…
                   </div>
                 </div>
@@ -635,7 +638,12 @@ const Chat = () => {
               value={message}
               onChange={e => setMessage(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && message.trim().length > 0) {
+                if (
+                  e.key === 'Enter' &&
+                  !e.shiftKey &&
+                  message.trim().length > 0 &&
+                  !isTyping // 🔑 block send while Neura is responding
+                ) {
                   e.preventDefault();
                   send();
                 }
@@ -647,13 +655,17 @@ const Chat = () => {
 
             <button
               onClick={send}
-              disabled={message.trim().length === 0}
+              disabled={message.trim().length === 0 || isTyping} // 🔑 keep disabled while responding
+              aria-disabled={message.trim().length === 0 || isTyping}
+              aria-busy={isTyping}
+              title="Send"
               className={`px-4 py-2 rounded-xl text-white shadow transition ${
-                message.trim().length > 0
+                message.trim().length > 0 && !isTyping
                   ? 'bg-gradient-to-r from-teal-500 to-indigo-500 hover:opacity-95'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
+              {/* Always show "Send" — do not change label while typing */}
               Send
             </button>
           </div>

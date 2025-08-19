@@ -48035,3 +48035,18 @@ Traceback (most recent call last):
     version = _bcrypt.__about__.__version__
               ^^^^^^^^^^^^^^^^^
 AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 14:38:30,881 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-19 14:38:54,224 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-19 14:38:57,784 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 14:38:58,515 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '0140d08513c0d9aa2a24470c4648e3fb621a37c9e5e84dc87e34cb5e9dca9145', 'storage_uri': 'file://D:\\Neura\\ChatBot\\backend\\uploads\\9\\22\\f1e429cb-e14f-4441-a0b9-92526bd984ad.csv', 'size_bytes': 3728, 'mime': 'text/csv', 'ext': '.csv', 'duplicate': False, 'chars_indexed': 3575}
+2025-08-19 14:39:41,182 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 14:39:43,353 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 14:39:43,489 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 20, 'question': 'hello', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Extended ECM (xECM)', 'OpenText Content Server', 'OpenText Core Content', 'Aviator AI', 'Content Aviator', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 14:47:05,714 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-19 14:47:09,365 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-19 14:47:09,484 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 20, 'question': 'lkajdlfajl', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Extended ECM (xECM)', 'OpenText Content Server', 'OpenText Core Content', 'Aviator AI', 'Content Aviator', 'OpenText Observability & Service Management Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}

@@ -158,15 +158,6 @@ const TopBar = () => {
           <div className="justify-self-end flex items-center gap-3">
             {authed ? (
               <>
-                {/* Admin link if role === 'admin' */}
-                {/* {isAdmin() && (
-                  <button
-                    onClick={() => navigate("/admin")}
-                    className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                  >
-                    Admin
-                  </button>
-                )} */}
 
                 {isAdmin() && (
                   <Link
