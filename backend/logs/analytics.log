@@ -48056,3 +48056,7 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-19 23:02:18,920 - python-dotenv could not parse statement starting at line 2
 2025-08-19 23:02:25,085 - python-dotenv could not parse statement starting at line 1
 2025-08-19 23:02:25,085 - python-dotenv could not parse statement starting at line 2
+2025-08-20 22:00:05,707 - python-dotenv could not parse statement starting at line 1
+2025-08-20 22:00:05,707 - python-dotenv could not parse statement starting at line 2
+2025-08-20 23:16:26,205 - python-dotenv could not parse statement starting at line 1
+2025-08-20 23:16:26,205 - python-dotenv could not parse statement starting at line 2
