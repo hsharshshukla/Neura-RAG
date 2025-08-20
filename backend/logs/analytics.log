@@ -48050,3 +48050,9 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-19 14:47:05,714 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
 2025-08-19 14:47:09,365 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
 2025-08-19 14:47:09,484 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 20, 'question': 'lkajdlfajl', 'chunks_used': 6, 'grounded': False, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True, 'scope': {'ctx': ['OpenText Extended ECM (xECM)', 'OpenText Content Server', 'OpenText Core Content', 'Aviator AI', 'Content Aviator', 'OpenText Observability & Service Management Cloud', 'OpenText Device and Data Protection', 'UFT One', 'Service Management Automation X']}}
+2025-08-19 22:51:18,361 - python-dotenv could not parse statement starting at line 1
+2025-08-19 22:51:18,362 - python-dotenv could not parse statement starting at line 2
+2025-08-19 23:02:18,920 - python-dotenv could not parse statement starting at line 1
+2025-08-19 23:02:18,920 - python-dotenv could not parse statement starting at line 2
+2025-08-19 23:02:25,085 - python-dotenv could not parse statement starting at line 1
+2025-08-19 23:02:25,085 - python-dotenv could not parse statement starting at line 2

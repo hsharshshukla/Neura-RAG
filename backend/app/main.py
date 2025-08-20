@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import (
     auth, chat, upload, billing, profile, auth_oauth,
-    search, settings as settings_routes, admin, auth_password
+    search, settings as settings_routes, admin, auth_password,health
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +40,7 @@ app.include_router(search.router)
 app.include_router(settings_routes.router)
 app.include_router(admin.router)
 app.include_router(auth_password.router)
+app.include_router(health.router)
 
 # (Optional) quick health
 @app.get("/health")
