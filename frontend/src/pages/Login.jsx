@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import secureAxios from '../utils/secureAxios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { markAuthed } from '../utils/auth';
@@ -10,19 +10,42 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
 
+  // If already authenticated (cookie session), skip the login page.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await secureAxios.get('/auth/me');
+        if (!mounted) return;
+        if (data?.authenticated && location.pathname !== '/chat') {
+          navigate('/chat', { replace: true });
+        }
+      } catch {
+        // stay on /login if unauthenticated or network error
+      }
+    })();
+    return () => { mounted = false; };
+    
+  }, [navigate, location.pathname]);
+
   const submit = async () => {
+    if (loading) return; // avoid double submits
     setError('');
-    if (!email.trim() || !password) {
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
       setError('Please enter email and password');
       return;
     }
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append('email', email.trim());
+      params.append('email', normalizedEmail);
       params.append('password', password);
 
       // Cookie-based login: server sets HttpOnly cookie + returns profile
@@ -38,10 +61,11 @@ export default function Login() {
 
       // Persist minimal profile so UI/topbar/admin can read role/tier
       markAuthed({
-        email: data.email || email.trim(),
+        email: data.email || normalizedEmail,
         name:  data.name  || '',
-        role:  (data.role || 'user'),
-        tier:  (data.tier || 'free'),
+        role:  data.role  || 'user',
+        tier:  data.tier  || 'free',
+        token: data.access_token, // optional legacy support if backend returns one
       });
 
       // Navigate back to original page or /chat
@@ -49,7 +73,7 @@ export default function Login() {
       const nextFromQuery = urlParams.get('next');
       const fromState = location.state?.from?.pathname;
       const dest = fromState || nextFromQuery || '/chat';
-      navigate(dest, { replace: true });
+      if (location.pathname !== dest) navigate(dest, { replace: true });
     } catch (err) {
       const data = err?.response?.data;
       let message = 'Login failed';
@@ -91,6 +115,7 @@ export default function Login() {
             placeholder="you@example.com"
             className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
             autoComplete="email"
+            disabled={loading}
           />
 
           <label className="block text-sm text-gray-700 mb-1">Password</label>
@@ -103,12 +128,14 @@ export default function Login() {
               className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
               autoComplete="current-password"
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPw(s => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
               aria-label={showPw ? 'Hide password' : 'Show password'}
+              disabled={loading}
             >
               {showPw ? 'Hide' : 'Show'}
             </button>
@@ -116,13 +143,17 @@ export default function Login() {
 
           <div className="flex items-center justify-between mb-4 text-sm">
             <label className="inline-flex items-center gap-2">
-              <input type="checkbox" className="rounded" onChange={(e)=>{
-                if(e.target.checked){ localStorage.setItem('remember', '1'); }
-                else { localStorage.removeItem('remember'); }
-              }} />
+              <input
+                type="checkbox"
+                className="rounded"
+                onChange={(e) => {
+                  if (e.target.checked) localStorage.setItem('remember', '1');
+                  else localStorage.removeItem('remember');
+                }}
+                disabled={loading}
+              />
               Remember me
             </label>
-            
             {/* <a href="/forgot" className="text-blue-600 hover:underline">Forgot password?</a> */}
           </div>
 

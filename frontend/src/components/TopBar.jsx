@@ -49,7 +49,10 @@ const TopBar = () => {
 
   // ---- Auth & route state ----
   const authedEmail = localStorage.getItem("email") || "";
-  const plan = (localStorage.getItem("plan") || "Free").trim();
+  // const plan = (localStorage.getItem("plan") || "Free").trim();
+  // src/components/TopBar.jsx
+  const rawTier = (localStorage.getItem("tier") || "free").toLowerCase();
+  const plan = rawTier.charAt(0).toUpperCase() + rawTier.slice(1); // "Free" | "Pro"
   const onChatPage = location.pathname.startsWith("/chat");
   const onLogin = location.pathname === "/login";
   const onSignup = location.pathname === "/signup";

@@ -48060,3 +48060,146 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-20 22:00:05,707 - python-dotenv could not parse statement starting at line 2
 2025-08-20 23:16:26,205 - python-dotenv could not parse statement starting at line 1
 2025-08-20 23:16:26,205 - python-dotenv could not parse statement starting at line 2
+2025-08-21 23:45:34,140 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-21 23:45:34,181 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-21 23:45:34,181 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 00:04:15,114 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 00:12:20,693 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 00:12:21,205 - CONSENT_RECORDED | {'email': 'jai@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-21T18:42:20.693057Z'}
+2025-08-22 16:39:24,521 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 17:08:39,898 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 18:46:43,438 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 178, in upload_file
+    storage = get_storage()
+              ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 74, in get_storage
+    return S3Storage()
+           ^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 41, in __init__
+    import boto3  # pip install boto3
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'boto3'
+2025-08-22 18:46:50,787 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 178, in upload_file
+    storage = get_storage()
+              ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 74, in get_storage
+    return S3Storage()
+           ^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 41, in __init__
+    import boto3  # pip install boto3
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'boto3'
+2025-08-22 18:47:02,893 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 178, in upload_file
+    storage = get_storage()
+              ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 74, in get_storage
+    return S3Storage()
+           ^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 41, in __init__
+    import boto3  # pip install boto3
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'boto3'
+2025-08-22 18:47:16,004 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 178, in upload_file
+    storage = get_storage()
+              ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 74, in get_storage
+    return S3Storage()
+           ^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 41, in __init__
+    import boto3  # pip install boto3
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'boto3'
+2025-08-22 21:22:37,169 - Upload failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\upload.py", line 178, in upload_file
+    storage = get_storage()
+              ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 74, in get_storage
+    return S3Storage()
+           ^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\storage\storage.py", line 41, in __init__
+    import boto3  # pip install boto3
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'boto3'
+2025-08-22 21:27:57,809 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-22 21:27:59,693 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 21:27:59,749 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': '9c0d493936c0032c25a38afb34ada36593ecf945f58676059b53b6fb39c4d96e', 'storage_uri': 's3://neurokron-docs/uploads/9/22/19786fff-ca4f-4a62-a5dd-79b5b96eb677.json', 'size_bytes': 207, 'mime': 'application/json', 'ext': '.json', 'duplicate': False, 'chars_indexed': 190}
+2025-08-22 21:31:25,480 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 21:31:26,151 - CONSENT_RECORDED | {'email': 'jac@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T16:01:25.479776Z'}
+2025-08-22 22:08:02,244 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 22:16:01,709 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-22 22:16:24,107 - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-08-22 22:16:25,227 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:16:25,348 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': '87cbab5ed43d0170547006ef24a61cba729b33378d08810434e55eddb24c7bf0', 'storage_uri': 's3://neurokron-docs/uploads/8/12/dbc47a1f-9455-4b6b-8c6c-b38cd79b30b6.pdf', 'size_bytes': 84505, 'mime': 'application/pdf', 'ext': '.pdf', 'duplicate': False, 'chars_indexed': 6452}
+2025-08-22 22:18:06,636 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:18:06,775 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': '7a58f3d01c0e64a995771b5207ce137d8c17ac577bb830b8acf016ba3e2064c2', 'storage_uri': 's3://neurokron-docs/uploads/8/12/004a856e-9df9-49a3-9311-33608f927238.xlsx', 'size_bytes': 8338, 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'ext': '.xlsx', 'duplicate': False, 'chars_indexed': 4}
+2025-08-22 22:18:09,812 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:18:09,856 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': 'b79cbb140428e2ce755aecb6e16006efca1400e00c645ed3ef7b4db0be270413', 'storage_uri': 's3://neurokron-docs/uploads/8/12/baeb6835-16fd-4503-a154-61b5e2194968.pdf', 'size_bytes': 29495, 'mime': 'application/pdf', 'ext': '.pdf', 'duplicate': False, 'chars_indexed': 4}
+2025-08-22 22:18:13,528 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:18:13,573 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'storage_uri': 's3://neurokron-docs/uploads/8/12/6cfddb55-b71b-4fd7-9903-d3812b81807f.txt', 'size_bytes': 4, 'mime': 'text/plain', 'ext': '.txt', 'duplicate': False, 'chars_indexed': 4}
+2025-08-22 22:18:17,534 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:18:17,747 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': '79cfdc953e1bda1ddedf810eed5cf276be4ef111721b5c6951f4b1527bbc6d52', 'storage_uri': 's3://neurokron-docs/uploads/8/12/76fda6d9-a9f3-43dd-ab9a-2c4ebc3279b0.docx', 'size_bytes': 13449, 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ext': '.docx', 'duplicate': False, 'chars_indexed': 4}
+2025-08-22 22:18:49,515 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:18:49,558 - UPLOAD_OK | {'user': 'uyt@g.com', 'session_id': 12, 'sha256': 'e9ee812cea7941903de8c7ccc840b7c6114260f1651c1777cd368397d21cd364', 'storage_uri': 's3://neurokron-docs/uploads/8/12/bd7461a4-76cb-4b81-900f-492a7df01ff3.jpg', 'size_bytes': 49388, 'mime': 'image/jpeg', 'ext': '.jpg', 'duplicate': False, 'chars_indexed': 27}
+2025-08-22 22:19:28,991 - CONSENT_RECORDED | {'email': 'xtra@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T16:49:28.451929Z'}
+2025-08-22 22:21:42,500 - CONSENT_RECORDED | {'email': 'xtra1@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T16:51:41.712793Z'}
+2025-08-22 22:23:09,421 - CONSENT_RECORDED | {'email': 'jail@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T16:53:08.773623Z'}
+2025-08-22 22:23:18,479 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:23:18,981 - CHAT | {'user': 'jail@gmail.com', 'tier': 'free', 'session_id': 26, 'question': 'aldjfal', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}
+2025-08-22 22:23:23,009 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:23:23,516 - CHAT | {'user': 'jail@gmail.com', 'tier': 'free', 'session_id': 26, 'question': 'adlfjl', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}
+2025-08-22 22:30:39,561 - CONSENT_RECORDED | {'email': 'yu@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T17:00:38.928772Z'}
+2025-08-22 22:30:49,018 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-22 22:30:49,573 - CHAT | {'user': 'yu@gmail.com', 'tier': 'free', 'session_id': 27, 'question': '', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}

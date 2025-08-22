@@ -1,10 +1,14 @@
 // src/pages/signup.jsx
 import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
+import { markAuthed } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 export default function Signup() {
-  const TOS_VERSION = "2025-08-01";
-  const PRIVACY_VERSION = "2025-08-01";
+  const navigate = useNavigate();
+
+  const TOS_VERSION = '2025-08-01';
+  const PRIVACY_VERSION = '2025-08-01';
 
   const [agree, setAgree] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
@@ -29,17 +33,22 @@ export default function Signup() {
   };
 
   const submit = async () => {
+    if (loading) return; // prevent double submits
     setError('');
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Client-side checks
     if (!name.trim()) return setError('Please enter your name');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError('Enter a valid email');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError('Enter a valid email');
     if (pw !== pw2) return setError('Passwords do not match');
     if (strength() < 3) return setError('Use a stronger password (min 8 chars incl. mix)');
-    if (!agree) { setError("Please accept Terms & Privacy to continue."); return; }
+    if (!agree) return setError('Please accept Terms & Privacy to continue.');
 
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append('email', email.trim().toLowerCase());
+      params.append('email', normalizedEmail);
       params.append('password', pw);
       params.append('name', name.trim());
       params.append('agree', String(agree));
@@ -47,18 +56,31 @@ export default function Signup() {
       params.append('tosVersion', TOS_VERSION);
       params.append('privacyVersion', PRIVACY_VERSION);
 
+      // Cookie-based signup: server sets HttpOnly cookie + returns profile
       const res = await secureAxios.post('/auth/signup', params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      if (res.data?.access_token) {
-        localStorage.setItem('email', res.data.email || email.trim().toLowerCase());
-        localStorage.setItem('tier', res.data.tier || 'free');
-        localStorage.setItem('token', res.data.access_token);
-        window.location.href = '/chat';
-        return;
-      }
-      window.location.href = '/login';
+      const d = res.data || {};
+
+      // If backend sometimes returns a token, persist for legacy code
+      if (d.access_token) localStorage.setItem('token', d.access_token);
+
+      // Normalize tier/plan + seed minimal profile for UI
+      const tier = String(d.tier || 'free').toLowerCase();
+      markAuthed({
+        email: d.email || normalizedEmail,
+        name: d.name || name.trim(),
+        role: d.role || 'user',
+        tier,           // 'free' | 'pro'
+        token: d.access_token, // optional
+      });
+
+      // Optional legacy: keep 'plan' in sync if some components still read it
+      localStorage.setItem('plan', tier.charAt(0).toUpperCase() + tier.slice(1));
+
+      // Go straight to chat after successful signup
+      navigate('/chat', { replace: true });
     } catch (err) {
       const data = err?.response?.data;
       let message = 'Signup failed';
@@ -99,6 +121,7 @@ export default function Signup() {
             className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
             maxLength={80}
             autoComplete="name"
+            disabled={loading}
           />
 
           <label className="block text-sm text-gray-700 mb-1">Email</label>
@@ -109,6 +132,7 @@ export default function Signup() {
             placeholder="you@example.com"
             className="w-full p-3 rounded-xl border border-gray-200 mb-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
             autoComplete="email"
+            disabled={loading}
           />
 
           <label className="block text-sm text-gray-700 mb-1">Password</label>
@@ -120,11 +144,13 @@ export default function Signup() {
               placeholder="••••••••"
               className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
               autoComplete="new-password"
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPw(s => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+              disabled={loading}
             >
               {showPw ? 'Hide' : 'Show'}
             </button>
@@ -160,11 +186,13 @@ export default function Signup() {
               className="w-full p-3 rounded-xl border border-gray-200 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500"
               autoComplete="new-password"
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPw2(s => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+              disabled={loading}
             >
               {showPw2 ? 'Hide' : 'Show'}
             </button>
@@ -175,13 +203,13 @@ export default function Signup() {
               type="checkbox"
               checked={agree}
               onChange={(e)=>setAgree(e.target.checked)}
+              disabled={loading}
             />
             <span>
-              I agree to the{" "}
-              <a href="/terms" target="_blank" className="text-teal-600 underline">Terms of Service</a>{" "}
-              and{" "}
-              <a href="/privacy" target="_blank" className="text-teal-600 underline">Privacy Policy</a>.
-              {/* <Link to="/privacy" className="text-teal-600 hover:underline">Privacy</Link> */}
+              I agree to the{' '}
+              <a href="/terms" target="_blank" rel="noreferrer" className="text-teal-600 underline">Terms of Service</a>{' '}
+              and{' '}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="text-teal-600 underline">Privacy Policy</a>.
             </span>
           </label>
 
@@ -190,6 +218,7 @@ export default function Signup() {
               type="checkbox"
               checked={marketingOptIn}
               onChange={(e)=>setMarketingOptIn(e.target.checked)}
+              disabled={loading}
             />
             <span>Send me product updates and tips (optional).</span>
           </label>
@@ -211,5 +240,4 @@ export default function Signup() {
     </div>
   );
 }
-
 

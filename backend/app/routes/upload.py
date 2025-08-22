@@ -5,8 +5,9 @@ from sqlalchemy import text
 from pathlib import Path
 from datetime import datetime
 import logging
-import uuid
 import hashlib
+import uuid
+import os
 
 from app.db import get_session
 from app.models import User, ChatSession
@@ -17,6 +18,7 @@ from app.parsers.parser import parse_and_clean_bytes  # txt/md/pdf/docx/pptx/xls
 from app.storage.storage import get_storage
 
 router = APIRouter(prefix="/api/v1", tags=["upload"])
+logger = logging.getLogger("uvicorn.error")
 
 ALLOWED_EXTS = {
     ".pdf", ".docx", ".pptx", ".xlsx",
@@ -173,15 +175,28 @@ async def upload_file(
         blob_exists = bool(blob_row)
         storage_uri = blob_row["storage_uri"] if blob_row else None
 
-        # 5) If blob missing: persist file once
+        # 5) If blob missing: persist file once (support save_bytes or save)
         if not blob_exists:
             storage = get_storage()
-            _, storage_uri = storage.save(
-                user_id=user.id,
-                session_id=session_id,
-                filename=original_name,
-                data=raw,
-            )
+            try:
+                if hasattr(storage, "save_bytes"):
+                    _, storage_uri = storage.save_bytes(
+                        user_id=user.id,
+                        session_id=session_id,
+                        filename=original_name,
+                        data=raw,
+                    )
+                else:
+                    _, storage_uri = storage.save(
+                        user_id=user.id,
+                        session_id=session_id,
+                        filename=original_name,
+                        data=raw,
+                    )
+            except Exception:
+                logger.exception("Storage save failed for %s", original_name)
+                raise HTTPException(status_code=500, detail="Upload failed: storage error")
+
             blob_ins = text("""
                 INSERT INTO public.blob (sha256, bytes, ext, mime, storage_uri)
                 VALUES (:h, :b, :e, :m, :u)
@@ -198,21 +213,42 @@ async def upload_file(
 
         chars_indexed = 0
         if not embedded:
-            parsed = parse_and_clean_bytes(original_name, raw, mime)
-            text_content = (parsed.get("text") or "").strip()
+            # ---- tolerant parser call: 2-arg vs 3-arg and dict vs string
+            try:
+                try:
+                    parsed = parse_and_clean_bytes(original_name, raw, mime)
+                except TypeError:
+                    parsed = parse_and_clean_bytes(original_name, raw)
 
-            if text_content:
-                embed_and_store(
-                    user_email=user_email,
-                    text=text_content,
-                    metadata={"sha256": sha, "session_id": str(session_id), "doc_id": sha},
-                )
-                chars_indexed = len(text_content)
+                if isinstance(parsed, dict):
+                    text_content = (parsed.get("text") or "").strip()
+                else:
+                    text_content = (parsed or "").strip()
+            except Exception:
+                logger.exception("Parsing failed for %s", original_name)
+                # Treat as non-text; proceed without embeddings
+                text_content = ""
+
+            # ---- Optional: allow skipping embeddings via env
+            if os.getenv("DISABLE_EMBED", "").lower() in ("1", "true", "yes"):
+                logger.info("[upload] Skipping embed_and_store due to DISABLE_EMBED=1")
             else:
-                log_event("upload_nontext", {
-                    "user": user_email, "session_id": session_id, "sha256": sha,
-                    "size_bytes": len(raw), "mime": mime, "ext": ext
-                })
+                if text_content:
+                    try:
+                        embed_and_store(
+                            user_email=user_email,
+                            text=text_content,
+                            metadata={"sha256": sha, "session_id": str(session_id), "doc_id": sha},
+                        )
+                        chars_indexed = len(text_content)
+                    except Exception:
+                        logger.exception("Embedding/index failed for %s", original_name)
+                        raise HTTPException(status_code=500, detail="Upload failed: embedding error")
+                else:
+                    log_event("upload_nontext", {
+                        "user": user_email, "session_id": session_id, "sha256": sha,
+                        "size_bytes": len(raw), "mime": mime, "ext": ext
+                    })
 
             emb_ins = text("""
                 INSERT INTO public.embedding_index (sha256, store_key, chunks)
@@ -255,6 +291,6 @@ async def upload_file(
 
     except HTTPException:
         raise
-    except Exception as e:
-        logging.exception("Upload failed")
-        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+    except Exception:
+        logger.exception("Upload pipeline failed for %s", getattr(file, "filename", "<unknown>"))
+        raise HTTPException(status_code=500, detail="Upload failed: server error")
