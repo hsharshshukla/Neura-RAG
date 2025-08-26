@@ -215,8 +215,8 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Block unverified users if required
-    # if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
-    if REQUIRE_EMAIL_VERIFICATION and not getattr(user, "email_verified_at", None):
+    if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
+    # if REQUIRE_EMAIL_VERIFICATION and not getattr(user, "email_verified_at", None):
         print("LOGIN_BLOCKED", {
         "email": user.email,
         "created_at": str(getattr(user, "created_at", None)),

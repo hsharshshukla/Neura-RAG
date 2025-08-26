@@ -1,24 +1,31 @@
 // src/components/Layout.jsx
 import React from "react";
 import { useLocation } from "react-router-dom";
-import TopBar from "./TopBar";      // 👈 your file is TopBar.jsx (case matches)
-/// import Footer from "./Footer";   // optional
+import TopBar from "./TopBar";
+
+const HIDE_TOPBAR_PATHS = new Set([
+  "/login",
+  "/signup",
+  "/forgot",
+  "/reset",
+  "/verify",
+  "/verify-email",
+  "/verify-sent",
+]);
 
 export default function Layout({ children }) {
-  const location = useLocation();
+  const { pathname } = useLocation();
 
-  // If you ever want to hide the header on some routes, use this:
-  // const hideTopBar = false; // e.g., [''].includes(location.pathname)
-  const hideTopBar = false; // ✅ show TopBar on EVERY page, including /login and /signup
+  // Hide TopBar on auth/verification screens to prevent loops/odd states
+  const hideTopBar =
+    HIDE_TOPBAR_PATHS.has(pathname) ||
+    // also hide when /verify has query (?token=...)
+    (pathname === "/verify" || pathname === "/verify-email");
 
   return (
     <div className="min-h-screen flex flex-col">
       {!hideTopBar && <TopBar />}
-      <div className="flex-1">
-        {children}
-      </div>
-      {/* <Footer /> */}
+      <div className="flex-1">{children}</div>
     </div>
   );
 }
-

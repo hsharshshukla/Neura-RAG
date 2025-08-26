@@ -1,42 +1,56 @@
 // src/utils/secureAxios.js
 import axios from 'axios';
 
-// Same-origin base; the FE proxy will forward this to the real backend.
-const API_BASE = '/api/v1';
+// Resolve API base dynamically (window override > Vite > CRA > default)
+const API_BASE =
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  (import.meta?.env?.VITE_API_BASE) ||
+  (process?.env?.REACT_APP_API_BASE) ||
+  '/api/v1';
 
-const secureAxios = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true, // send HttpOnly cookie
-});
-
-// ---- Simple cookie reader (no regex) ----
+// ---- Cookie helper ----
 function readCookie(name) {
-  // Find "name=<value>" pair among semicolon-separated cookies
   const pair = document.cookie.split('; ').find((row) => row.startsWith(name + '='));
   if (!pair) return '';
-  // Handle values that may contain additional '=' characters
   return decodeURIComponent(pair.split('=').slice(1).join('='));
 }
 
+const secureAxios = axios.create({
+  baseURL: API_BASE,        // relative paths will be prefixed with this
+  withCredentials: true,    // send/receive HttpOnly cookies
+  timeout: 20000,
+});
+
+// Mark when we’ve notified the app about auth loss to avoid storms
+let notified401Recently = false;
+let notified401Timer = null;
+
 secureAxios.interceptors.request.use((config) => {
-  // Guard: avoid double /api/v1 prefix if callers pass absolute paths.
-  if (config && typeof config.url === 'string' && config.url.startsWith('/api/v1/')) {
-    config.url = config.url.replace(/^\/api\/v1/, '');
+  // Do NOT rewrite URLs; axios handles absolute vs relative for us.
+  // Ensure headers object
+  config.headers = config.headers || {};
+
+  // CSRF (noop if cookie absent)
+  const csrf = readCookie('csrf_token');           // server sets this if you enable CSRF
+  if (csrf) config.headers['X-CSRF-Token'] = csrf;
+
+  // Mark XHR (helps some backends distinguish browser calls)
+  config.headers['X-Requested-With'] = 'XMLHttpRequest';
+
+  // Reasonable defaults
+  if (!config.headers['Accept']) {
+    config.headers['Accept'] = 'application/json';
+  }
+  // Keep Content-Type if caller already set (e.g., form-data)
+  if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
+    config.headers['Content-Type'] = 'application/json';
   }
 
-  // Attach CSRF token if present (safe even if CSRF not enabled yet)
-  const csrf = readCookie('csrf_token');
-  if (csrf) {
-    config.headers = config.headers || {};
-    config.headers['X-CSRF-Token'] = csrf;
-  }
-
-  // Legacy header support (only if a real token string exists)
+  // Legacy bearer (only if stored token exists)
   try {
-    const legacyToken = localStorage.getItem('token');
-    if (legacyToken && legacyToken !== 'null' && legacyToken !== 'undefined') {
-      config.headers = config.headers || {};
-      config.headers.Authorization = 'Bearer ' + legacyToken;
+    const legacy = localStorage.getItem('token');
+    if (legacy && legacy !== 'null' && legacy !== 'undefined') {
+      config.headers.Authorization = 'Bearer ' + legacy;
     }
   } catch {}
 
@@ -47,19 +61,26 @@ secureAxios.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err?.response?.status;
+
+    // Emit a single debounced signal on 401 so pages can react (e.g., show login)
     if (status === 401) {
       try { localStorage.removeItem('token'); } catch {}
-      window.dispatchEvent(new Event('auth-changed'));
+      if (!notified401Recently) {
+        notified401Recently = true;
+        window.dispatchEvent(new Event('auth-changed'));
+        // cool-down to avoid loops if multiple requests fail together
+        if (notified401Timer) clearTimeout(notified401Timer);
+        notified401Timer = setTimeout(() => { notified401Recently = false; }, 1500);
+      }
       return Promise.reject(err);
     }
 
+    // Nice UX for rate limits (optional)
     if (status === 429) {
       const detail = err?.response?.data?.detail || 'Daily limit reached.';
-      // Broadcast so pages can react if they want
       try {
         window.dispatchEvent(new CustomEvent('rate-limit-hit', { detail }));
       } catch {}
-
       if (window?.toast?.error) {
         window.toast.error(`${detail} Upgrade to Mini+ or Pro for unlimited chats.`);
       } else {
@@ -71,5 +92,11 @@ secureAxios.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+// Optional helpers
+secureAxios.ping = async () => {
+  try { return (await secureAxios.get('/auth/me')).data; }
+  catch { return null; }
+};
 
 export default secureAxios;
