@@ -16,16 +16,20 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Use STRICT probe to avoid redirect loops from soft/lenient checks.
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const { data } = await secureAxios.get('/auth/me');
+        // Strict: 200 only if truly authenticated; 401 otherwise.
+        await secureAxios.get('/auth/whoami');
         if (!mounted) return;
-        if (data?.authenticated && location.pathname !== '/chat') {
+        if (location.pathname !== '/chat') {
           navigate('/chat', { replace: true });
         }
-      } catch {/* unauthenticated: stay on /login */}
+      } catch {
+        // unauthenticated: stay on /login
+      }
     })();
     return () => { mounted = false; };
   }, [navigate, location.pathname]);
@@ -61,7 +65,7 @@ export default function Login() {
         name:  data.name  || '',
         role:  data.role  || 'user',
         tier:  data.tier  || 'free',
-        token: data.access_token,
+        token: data.access_token, // optional legacy
       });
 
       const urlParams = new URLSearchParams(location.search);
@@ -79,8 +83,8 @@ export default function Login() {
         else if (typeof data.detail === 'string') message = data.detail;
       } else if (err?.message) message = err.message;
 
+      // Hard-gate unverified accounts
       if (status === 403 && /not verified/i.test(message)) {
-        // Hard gate: redirect to verify-sent UI
         setUnverifiedEmail(normalizedEmail);
         navigate('/verify-sent', { state: { email: normalizedEmail } });
         return;
@@ -208,4 +212,3 @@ export default function Login() {
     </div>
   );
 }
-
