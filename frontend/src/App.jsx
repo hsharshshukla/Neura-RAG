@@ -59,21 +59,20 @@ function HomeOrChat() {
     return () => { mounted = false; };
   }, []);
 
-  if (!checked) {
-    // minimal placeholder while probing auth
-    return <div className="p-6" />;
-  }
+  // Minimal placeholder while probing auth
+  if (!checked) return <div className="p-6" />;
+
+  // Only redirect when already authenticated; otherwise show Home
   return authed ? <Navigate to="/chat" replace /> : <Home />;
 }
 
-function App() {
+export default function App() {
   return (
     <Router>
       <Layout>
         <Routes>
           {/* Public root that respects auth */}
           <Route path="/" element={<HomeOrChat />} />
-          {/* Optional: make /home behave the same as / */}
           <Route path="/home" element={<HomeOrChat />} />
 
           {/* Public marketing/legal */}
@@ -92,7 +91,6 @@ function App() {
 
           {/* Email verification (public) */}
           <Route path="/verify-sent" element={<VerifySent />} />
-          {/* Accept both /verify and /verify-email for flexibility */}
           <Route path="/verify" element={<VerifyComplete />} />
           <Route path="/verify-email" element={<Navigate to="/verify" replace />} />
 
@@ -155,5 +153,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;

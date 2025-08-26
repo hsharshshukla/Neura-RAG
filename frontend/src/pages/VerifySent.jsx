@@ -1,31 +1,33 @@
-import React, { useState } from "react";
+// src/pages/VerifySent.jsx
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import secureAxios from "../utils/secureAxios";
 
 export default function VerifySent() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const initial = state?.email || "";
-  const [email, setEmail] = useState(initial);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  // Prefill from navigation state or query param
+  const urlEmail = new URLSearchParams(window.location.search).get("email") || "";
+  const email = (state?.email || urlEmail || "").trim().toLowerCase();
+
+  const [msg, setMsg] = React.useState("");
+  const [err, setErr] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   const resend = async () => {
     setMsg("");
     setErr("");
-    const normalized = (email || "").trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-      setErr("Enter a valid email to resend.");
+    if (!email) {
+      setErr("No email available to resend. Please sign up again.");
       return;
     }
     setLoading(true);
     try {
-      // Backend: POST /api/v1/auth/verify/start -> 204 always
-      await secureAxios.post("/auth/verify/start", { email: normalized });
-      setMsg("Verification email sent. Check your inbox and spam folder.");
+      // Backend: POST /api/v1/auth/verify/start -> 204 (no enumeration)
+      await secureAxios.post("/auth/verify/start", { email });
+      setMsg("Verification email sent. Please check your inbox and spam folder.");
     } catch {
-      // Keep it generic to avoid enumeration leaks
       setErr("Could not send verification email. Try again in a minute.");
     } finally {
       setLoading(false);
@@ -36,14 +38,34 @@ export default function VerifySent() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold mb-2 text-center">Verify your email</h1>
-        <p className="text-gray-700 text-center">
-          We sent a verification link{email ? <> to <strong>{email}</strong></> : ""}. Click the link to activate your account.
+        <p className="text-gray-700 text-center mb-4">
+          We sent a verification link to your email. Click the link to activate your account.
         </p>
+
+        <label className="block text-sm text-gray-700 mb-1">Email</label>
+        {/* Display-only (not editable) */}
+        <input
+          type="email"
+          value={email}
+          disabled
+          aria-readonly="true"
+          className="w-full p-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-800 cursor-not-allowed"
+        />
+        {/* Hidden copy-safe value (if needed in future) */}
+        <input type="hidden" value={email} readOnly />
+
+        {!email && (
+          <div className="mt-2 text-xs text-red-700">
+            We couldn’t detect your email from the signup flow. Please sign up again.
+          </div>
+        )}
 
         {(msg || err) && (
           <div
             className={`mt-4 rounded-lg px-3 py-2 text-sm ${
-              err ? "border border-red-200 bg-red-50 text-red-700" : "border border-green-200 bg-green-50 text-green-700"
+              err
+                ? "border border-red-200 bg-red-50 text-red-700"
+                : "border border-green-200 bg-green-50 text-green-700"
             }`}
           >
             {err || msg}
@@ -51,19 +73,12 @@ export default function VerifySent() {
         )}
 
         <div className="mt-6 space-y-3">
-          <label className="block text-sm text-gray-700">Email to resend</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e)=>setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            disabled={loading}
-          />
           <button
             onClick={resend}
-            disabled={loading}
-            className={`w-full py-2.5 rounded-xl text-white shadow ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-95'} bg-gradient-to-r from-teal-500 to-indigo-500`}
+            disabled={loading || !email}
+            className={`w-full py-2.5 rounded-xl text-white shadow ${
+              loading || !email ? "opacity-70 cursor-not-allowed" : "hover:opacity-95"
+            } bg-gradient-to-r from-teal-500 to-indigo-500`}
           >
             {loading ? "Sending…" : "Resend verification email"}
           </button>

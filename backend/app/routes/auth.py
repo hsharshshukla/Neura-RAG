@@ -98,13 +98,17 @@ def _set_user_verified(user: User) -> None:
     if hasattr(user, "verified_at"):
         setattr(user, "verified_at", now)
 
+# def _is_verified(user: User) -> bool:
+#     return bool(
+#         getattr(user, "email_verified_at", None)  # current field
+#         or getattr(user, "verified_at", None)    # future/alt
+#         or getattr(user, "verified", False)
+#         or getattr(user, "email_verified", False)
+#     )
 def _is_verified(user: User) -> bool:
-    return bool(
-        getattr(user, "email_verified_at", None)  # current field
-        or getattr(user, "verified_at", None)    # future/alt
-        or getattr(user, "verified", False)
-        or getattr(user, "email_verified", False)
-    )
+    # Strict: only accept the canonical field we write on confirm/backfill
+    return bool(getattr(user, "email_verified_at", None))
+    
 
 
 # ---- models ----
@@ -211,7 +215,8 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Block unverified users if required
-    if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
+    # if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
+    if REQUIRE_EMAIL_VERIFICATION and not getattr(user, "email_verified_at", None):
         print("LOGIN_BLOCKED", {
         "email": user.email,
         "created_at": str(getattr(user, "created_at", None)),
