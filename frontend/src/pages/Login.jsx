@@ -10,11 +10,12 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendMsg, setResendMsg] = useState('');
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // If already authenticated (cookie session), skip the login page.
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -24,17 +25,16 @@ export default function Login() {
         if (data?.authenticated && location.pathname !== '/chat') {
           navigate('/chat', { replace: true });
         }
-      } catch {
-        // stay on /login if unauthenticated or network error
-      }
+      } catch {/* unauthenticated: stay on /login */}
     })();
     return () => { mounted = false; };
-    
   }, [navigate, location.pathname]);
 
   const submit = async () => {
-    if (loading) return; // avoid double submits
+    if (loading) return;
     setError('');
+    setResendMsg('');
+    setUnverifiedEmail('');
 
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password) {
@@ -48,33 +48,29 @@ export default function Login() {
       params.append('email', normalizedEmail);
       params.append('password', password);
 
-      // Cookie-based login: server sets HttpOnly cookie + returns profile
       const res = await secureAxios.post('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-
       const data = res.data || {};
 
-      // Optional: reconsent flag for UI
       if (data.needs_reconsent) localStorage.setItem('needs_reconsent', '1');
       else localStorage.removeItem('needs_reconsent');
 
-      // Persist minimal profile so UI/topbar/admin can read role/tier
       markAuthed({
         email: data.email || normalizedEmail,
         name:  data.name  || '',
         role:  data.role  || 'user',
         tier:  data.tier  || 'free',
-        token: data.access_token, // optional legacy support if backend returns one
+        token: data.access_token,
       });
 
-      // Navigate back to original page or /chat
       const urlParams = new URLSearchParams(location.search);
       const nextFromQuery = urlParams.get('next');
       const fromState = location.state?.from?.pathname;
       const dest = fromState || nextFromQuery || '/chat';
       if (location.pathname !== dest) navigate(dest, { replace: true });
     } catch (err) {
+      const status = err?.response?.status;
       const data = err?.response?.data;
       let message = 'Login failed';
       if (typeof data === 'string') message = data;
@@ -82,13 +78,31 @@ export default function Login() {
         if (Array.isArray(data.detail)) message = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
         else if (typeof data.detail === 'string') message = data.detail;
       } else if (err?.message) message = err.message;
+
+      if (status === 403 && /not verified/i.test(message)) {
+        // Hard gate: redirect to verify-sent UI
+        setUnverifiedEmail(normalizedEmail);
+        navigate('/verify-sent', { state: { email: normalizedEmail } });
+        return;
+      }
+
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  // SSO redirects are same-origin now (proxied by FE)
+  const resend = async () => {
+    if (!unverifiedEmail) return;
+    setResendMsg('');
+    try {
+      await secureAxios.post('/auth/resend-verification', { email: unverifiedEmail });
+      setResendMsg('Verification email sent. Check your inbox.');
+    } catch {
+      setResendMsg('Could not send verification email. Try again.');
+    }
+  };
+
   const goGoogle = () => { window.location.href = `/api/v1/auth/google/start`; };
   const goApple  = () => { window.location.href = `/api/v1/auth/apple/start`; };
 
@@ -104,6 +118,19 @@ export default function Login() {
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
               {error}
+              {unverifiedEmail && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={resend}
+                    className="text-sm text-teal-600 hover:underline"
+                    disabled={loading}
+                  >
+                    Resend verification email
+                  </button>
+                  {resendMsg && <div className="mt-1 text-gray-700">{resendMsg}</div>}
+                </div>
+              )}
             </div>
           )}
 
@@ -154,7 +181,7 @@ export default function Login() {
               />
               Remember me
             </label>
-            {/* <a href="/forgot" className="text-blue-600 hover:underline">Forgot password?</a> */}
+            <a href="/forgot" className="text-teal-600 hover:underline">Forgot password?</a>
           </div>
 
           <button
@@ -165,21 +192,20 @@ export default function Login() {
             {loading ? 'Signing in…' : 'Login'}
           </button>
 
-          {/* If/when SSO is enabled, keep these. They will work through the proxy. */}
-          {/* <div className="flex items-center my-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="px-3 text-xs text-gray-500">or</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-          <button onClick={goGoogle} className="w-full border rounded-xl py-2 hover:bg-gray-50 mb-2">Continue with Google</button>
-          <button onClick={goApple} className="w-full border rounded-xl py-2 hover:bg-gray-50">Continue with Apple</button> */}
-
           <div className="text-center mt-4 text-sm text-gray-600">
             Don’t have an account?{' '}
             <a href="/signup" className="text-teal-600 hover:underline">Register</a>
           </div>
+
+          {/* Optional: Social buttons
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button onClick={goGoogle} className="border rounded p-2">Google</button>
+            <button onClick={goApple}  className="border rounded p-2">Apple</button>
+          </div>
+          */}
         </div>
       </div>
     </div>
   );
 }
+

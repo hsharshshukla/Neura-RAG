@@ -48203,3 +48203,156 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-22 22:30:39,561 - CONSENT_RECORDED | {'email': 'yu@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-22T17:00:38.928772Z'}
 2025-08-22 22:30:49,018 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
 2025-08-22 22:30:49,573 - CHAT | {'user': 'yu@gmail.com', 'tier': 'free', 'session_id': 27, 'question': '', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}
+2025-08-23 17:01:15,293 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-23 17:17:37,051 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-23 17:17:37,853 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 404 Not Found"
+2025-08-23 17:17:38,297 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-23 17:17:39,918 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-23 17:17:40,721 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-23 17:17:40,725 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-23 17:17:44,076 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 401 Unauthorized"
+2025-08-23 17:25:01,002 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-23 17:25:01,807 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-23 17:25:03,564 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-23 17:25:04,369 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-23 17:25:04,370 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-23 17:25:07,377 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-23 17:25:09,969 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-23 17:25:11,779 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-23 17:25:11,868 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': 'fa2ac4688854673ef7c62484690ab079715768689b3cc7280576e99bb0eccfb2', 'storage_uri': 's3://neurokron-docs/uploads/9/22/7e01a580-e63d-4685-b3c3-d622c884edea.pdf', 'size_bytes': 932501, 'mime': 'application/pdf', 'ext': '.pdf', 'duplicate': False, 'chars_indexed': 2634}
+2025-08-23 22:43:40,366 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-23 23:35:18,269 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-24 16:24:26,184 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-24 16:24:27,015 - CONSENT_RECORDED | {'email': 'viruj8152@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-24T10:54:26.184855Z'}
+2025-08-24 17:25:53,558 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-24 17:25:54,273 - CONSENT_RECORDED | {'email': 'ghbs2100@gmail.ccom', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-24T11:55:53.557212Z'}
+2025-08-25 23:30:51,909 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-25 23:30:52,575 - CONSENT_RECORDED | {'email': 'var@gmai.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-25T18:00:51.909957Z'}
+2025-08-26 00:46:00,375 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 00:46:01,082 - CONSENT_RECORDED | {'email': 'var@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-25T19:16:00.374430Z'}
+2025-08-26 00:51:44,132 - CONSENT_RECORDED | {'email': 'viruj8154@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-25T19:21:43.513889Z'}
+2025-08-26 01:01:38,450 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 01:02:38,249 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 01:13:09,850 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 01:14:32,760 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 22:31:24,597 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-26 22:34:59,169 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-26 22:35:00,059 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-26 22:35:01,807 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-26 22:35:02,728 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-26 22:35:02,729 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-26 22:35:06,165 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:35:07,694 - HTTP Request: POST https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points/search "HTTP/1.1 400 Bad Request"
+2025-08-26 22:35:07,694 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 562, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 399, in search
+    res = self.client.search(
+          ^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Bad request: Index required but not found for \\"__ns\\" of one of the following types: [keyword]. Help: Create an index for this key or use a different filter."},"time":0.00003864}'
+2025-08-26 22:35:08,321 - CHAT | {'user': 'viruj8152@gmail.com', 'tier': 'free', 'session_id': 26, 'question': 'hello', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}
+2025-08-26 22:42:00,494 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:42:07,174 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:42:14,442 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:42:21,615 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:42:28,203 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:42:31,521 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:43:44,661 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:43:51,007 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:44:06,041 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:44:07,286 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-26 22:44:08,382 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-26 22:44:08,605 - UPLOAD_OK | {'user': 'viruj8152@gmail.com', 'session_id': 26, 'sha256': '310ad4234ba1c7743022cef1e8ec829acf78c879022210d611812a4ed9bab482', 'storage_uri': 's3://neurokron-docs/uploads/13/26/ccfd3fa7-6bb0-4169-9928-80f1c38e2f12.png', 'size_bytes': 68322, 'mime': 'image/png', 'ext': '.png', 'duplicate': False, 'chars_indexed': 27}
+2025-08-26 22:44:31,050 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-26 22:44:34,176 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-26 22:44:36,829 - HTTP Request: PUT https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points?wait=true "HTTP/1.1 200 OK"
+2025-08-26 22:44:37,134 - UPLOAD_OK | {'user': 'viruj8152@gmail.com', 'session_id': 26, 'sha256': '07fa6bae9e7340e9d7637ee7ed6f924db3ba06ecc0b9d0b0cc0d1074424c8865', 'storage_uri': 's3://neurokron-docs/uploads/13/26/9ca4d52b-fd44-4cec-a50f-891b2f857037.xlsx', 'size_bytes': 12518, 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'ext': '.xlsx', 'duplicate': False, 'chars_indexed': 5303}
+2025-08-26 22:47:53,230 - CONSENT_RECORDED | {'email': 'ghbs2101@gmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-26T17:17:52.260682Z'}
+2025-08-26 23:16:07,369 - CONSENT_RECORDED | {'email': 'ghbs2100@rediffmail.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-26T17:46:06.565516Z'}
+2025-08-26 23:18:24,745 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'

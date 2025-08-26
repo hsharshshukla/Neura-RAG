@@ -10,7 +10,7 @@ export default function Forgot() {
     e.preventDefault();
     setLoading(true);
     try {
-      await secureAxios.post("/api/v1/auth/password/forgot", { email });
+      await secureAxios.post("/auth/password/forgot", { email });
       setDone(true); // always “success” to avoid user enumeration
     } catch {
       setDone(true);

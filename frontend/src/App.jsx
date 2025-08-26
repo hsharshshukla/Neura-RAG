@@ -1,4 +1,8 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import secureAxios from './utils/secureAxios';
+
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
@@ -14,7 +18,7 @@ import './themeBoot';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
-// ⬇️ Admin imports
+// Admin
 import AdminRoute from './components/AdminRoute';
 import AdminLayout from './sections/admin/AdminLayout';
 import Overview from './sections/admin/pages/Overview';
@@ -23,32 +27,74 @@ import Files from './sections/admin/pages/Files';
 import Sessions from './sections/admin/pages/Sessions';
 import Billing from './sections/admin/pages/Billing';
 import Analytics from './sections/admin/pages/Analytics';
-import SettingsAdmin from './sections/admin/pages/Settings'; // alias to avoid name clash
+import SettingsAdmin from './sections/admin/pages/Settings';
 
-// ⬇️ NEW: forgot/reset pages
+// Forgot/Reset
 import Forgot from './pages/Forgot';
 import Reset from './pages/Reset';
+
+// Email verification pages
+import VerifySent from './pages/VerifySent';
+import VerifyComplete from './pages/VerifyComplete';
+
+// Wrapper: if authed -> /chat, else -> <Home />
+function HomeOrChat() {
+  const [checked, setChecked] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await secureAxios.get('/auth/me');
+        if (!mounted) return;
+        setAuthed(Boolean(data?.authenticated));
+      } catch {
+        if (!mounted) return;
+        setAuthed(false);
+      } finally {
+        if (mounted) setChecked(true);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (!checked) {
+    // minimal placeholder while probing auth
+    return <div className="p-6" />;
+  }
+  return authed ? <Navigate to="/chat" replace /> : <Home />;
+}
 
 function App() {
   return (
     <Router>
       <Layout>
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
+          {/* Public root that respects auth */}
+          <Route path="/" element={<HomeOrChat />} />
+          {/* Optional: make /home behave the same as / */}
+          <Route path="/home" element={<HomeOrChat />} />
+
+          {/* Public marketing/legal */}
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/home" element={<Navigate to="/" replace />} />
 
           {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* NEW: Forgot/Reset (public) */}
+          {/* Password flows (public) */}
           <Route path="/forgot" element={<Forgot />} />
           <Route path="/reset" element={<Reset />} />
+
+          {/* Email verification (public) */}
+          <Route path="/verify-sent" element={<VerifySent />} />
+          {/* Accept both /verify and /verify-email for flexibility */}
+          <Route path="/verify" element={<VerifyComplete />} />
+          <Route path="/verify-email" element={<Navigate to="/verify" replace />} />
 
           {/* Protected (user) */}
           <Route
@@ -111,5 +157,3 @@ function App() {
 }
 
 export default App;
-
-

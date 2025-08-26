@@ -1,0 +1,4 @@
+Welcome, {{ user_name }}
+
+Your account is ready.
+Visit: {{ dashboard_url }}

@@ -18,7 +18,7 @@ export default function Reset() {
     if (pw1.length < 8) return setErr("Password must be at least 8 characters.");
     if (pw1 !== pw2) return setErr("Passwords do not match.");
     try {
-      await secureAxios.post("/api/v1/auth/password/reset", { token, new_password: pw1 });
+      await secureAxios.post("/auth/password/reset", { token, new_password: pw1 });
       setOk(true);
     } catch {
       setErr("The reset link is invalid or has expired.");

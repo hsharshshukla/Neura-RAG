@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height:1.5; color:#111">
+    <h2>Welcome to Neura</h2>
+    <p>Hi {{ user_name }},</p>
+    <p>Confirm your email address to finish setting up your account.</p>
+    <p>
+      <a href="{{ verify_url }}" style="display:inline-block;padding:10px 16px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:8px">
+        Verify email
+      </a>
+    </p>
+    <p>If the button doesn’t work, copy this link:</p>
+    <p><a href="{{ verify_url }}">{{ verify_url }}</a></p>
+    <p>This link expires in {{ expires_hours }} hours.</p>
+    <p>— The Neura team</p>
+  </body>
+</html>

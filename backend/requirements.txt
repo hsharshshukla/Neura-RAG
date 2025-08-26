@@ -1,5 +1,5 @@
 authlib
-chromadb
+#chromadb
 fastapi
 httpx
 langchain
@@ -10,6 +10,7 @@ openpyxl
 passlib
 Pillow>=10.0.0
 psycopg[binary]
+psycopg2
 PyMuPDF
 pypdf>=4.0.0
 PyPDF2
@@ -25,47 +26,6 @@ sqlmodel
 uvicorn[standard]
 boto3
 pydantic[email]
-
-
-# fastapi
-# sqlmodel
-# uvicorn
-# python-multipart
-# pytesseract
-# python-dotenv
-# openai
-# jose
-# jwt
-# PyMuPDF
-# pillow
-# pytesseract
-# python-docx 
-# PyPDF2
-# langchain
-# langchain-community
-# langchain-openai
-# passlib
-# pypdf>=4.0.0
-# Pillow>=10.0.0
-# pytesseract>=0.3.10
-# pypdf>=4.0.0
-# python-docx>=1.1.0
-# pypdf
-# python-docx
-# python-pptx
-# openpyxl
-# pillow
-# pytesseract
-# authlib 
-# python-jose[cryptography] 
-# python-dotenv
-# psycopg[binary]
-# python-dotenv
-# pytest 
-# pytest-asyncio 
-# httpx
-# uvicorn[standard]
-# sqlmodel
-# python-multipart
-# langchain
-# chromadb
+qdrant-client>=1.9,<2.0
+aiosmtplib>=2.0.2
+jinja2>=3.1.4

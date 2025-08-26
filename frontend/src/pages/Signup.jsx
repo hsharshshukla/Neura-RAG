@@ -1,12 +1,12 @@
-// src/pages/signup.jsx
+// src/pages/Signup.jsx
 import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
-import { markAuthed } from '../utils/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function Signup() {
   const navigate = useNavigate();
 
+  // Keep these in sync with backend env defaults
   const TOS_VERSION = '2025-08-01';
   const PRIVACY_VERSION = '2025-08-01';
 
@@ -33,12 +33,11 @@ export default function Signup() {
   };
 
   const submit = async () => {
-    if (loading) return; // prevent double submits
+    if (loading) return;
     setError('');
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Client-side checks
     if (!name.trim()) return setError('Please enter your name');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError('Enter a valid email');
     if (pw !== pw2) return setError('Passwords do not match');
@@ -56,31 +55,12 @@ export default function Signup() {
       params.append('tosVersion', TOS_VERSION);
       params.append('privacyVersion', PRIVACY_VERSION);
 
-      // Cookie-based signup: server sets HttpOnly cookie + returns profile
-      const res = await secureAxios.post('/auth/signup', params, {
+      await secureAxios.post('/auth/signup', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      const d = res.data || {};
-
-      // If backend sometimes returns a token, persist for legacy code
-      if (d.access_token) localStorage.setItem('token', d.access_token);
-
-      // Normalize tier/plan + seed minimal profile for UI
-      const tier = String(d.tier || 'free').toLowerCase();
-      markAuthed({
-        email: d.email || normalizedEmail,
-        name: d.name || name.trim(),
-        role: d.role || 'user',
-        tier,           // 'free' | 'pro'
-        token: d.access_token, // optional
-      });
-
-      // Optional legacy: keep 'plan' in sync if some components still read it
-      localStorage.setItem('plan', tier.charAt(0).toUpperCase() + tier.slice(1));
-
-      // Go straight to chat after successful signup
-      navigate('/chat', { replace: true });
+      // No auto-login. Go to "verify your email" screen.
+      navigate('/verify-sent', { replace: true, state: { email: normalizedEmail } });
     } catch (err) {
       const data = err?.response?.data;
       let message = 'Signup failed';
@@ -240,4 +220,3 @@ export default function Signup() {
     </div>
   );
 }
-

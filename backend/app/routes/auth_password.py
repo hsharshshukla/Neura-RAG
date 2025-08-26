@@ -29,6 +29,8 @@ def forgot_password(payload: ForgotIn, db: Session = Depends(get_session), reque
         )
         db.add(token); db.commit()
         link = f"{FRONTEND_BASE}/reset?token={raw}"
+        print(f"[forgot] issuing reset token for {user.email} -> {link}")
+
         send_password_reset_email(user.email, link)
     return
 

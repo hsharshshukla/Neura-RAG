@@ -1,0 +1,10 @@
+Welcome to Neura
+
+Hi {{ user_name }},
+
+Confirm your email address to finish setting up your account:
+{{ verify_url }}
+
+This link expires in {{ expires_hours }} hours.
+
+— The Neura team
