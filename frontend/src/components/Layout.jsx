@@ -3,11 +3,9 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import TopBar from "./TopBar";
 
+// Only hide on email verification screens (optional).
+// Show TopBar on login/signup/forgot/reset so users always see brand + nav.
 const HIDE_TOPBAR_PATHS = new Set([
-  "/login",
-  "/signup",
-  "/forgot",
-  "/reset",
   "/verify",
   "/verify-email",
   "/verify-sent",
@@ -15,12 +13,9 @@ const HIDE_TOPBAR_PATHS = new Set([
 
 export default function Layout({ children }) {
   const { pathname } = useLocation();
-
-  // Hide TopBar on auth/verification screens to prevent loops/odd states
   const hideTopBar =
     HIDE_TOPBAR_PATHS.has(pathname) ||
-    // also hide when /verify has query (?token=...)
-    (pathname === "/verify" || pathname === "/verify-email");
+    (pathname === "/verify" || pathname === "/verify-email"); // handles query e.g. ?token=...
 
   return (
     <div className="min-h-screen flex flex-col">

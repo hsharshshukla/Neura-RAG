@@ -1,9 +1,17 @@
 // src/components/TopBar.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import SearchCommand from "./SearchCommand";
 import { isLoggedIn, isAdmin, logout as authLogout } from "../utils/auth";
 import secureAxios from "../utils/secureAxios";
+
+// Lazy-load SearchCommand so TopBar can't crash on pages that don't need it
+const SearchCommand = React.lazy(() => import("./SearchCommand"));
+
+function normalizePath(pathname) {
+  if (!pathname) return "/";
+  const p = pathname.toLowerCase();
+  return p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
+}
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -11,17 +19,17 @@ const TopBar = () => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [authed, setAuthed] = useState(isLoggedIn()); // seed from local flag
+  const [authed, setAuthed] = useState(isLoggedIn()); // seed from local
 
   const menuRef = useRef(null);
   const btnRef = useRef(null);
 
-  // Soft verify once; /auth/me returns {authenticated:false} (no 401s)
+  // Soft probe once to sync cookie-backed session with local flags
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const { data } = await secureAxios.get('/auth/me');
+        const { data } = await secureAxios.get("/auth/me"); // never 401
         if (!mounted) return;
         if (!data?.authenticated) {
           authLogout();
@@ -30,48 +38,44 @@ const TopBar = () => {
           setAuthed(true);
         }
       } catch {
-        // ignore network errors; keep current flag
+        // ignore transient errors; keep current flag
       }
     })();
 
     const onAuthChanged = () => setAuthed(isLoggedIn());
-    window.addEventListener('auth-changed', onAuthChanged);
+    window.addEventListener("auth-changed", onAuthChanged);
     return () => {
       mounted = false;
-      window.removeEventListener('auth-changed', onAuthChanged);
+      window.removeEventListener("auth-changed", onAuthChanged);
     };
   }, []);
 
-  // ✅ Also re-check on every route change (covers redirect after login)
+  // Re-evaluate on route changes (after a login redirect, etc.)
   useEffect(() => {
     setAuthed(isLoggedIn());
   }, [location.pathname]);
 
-  // ---- Auth & route state ----
-  const authedEmail = localStorage.getItem("email") || "";
-  // const plan = (localStorage.getItem("plan") || "Free").trim();
-  // src/components/TopBar.jsx
-  const rawTier = (localStorage.getItem("tier") || "free").toLowerCase();
-  const plan = rawTier.charAt(0).toUpperCase() + rawTier.slice(1); // "Free" | "Pro"
-  const onChatPage = location.pathname.startsWith("/chat");
-  const onLogin = location.pathname === "/login";
-  const onSignup = location.pathname === "/signup";
+  // Current route flags (normalized, resilient to trailing slashes/case)
+  const path = normalizePath(location.pathname);
+  const onChat = path.startsWith("/chat");
+  const onLogin = path === "/login";
+  const onSignup = path === "/signup";
 
-  // ---- Keyboard: Ctrl/Cmd+K only on chat page ----
+  // Hotkey: Ctrl/Cmd+K opens command palette on chat page
   useEffect(() => {
     const handler = (e) => {
       const mac = navigator.platform.toUpperCase().includes("MAC");
       const hotkey = (mac && e.metaKey) || (!mac && e.ctrlKey);
-      if (onChatPage && hotkey && e.key.toLowerCase() === "k") {
+      if (onChat && hotkey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCmdOpen(true);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onChatPage]);
+  }, [onChat]);
 
-  // ---- Close profile menu on outside click / ESC ----
+  // Close profile menu on outside click / ESC
   useEffect(() => {
     const onClickOutside = (e) => {
       if (
@@ -94,12 +98,19 @@ const TopBar = () => {
   }, [menuOpen]);
 
   const handleLogout = async () => {
-    try { await secureAxios.post('/auth/logout'); } catch {}
-    authLogout();       // clears local state and dispatches 'auth-changed'
+    try { await secureAxios.post("/auth/logout"); } catch {}
+    authLogout();
     setMenuOpen(false);
     setAuthed(false);
-    navigate("/");      // back to Home
+    navigate("/"); // home after logout
   };
+
+  // UI bits
+  const authedEmail = localStorage.getItem("email") || "";
+  const rawTier = (localStorage.getItem("tier") || "free").toLowerCase();
+  const plan =
+    rawTier === "mini+" ? "Mini+" :
+    rawTier === "pro"   ? "Pro"   : "Free";
 
   const initials = (() => {
     const name = (localStorage.getItem("name") || authedEmail || "U").trim();
@@ -126,20 +137,22 @@ const TopBar = () => {
       <div className="w-full px-3 sm:px-4 lg:px-6">
         {/* 3-column grid: left / center / right */}
         <div className="grid grid-cols-[auto,1fr,auto] items-center h-14 w-full">
-          {/* LEFT: Brand */}
+          {/* LEFT: Brand → Home if logged out, Chat if logged in */}
           <button
             onClick={() => navigate(authed ? "/chat" : "/")}
             className="justify-self-start flex items-center gap-2"
-            aria-label="Go to Home/Chat"
+            aria-label="Go to Home or Chat"
           >
+            {/* Brand mark */}
             <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-blue-500 shadow-sm" />
+            {/* Wordmark */}
             <span className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-300">
               Neura
             </span>
           </button>
 
-          {/* CENTER: Search (chat page only) */}
-          {onChatPage ? (
+          {/* CENTER: Command/Search (only on chat) */}
+          {onChat ? (
             <div className="justify-self-center w-full max-w-md hidden md:block">
               <div className="relative">
                 <input
@@ -157,11 +170,10 @@ const TopBar = () => {
             <div />
           )}
 
-          {/* RIGHT: Auth-aware + route-aware controls */}
+          {/* RIGHT: Auth-aware controls */}
           <div className="justify-self-end flex items-center gap-3">
             {authed ? (
               <>
-
                 {isAdmin() && (
                   <Link
                     to="/admin"
@@ -170,10 +182,7 @@ const TopBar = () => {
                     Admin
                   </Link>
                 )}
-
-
                 <PlanPill />
-
                 <div className="relative">
                   <button
                     ref={btnRef}
@@ -185,7 +194,6 @@ const TopBar = () => {
                   >
                     {initials}
                   </button>
-
                   {menuOpen && (
                     <div
                       ref={menuRef}
@@ -220,41 +228,47 @@ const TopBar = () => {
                   )}
                 </div>
               </>
-            ) : onSignup ? (
-              <button
-                onClick={() => navigate("/login")}
-                className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-              >
-                Login
-              </button>
-            ) : onLogin ? (
-              <button
-                onClick={() => navigate("/signup")}
-                className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-              >
-                Register
-              </button>
             ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate("/signup")}
-                  className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                >
-                  Register
-                </button>
-              </div>
+              <>
+                {/* Logged OUT */}
+                {onLogin ? (
+                  <button
+                    onClick={() => navigate("/signup")}
+                    className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  >
+                    Register
+                  </button>
+                ) : onSignup ? (
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    Login
+                  </button>
+                ) : (
+                  // Home (and other public pages): show both
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => navigate("/signup")}
+                      className="px-3 py-2 text-sm rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    >
+                      Register
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
         {/* Mobile search (chat page only) */}
-        {onChatPage && (
+        {onChat && (
           <div className="md:hidden pt-2">
             <input
               type="text"
@@ -268,8 +282,12 @@ const TopBar = () => {
         )}
       </div>
 
-      {/* Command Palette overlay (only opened from chat page) */}
-      <SearchCommand open={cmdOpen} onClose={() => setCmdOpen(false)} />
+      {/* Command Palette overlay (lazy, only loaded when needed) */}
+      {onChat && (
+        <Suspense fallback={null}>
+          <SearchCommand open={cmdOpen} onClose={() => setCmdOpen(false)} />
+        </Suspense>
+      )}
     </header>
   );
 };
