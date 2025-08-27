@@ -16,7 +16,7 @@ from app.utils.logger import log_event
 from app.utils.mailer import send_email_verification
 from datetime import datetime, timezone
 LEGACY_VERIFY_CUTOFF = os.getenv("LEGACY_VERIFY_CUTOFF_ISO", "2025-08-24T00:00:00Z")
-
+REQUIRE_EMAIL_VERIFICATION = os.getenv("REQUIRE_EMAIL_VERIFICATION", "true").lower() in ("1","true","yes","on")
 
 # ---- config ----
 CURRENT_TOS_VERSION = os.getenv("TOS_VERSION", "2025-08-01")

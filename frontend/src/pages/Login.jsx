@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import secureAxios from '../utils/secureAxios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { markAuthed } from '../utils/auth';
@@ -15,28 +15,6 @@ export default function Login() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const probedRef = useRef(false);  // ensure we probe only once
-
-  // Soft probe (no 401s): only once, and only redirect if truly authed
-  useEffect(() => {
-    if (probedRef.current) return;
-    probedRef.current = true;
-
-    let mounted = true;
-    (async () => {
-      try {
-        const { data } = await secureAxios.get('/auth/me'); // 200 w/ authenticated: true|false
-        if (!mounted) return;
-        if (data?.authenticated) {
-          navigate('/chat', { replace: true });
-        }
-      } catch {
-        // unauthenticated: stay on /login
-      }
-    })();
-
-    return () => { mounted = false; };
-  }, [navigate]);
 
   const submit = async () => {
     if (loading) return;
@@ -72,6 +50,7 @@ export default function Login() {
         token: data.access_token, // optional legacy
       });
 
+      // On success: go where they were heading, or /chat.
       const urlParams = new URLSearchParams(location.search);
       const nextFromQuery = urlParams.get('next');
       const fromState = location.state?.from?.pathname;
