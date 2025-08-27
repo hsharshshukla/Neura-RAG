@@ -10,7 +10,6 @@ openpyxl
 passlib
 Pillow>=10.0.0
 psycopg[binary]
-psycopg2
 PyMuPDF
 pypdf>=4.0.0
 PyPDF2

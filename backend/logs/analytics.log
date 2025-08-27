@@ -48391,3 +48391,10 @@ Traceback (most recent call last):
               ^^^^^^^^^^^^^^^^^
 AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-27 16:33:39,659 - CONSENT_RECORDED | {'email': 'jami@123.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-27T11:03:38.966850Z'}
+2025-08-27 16:43:34,680 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-27 16:43:35,344 - CONSENT_RECORDED | {'email': 'jaamin@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-27T11:13:34.679309Z'}
