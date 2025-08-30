@@ -48398,3 +48398,149 @@ Traceback (most recent call last):
               ^^^^^^^^^^^^^^^^^
 AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-27 16:43:35,344 - CONSENT_RECORDED | {'email': 'jaamin@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-27T11:13:34.679309Z'}
+2025-08-28 00:29:28,073 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-28 00:29:56,127 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-28 00:29:56,932 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:29:58,775 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-28 00:29:59,610 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:29:59,611 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-28 00:29:59,899 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:00,764 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:01,578 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:02,365 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:03,141 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:03,943 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-28 00:30:28,843 - CONSENT_RECORDED | {'email': 'jaman@12.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-27T19:00:28.204557Z'}
+2025-08-28 00:43:55,424 - HTTP Request: POST https://api.razorpay.com/v1/payment_links "HTTP/1.1 401 Unauthorized"
+2025-08-28 19:13:06,693 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-29 01:30:56,124 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-29 15:22:16,499 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-29 19:35:28,517 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-29 23:12:24,191 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-29 23:46:48,371 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 00:06:38,459 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 00:55:11,046 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 15:39:28,387 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 15:42:08,703 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-30 15:42:09,522 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:42:11,429 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-30 15:42:12,219 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:42:12,219 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-30 15:42:12,492 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:42:13,340 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:43:19,536 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:43:20,394 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:43:21,864 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 15:43:22,417 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-30 18:25:00,723 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 20:49:11,296 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 21:04:24,304 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-30 21:58:29,616 - send_subscription_activated failed (webhook) for tana@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': 'Your Pro sub...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 389, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 53, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 20, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': 'Your Pro sub...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-30 21:58:32,980 - send_subscription_activated failed (webhook) for tana@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': 'Your Pro sub...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 389, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 53, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 20, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': 'Your Pro sub...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-30 22:00:51,033 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'

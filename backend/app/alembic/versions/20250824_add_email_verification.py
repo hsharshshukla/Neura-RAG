@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "20250824_add_email_verification"
-down_revision = "172de1004b16"   # 👈 parent revision id
+down_revision = '67eec25b6a9f'   # 👈 parent revision id
 branch_labels = None
 depends_on = None
 

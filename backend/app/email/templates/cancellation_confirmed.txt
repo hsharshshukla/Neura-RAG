@@ -1,0 +1,9 @@
+Hello {{ user_name }},
+
+{% if immediate -%}
+Your subscription has been cancelled effective immediately.
+{%- else -%}
+Your subscription will end on {{ effective_date }}.
+{%- endif %}
+
+Manage/Reactivate: {{ reactivate_url }}

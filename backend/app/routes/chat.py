@@ -1,22 +1,36 @@
 # app/routes/chat.py
+from __future__ import annotations
+
+import os, time
+from textwrap import shorten
+from typing import Optional, List
+from datetime import datetime, date
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
 from sqlmodel import Session, select, func
-from datetime import datetime, date
+from openai import OpenAI
+
 from app.db import get_session
 from app.models import ChatSession, ChatMessage, User
 from app.schemas import ChatSessionOut, ChatMessageOut
 from app.deps.auth import get_current_user
 from app.vector_store import query_user_docs
 from app.utils.logger import log_event
-import os
-from textwrap import shorten
-from openai import OpenAI
 from app.prompting.product import infer_scope_products, make_system_prompt
 from app.utils.redaction import redact_source_identity
 
-from app.config import plan_limit, plan_model, is_session_scoped
+# Plan config & helpers (standardized to app.config.*)
+from app.config.plan_policy import (
+    plan_limit,          # daily chat limit (-1 = unlimited)
+    plan_model,          # pick model by tier
+    is_session_scoped,   # Free/Mini = session-only; Pro = global
+    monthly_token_limit_for,
+    monthly_tokens_used,
+)
+
+# Optional: log LLM usage for analytics/costing
+from app.utils.llm_logger import log_llm_event
 
 STRICT_SCOPE = os.getenv("STRICT_OPENTEXT_SCOPE", "true").lower() == "true"
 ANSWER_POLICY = os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context").lower()
@@ -117,7 +131,7 @@ def ask(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # --- Quota check (per plan) ---
+    # --- Daily chat quota (per plan) ---
     limit = plan_limit(user.tier)
     if limit != -1:
         used = _today_user_chat_count(db, user.id)
@@ -125,6 +139,16 @@ def ask(
             raise HTTPException(
                 status_code=429,
                 detail=f"Daily chat limit reached for your plan ({limit}/day). Upgrade to Mini+ or Pro for unlimited.",
+            )
+
+    # --- Monthly token hard cap (fail fast before calling the model) ---
+    monthly_cap = monthly_token_limit_for(user.tier)
+    if monthly_cap > 0:
+        used_tokens = monthly_tokens_used(db, user.id)
+        if used_tokens >= monthly_cap:
+            raise HTTPException(
+                status_code=402,
+                detail="Monthly token limit reached for your plan. Upgrade to increase your limit.",
             )
 
     # --- Ensure a session exists ---
@@ -171,8 +195,8 @@ def ask(
         import re
         q_tokens = re.findall(r"[A-Za-z0-9]{3,}", q.lower())
         stop = {
-            "how", "what", "when", "where", "which", "please", "help", "issue", "error", "problem",
-            "setup", "set", "configure", "configuration", "config", "steps", "guide", "doc", "docs",
+            "how","what","when","where","which","please","help","issue","error","problem",
+            "setup","set","configure","configuration","config","steps","guide","doc","docs",
         }
         q_terms = [t for t in q_tokens if len(t) >= 4 and t not in stop]
         if not q_terms:
@@ -188,6 +212,9 @@ def ask(
 
     grounded = False
     ai = ""
+    req_tokens = 0
+    res_tokens = 0
+    latency_ms = 0
 
     if has_context:
         grounded = True
@@ -197,6 +224,7 @@ def ask(
             f"Context excerpts (separated by ---):\n{context_text}"
         )
         try:
+            start = time.perf_counter()
             completion = client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -207,11 +235,15 @@ def ask(
                 top_p=0.9,
                 max_tokens=900,
             )
+            latency_ms = int((time.perf_counter() - start) * 1000)
             ai = (completion.choices[0].message.content or "").strip()
+            usage = getattr(completion, "usage", None) or {}
+            req_tokens = int(usage.get("prompt_tokens", 0))
+            res_tokens = int(usage.get("completion_tokens", 0))
         except Exception as e:
             ai = f"RAG call failed: {e}"
     else:
-        if os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context").lower() == "context_only":
+        if ANSWER_POLICY == "context_only":
             ai = (
                 "I answer strictly from your uploaded OpenText materials. "
                 "Please upload relevant documentation and ask again."
@@ -226,6 +258,7 @@ def ask(
                     f"Detected product(s), if any: {', '.join(scope_hits_msg) or 'None'}."
                 )
                 try:
+                    start = time.perf_counter()
                     completion = client.chat.completions.create(
                         model=model_name,
                         messages=[
@@ -236,7 +269,11 @@ def ask(
                         top_p=0.9,
                         max_tokens=900,
                     )
+                    latency_ms = int((time.perf_counter() - start) * 1000)
                     ai = (completion.choices[0].message.content or "").strip()
+                    usage = getattr(completion, "usage", None) or {}
+                    req_tokens = int(usage.get("prompt_tokens", 0))
+                    res_tokens = int(usage.get("completion_tokens", 0))
                 except Exception as e:
                     ai = f"Model call failed: {e}"
             else:
@@ -247,28 +284,44 @@ def ask(
 
     # --- Persist messages
     now = datetime.utcnow()
-    db.add(
-        ChatMessage(
-            session_id=session_id,
-            user_id=user.id,
-            role="user",
-            content=message,
-            created_at=now,
-            # timestamp omitted -> DB/model default will fill
-        )
-    )
-    db.add(
-        ChatMessage(
-            session_id=session_id,
-            user_id=user.id,
-            role="assistant",
-            content=ai,
-            created_at=now,
-            # timestamp omitted -> DB/model default will fill
-        )
-    )
+    db.add(ChatMessage(
+        session_id=session_id,
+        user_id=user.id,
+        role="user",
+        content=message,
+        created_at=now,
+    ))
+    db.add(ChatMessage(
+        session_id=session_id,
+        user_id=user.id,
+        role="assistant",
+        content=ai,
+        created_at=now,
+    ))
     db.commit()
 
+    # --- Analytics: usage + cost
+    try:
+        if req_tokens or res_tokens:
+            log_llm_event(
+                db=db,
+                user_id=user.id,
+                tier=user.tier,
+                model=model_name,
+                provider="openai",
+                request_tokens=req_tokens,
+                response_tokens=res_tokens,
+                latency_ms=latency_ms,
+                chat_session_id=session_id,
+                retrieved_chunks=len(chunks),
+                # If you compute token counts for retrieved docs, pass them:
+                retrieved_tokens=0,
+            )
+    except Exception:
+        # Don't block user flow if analytics write fails
+        pass
+
+    # --- App event log (unchanged)
     log_event(
         "chat",
         {
@@ -279,7 +332,7 @@ def ask(
             "chunks_used": len(chunks),
             "grounded": grounded,
             "model": model_name,
-            "policy": os.getenv("NEURA_ANSWER_POLICY", "opentext_or_context"),
+            "policy": ANSWER_POLICY,
             "ctx_present": bool(context_text),
             "scope": {"ctx": scope_hits_ctx},
         },

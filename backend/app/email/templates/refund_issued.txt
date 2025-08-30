@@ -1,0 +1,4 @@
+Hello {{ user_name }},
+
+Your refund for {{ plan_name }} has been issued.
+{% if refund_id %}Refund ID: {{ refund_id }}{% endif %}

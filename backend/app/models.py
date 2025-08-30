@@ -61,6 +61,9 @@ class User(SQLModel, table=True):
     email_verified_at: Optional[datetime] = None
     email_verification_token_hash: Optional[str] = Field(default=None, index=True)
     email_verification_expires_at: Optional[datetime] = None
+    cancel_at_period_end: bool = Field(default=False, nullable=False)
+    scheduled_plan: Optional[str] = Field(default=None)                # typically "free"
+    next_renewal_at: Optional[datetime] = Field(default=None) 
 
     @property
     def is_email_verified(self) -> bool:

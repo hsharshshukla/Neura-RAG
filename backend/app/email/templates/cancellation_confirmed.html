@@ -1,0 +1,7 @@
+<p>Hello {{ user_name }},</p>
+{% if immediate %}
+  <p>Your subscription has been cancelled effective immediately.</p>
+{% else %}
+  <p>Your subscription will end on <b>{{ effective_date }}</b>.</p>
+{% endif %}
+<p>You can manage or reactivate anytime here: <a href="{{ reactivate_url }}">Billing</a></p>

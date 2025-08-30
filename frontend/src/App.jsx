@@ -37,6 +37,9 @@ import Reset from './pages/Reset';
 import VerifySent from './pages/VerifySent';
 import VerifyComplete from './pages/VerifyComplete';
 
+// ✅ Billing success
+import BillingSuccess from './pages/BillingSuccess';
+
 // Wrapper: if authed -> /chat, else -> <Home />
 function HomeOrChat() {
   const [checked, setChecked] = useState(false);
@@ -59,10 +62,7 @@ function HomeOrChat() {
     return () => { mounted = false; };
   }, []);
 
-  // Minimal placeholder while probing auth
   if (!checked) return <div className="p-6" />;
-
-  // Only redirect when already authenticated; otherwise show Home
   return authed ? <Navigate to="/chat" replace /> : <Home />;
 }
 
@@ -85,14 +85,17 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Password flows (public) */}
+          {/* Password flows */}
           <Route path="/forgot" element={<Forgot />} />
           <Route path="/reset" element={<Reset />} />
 
-          {/* Email verification (public) */}
+          {/* Email verification */}
           <Route path="/verify-sent" element={<VerifySent />} />
           <Route path="/verify" element={<VerifyComplete />} />
           <Route path="/verify-email" element={<Navigate to="/verify" replace />} />
+
+          {/* ✅ Billing success page */}
+          <Route path="/billing/success" element={<BillingSuccess />} />
 
           {/* Protected (user) */}
           <Route

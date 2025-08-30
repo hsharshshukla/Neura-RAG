@@ -4,7 +4,7 @@ from datetime import datetime
 
 # revision identifiers
 revision = "e653098e6dde"
-down_revision = "9c2f7f3c5b1a"
+down_revision = '61b4c88e8820'
 branch_labels = None
 depends_on = None
 

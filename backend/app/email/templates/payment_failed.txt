@@ -1,0 +1,4 @@
+Hello {{ user_name }},
+
+Your recent payment attempt failed. Please update your payment method to avoid interruption.
+Billing: {{ manage_url }}

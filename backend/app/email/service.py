@@ -5,7 +5,8 @@ import os
 import asyncio
 import logging
 from typing import Optional, Callable, Awaitable, Tuple, List, Set
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateNotFound
 
 from app.email.models import EmailMessage, EmailAddress, EmailSendResult
 from app.email.providers.base import EmailProvider
@@ -20,27 +21,37 @@ _jinja = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
+
 def render_template(name: str, **ctx) -> Tuple[str, str]:
     """
     Render (html, text) for a template pair: <name>.html and <name>.txt
-    Falls back to a naive HTML->text strip if .txt is absent.
+    If .txt is absent, fall back to a naive HTML->text strip.
+    Raises RuntimeError if <name>.html is missing (HTML is required).
     """
-    html = _jinja.get_template(name + ".html").render(**ctx)
+    try:
+        html = _jinja.get_template(name + ".html").render(**ctx)
+    except TemplateNotFound as e:
+        raise RuntimeError(f"Email HTML template not found: {name}.html") from e
+
     try:
         txt = _jinja.get_template(name + ".txt").render(**ctx)
-    except Exception:
+    except TemplateNotFound:
         import re
+        # very naive HTML tag strip as a fallback
         txt = re.sub(r"<[^>]+>", "", html)
     return html, txt
+
 
 def _make_provider() -> EmailProvider:
     # SMTP-only; settings are env-driven inside SMTPProvider
     return SMTPProvider()
 
+
 def _parse_allowlist(env_val: str | None) -> Set[str]:
     if not env_val:
         return set()
     return {e.strip().lower() for e in env_val.split(",") if e.strip()}
+
 
 def _apply_nonprod_policies(msg: EmailMessage) -> Optional[EmailSendResult]:
     """
@@ -60,7 +71,7 @@ def _apply_nonprod_policies(msg: EmailMessage) -> Optional[EmailSendResult]:
     if is_prod:
         return None  # nothing else to do
 
-    # Subject prefix
+    # Subject prefix for non-prod
     prefix = os.getenv("EMAIL_SUBJECT_PREFIX") or f"[{env.upper()}] "
     if prefix and not (msg.subject or "").startswith(prefix):
         msg.subject = f"{prefix}{msg.subject}"
@@ -96,6 +107,7 @@ def _apply_nonprod_policies(msg: EmailMessage) -> Optional[EmailSendResult]:
 
     return None  # proceed
 
+
 class EmailService:
     """SMTP-only email service with retries and non-prod safety rails."""
     def __init__(self, max_attempts: int = 2):
@@ -120,6 +132,22 @@ class EmailService:
             log.info("[email] DISABLE_EMAIL=1 (pretend-sent)")
             return EmailSendResult(provider="disabled", message_id=None, status="queued")
 
+        # Basic validation (helpful early failure)
+        if not msg.to:
+            return EmailSendResult(
+                provider="disabled",
+                message_id=None,
+                status="failed",
+                raw={"reason": "no recipients"},
+            )
+        if not msg.has_body():
+            return EmailSendResult(
+                provider="disabled",
+                message_id=None,
+                status="failed",
+                raw={"reason": "empty body"},
+            )
+
         # Apply non-prod guards (prefix/allowlist/redirect)
         maybe_skip = _apply_nonprod_policies(msg)
         if maybe_skip is not None:
@@ -128,8 +156,10 @@ class EmailService:
         # Send via SMTP with retries
         return await self._with_retries(lambda: self.primary.send(msg))
 
+
 def make_default_service() -> EmailService:
     return EmailService()
+
 
 def make_from_env(default_from: Optional[str] = None, default_name: Optional[str] = None) -> EmailAddress:
     """

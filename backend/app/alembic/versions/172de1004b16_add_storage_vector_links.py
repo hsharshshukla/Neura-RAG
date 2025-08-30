@@ -18,10 +18,10 @@ except Exception:
 
 
 # revision identifiers, used by Alembic.
-revision: str = '172de1004b16'
-down_revision: Union[str, None] = 'f4053c07231e'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = '172de1004b16'
+down_revision = 'f4053c07231e'
+branch_labels = None
+depends_on = None
 
 
 def upgrade() -> None:

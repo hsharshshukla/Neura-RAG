@@ -20,6 +20,8 @@ const TopBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [authed, setAuthed] = useState(isLoggedIn()); // seed from local
+  const [tier, setTier] = useState((localStorage.getItem("tier") || "free").toLowerCase());
+  const [loadingTier, setLoadingTier] = useState(true);
 
   const menuRef = useRef(null);
   const btnRef = useRef(null);
@@ -54,6 +56,40 @@ const TopBar = () => {
   useEffect(() => {
     setAuthed(isLoggedIn());
   }, [location.pathname]);
+
+  // Fetch tier (billing/status → fallback user/profile), keep localStorage in sync
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!authed) {
+        setTier("free");
+        setLoadingTier(false);
+        return;
+      }
+      setLoadingTier(true);
+      try {
+        const { data } = await secureAxios.get("/billing/status");
+        const t = String(data?.tier || "free").toLowerCase();
+        if (!mounted) return;
+        setTier(t);
+        localStorage.setItem("tier", t);
+      } catch {
+        try {
+          const { data } = await secureAxios.get("/user/profile");
+          const t = String(data?.tier || "free").toLowerCase();
+          if (!mounted) return;
+          setTier(t);
+          localStorage.setItem("tier", t);
+        } catch {
+          if (!mounted) return;
+          setTier("free");
+        }
+      } finally {
+        if (mounted) setLoadingTier(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [authed]);
 
   // Current route flags (normalized, resilient to trailing slashes/case)
   const path = normalizePath(location.pathname);
@@ -102,15 +138,15 @@ const TopBar = () => {
     authLogout();
     setMenuOpen(false);
     setAuthed(false);
+    setTier("free");
     navigate("/"); // home after logout
   };
 
   // UI bits
   const authedEmail = localStorage.getItem("email") || "";
-  const rawTier = (localStorage.getItem("tier") || "free").toLowerCase();
-  const plan =
-    rawTier === "mini+" ? "Mini+" :
-    rawTier === "pro"   ? "Pro"   : "Free";
+  const planLabel =
+    tier === "pro" ? "Pro" :
+    tier === "mini" || tier === "mini+" ? "Mini+" : "Free";
 
   const initials = (() => {
     const name = (localStorage.getItem("name") || authedEmail || "U").trim();
@@ -120,17 +156,28 @@ const TopBar = () => {
 
   const PlanPill = () => {
     const color =
-      plan === "Pro"
+      planLabel === "Pro"
         ? "bg-emerald-600 text-white"
-        : plan === "Mini+"
+        : planLabel === "Mini+"
         ? "bg-indigo-600 text-white"
         : "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100";
     return (
-      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${color}`}>
-        {plan}
+      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${color}`} title={`Current plan: ${planLabel}`}>
+        {loadingTier ? "…" : planLabel}
       </span>
     );
   };
+
+  const onUpgradeClick = () => {
+    if (location.pathname !== "/pricing") navigate("/pricing");
+  };
+  const onManageClick = () => {
+    // Later: open billing portal/manage URL when available
+    navigate("/pricing");
+  };
+
+  // Helper: treat mini/mini+ as Mini+
+  const isMiniTier = tier === "mini" || tier === "mini+";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur">
@@ -182,7 +229,52 @@ const TopBar = () => {
                     Admin
                   </Link>
                 )}
+
+                {/* Plan badge */}
                 <PlanPill />
+
+                {/* Upgrade / Manage */}
+                {(isMiniTier || tier === "pro") ? (
+                  <>
+                    {/* Desktop Manage */}
+                    <button
+                      onClick={onManageClick}
+                      className="hidden sm:inline-flex items-center rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-black"
+                      title="Manage billing and plan"
+                    >
+                      Manage plan
+                    </button>
+                    {/* Mobile Manage */}
+                    <button
+                      onClick={onManageClick}
+                      className="sm:hidden inline-flex items-center rounded-lg border px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      aria-label="Manage plan"
+                    >
+                      Manage
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Desktop Upgrade */}
+                    <button
+                      onClick={onUpgradeClick}
+                      className="hidden sm:inline-flex items-center rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                      title="Upgrade"
+                    >
+                      Upgrade
+                    </button>
+                    {/* Mobile Upgrade */}
+                    <button
+                      onClick={onUpgradeClick}
+                      className="sm:hidden inline-flex items-center rounded-lg border px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      aria-label="Upgrade"
+                    >
+                      Upgrade
+                    </button>
+                  </>
+                )}
+
+                {/* Avatar / menu */}
                 <div className="relative">
                   <button
                     ref={btnRef}

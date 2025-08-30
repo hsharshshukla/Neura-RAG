@@ -1,0 +1,6 @@
+Hello {{ user_name }},
+
+Your {{ plan_name }} subscription is now active. 🎉
+Manage: {{ manage_url }}
+
+Thanks for supporting us!
