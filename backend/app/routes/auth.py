@@ -122,7 +122,7 @@ class VerifyConfirmIn(BaseModel):
 @router.post("/signup")
 @limiter.limit("6/minute; 60/hour")  # tight, anonymous
 def signup(
-    request: Request,
+    request: Request,  # required by SlowAPI decorator
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
@@ -174,7 +174,6 @@ def signup(
     # Send verification on signup
     if REQUIRE_EMAIL_VERIFICATION:
         _ensure_email_verify_table(db)
-        # Clean old tokens for this user and expired ones
         db.exec(text("DELETE FROM public.email_verify_token WHERE user_id = :u OR expires_at < NOW()").bindparams(u=user.id))
         raw = secrets.token_urlsafe(32)
         tok_hash = _sha256(raw)
@@ -194,7 +193,6 @@ def signup(
         # Do NOT log the user in yet
         return {"ok": True, "verify_sent": True, "email": user.email}
 
-    # If verification is optional in this environment, proceed with auto-login
     token = create_access_token(user)
     set_auth_cookie(response, token)
     return {"email": user.email, "tier": user.tier, "name": user.name or "", "role": getattr(user, "role", "user")}
@@ -202,6 +200,7 @@ def signup(
 @router.post("/login")
 @limiter.limit("12/minute; 120/hour")  # brute-force guard per IP
 def login(
+    request: Request,  # <-- added
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
@@ -212,7 +211,6 @@ def login(
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Block unverified users if required
     if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
         print("LOGIN_BLOCKED", {
             "email": user.email,
@@ -234,19 +232,20 @@ def login(
         "name": user.name or "",
         "role": getattr(user, "role", "user"),
         "needs_reconsent": needs_reconsent,
-        "access_token": token,  # optional for legacy clients
+        "access_token": token,
         "token_type": "bearer",
     }
 
 @router.post("/logout")
 @limiter.limit("30/minute")  # cheap
-def logout(response: Response):
+def logout(request: Request, response: Response):  # <-- added request
     clear_auth_cookie(response)
     return {"ok": True}
 
 @router.post("/change-password")
 @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 def change_password(
+    request: Request,  # <-- added
     payload: ChangePasswordIn,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -263,6 +262,7 @@ def change_password(
 @router.post("/logout-all")
 @limiter.limit("3/minute; 30/hour", key_func=key_user_or_ip)
 def logout_all(
+    request: Request,  # <-- added
     response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -312,6 +312,7 @@ def accept_terms(
 @router.post("/verify/start", status_code=204)
 @limiter.limit("3/minute; 30/hour")  # avoid email spam & enumeration attempts
 def verify_start(
+    request: Request,  # <-- added
     body: VerifyStartIn,
     background: BackgroundTasks,
     db: Session = Depends(get_session),
@@ -325,7 +326,6 @@ def verify_start(
     if not user or _is_verified(user):
         return
 
-    # Cleanup and issue a new token
     db.exec(text("DELETE FROM public.email_verify_token WHERE user_id = :u OR expires_at < NOW()")
             .bindparams(u=user.id))
     raw = secrets.token_urlsafe(32)
@@ -344,13 +344,13 @@ def verify_start(
 @router.post("/verify/confirm")
 @limiter.limit("12/minute; 120/hour")
 def verify_confirm(
+    request: Request,  # <-- added
     payload: VerifyConfirmIn,
     db: Session = Depends(get_session),
 ):
     _ensure_email_verify_table(db)
     tok_hash = _sha256(payload.token)
 
-    # Validate in SQL to avoid tz pitfalls
     rec = db.exec(text("""
         SELECT id, user_id
         FROM public.email_verify_token
@@ -378,21 +378,31 @@ def verify_confirm(
 
 @router.post("/resend-verification", status_code=204)
 @limiter.limit("3/minute; 30/hour")
-def resend_verification(body: VerifyStartIn, background: BackgroundTasks, db: Session = Depends(get_session)):
+def resend_verification(
+    request: Request,  # <-- added
+    body: VerifyStartIn,
+    background: BackgroundTasks,
+    db: Session = Depends(get_session),
+):
     # Alias of /verify/start to support older clients
-    return verify_start(body, background, db)
+    return verify_start(request=request, body=body, background=background, db=db)
 
 @router.get("/verify-email")
 @limiter.limit("12/minute; 120/hour")
-def verify_email(token: str, db: Session = Depends(get_session)):
+def verify_email(
+    request: Request,  # <-- added
+    token: str,
+    db: Session = Depends(get_session),
+):
     # Alias that accepts token via query param (GET) for older clients
-    return verify_confirm(VerifyConfirmIn(token=token), db)
+    return verify_confirm(request=request, payload=VerifyConfirmIn(token=token), db=db)
 
 # ---------- Soft session probe (never 401) ----------
 
 @router.get("/me")
 @limiter.limit("120/minute")
 def soft_me(
+    request: Request,  # <-- added
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):
@@ -425,7 +435,11 @@ def soft_me(
 
 @router.get("/whoami")
 @limiter.limit("120/minute", key_func=key_user_or_ip)
-def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
+def whoami(
+    request: Request,  # <-- added
+    user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
     user = db.exec(select(User).where(User.email == user_email)).first()
     return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier, "name": user.name or ""}
 
@@ -434,6 +448,7 @@ def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(ge
 @alias.get("/me")
 @limiter.limit("120/minute")
 def soft_me_alias(
+    request: Request,  # <-- added
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):
