@@ -21,7 +21,7 @@ from app.parsers.parser import parse_and_clean_bytes  # txt/md/pdf/docx/pptx/xls
 from app.storage.storage import get_storage
 
 # 🔒 SlowAPI (endpoint-level guard; plan-aware limits enforced inside)
-from app.rate_limit import limiter
+from app.rate_limit import limiter, key_user_or_ip
 
 router = APIRouter(prefix="/api/v1", tags=["upload"])
 logger = logging.getLogger("uvicorn.error")
@@ -177,8 +177,9 @@ def _ensure_tables(db: Session) -> None:
 
 # ---------- routes ----------
 @router.get("/upload/check")
-@limiter.limit("60/minute")  # cheap, but prevent scraping
+@limiter.limit("60/minute", key_func=key_user_or_ip)  # cheap, but prevent scraping
 def check_duplicate(
+    request: Request,  # required by SlowAPI
     session_id: int,
     sha256: str,
     size: int,
@@ -234,9 +235,9 @@ def check_duplicate(
 
 
 @router.post("/upload")
-@limiter.limit("8/minute; 80/hour")  # coarse guard; plan-aware caps enforced below
+@limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
 async def upload_file(
-    request: Request,
+    request: Request,  # required by SlowAPI
     session_id: int = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_session),
