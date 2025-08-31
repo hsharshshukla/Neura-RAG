@@ -1,11 +1,14 @@
 # app/routes/auth.py
-from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie, status, BackgroundTasks
-from sqlmodel import Session, select
-from jose import jwt, JWTError
-from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel, Field, EmailStr
-from typing import Optional
+from __future__ import annotations
+
 import os, hashlib, secrets
+from typing import Optional
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie, BackgroundTasks
+from jose import jwt, JWTError
+from pydantic import BaseModel, Field, EmailStr
+from sqlmodel import Session, select
 from sqlalchemy import text
 
 from app.db import get_session
@@ -14,11 +17,14 @@ from app.deps.auth import get_current_user
 from app.utils.security import get_password_hash, verify_password
 from app.utils.logger import log_event
 from app.utils.mailer import send_email_verification
-from datetime import datetime, timezone
+
+# 🔒 SlowAPI per-endpoint limiter
+from app.rate_limit import limiter, key_user_or_ip
+
+# ---- config ----
 LEGACY_VERIFY_CUTOFF = os.getenv("LEGACY_VERIFY_CUTOFF_ISO", "2025-08-24T00:00:00Z")
 REQUIRE_EMAIL_VERIFICATION = os.getenv("REQUIRE_EMAIL_VERIFICATION", "true").lower() in ("1","true","yes","on")
 
-# ---- config ----
 CURRENT_TOS_VERSION = os.getenv("TOS_VERSION", "2025-08-01")
 CURRENT_PRIVACY_VERSION = os.getenv("PRIVACY_VERSION", "2025-08-01")
 
@@ -28,7 +34,6 @@ ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
 
 # Email verification
 VERIFY_TOKEN_TTL_HOURS = int(os.getenv("VERIFY_TOKEN_TTL_HOURS", "24"))
-REQUIRE_EMAIL_VERIFICATION = os.getenv("REQUIRE_EMAIL_VERIFICATION", "true").lower() in ("1", "true", "yes", "on")
 FRONTEND_URL = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
 
 # Cookie settings (dev-friendly defaults)
@@ -98,18 +103,9 @@ def _set_user_verified(user: User) -> None:
     if hasattr(user, "verified_at"):
         setattr(user, "verified_at", now)
 
-# def _is_verified(user: User) -> bool:
-#     return bool(
-#         getattr(user, "email_verified_at", None)  # current field
-#         or getattr(user, "verified_at", None)    # future/alt
-#         or getattr(user, "verified", False)
-#         or getattr(user, "email_verified", False)
-#     )
 def _is_verified(user: User) -> bool:
     # Strict: only accept the canonical field we write on confirm/backfill
     return bool(getattr(user, "email_verified_at", None))
-    
-
 
 # ---- models ----
 class ChangePasswordIn(BaseModel):
@@ -124,6 +120,7 @@ class VerifyConfirmIn(BaseModel):
 # ---- routes (authn) ----
 
 @router.post("/signup")
+@limiter.limit("6/minute; 60/hour")  # tight, anonymous
 def signup(
     request: Request,
     response: Response,
@@ -203,6 +200,7 @@ def signup(
     return {"email": user.email, "tier": user.tier, "name": user.name or "", "role": getattr(user, "role", "user")}
 
 @router.post("/login")
+@limiter.limit("12/minute; 120/hour")  # brute-force guard per IP
 def login(
     response: Response,
     email: str = Form(...),
@@ -216,11 +214,10 @@ def login(
 
     # Block unverified users if required
     if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
-    # if REQUIRE_EMAIL_VERIFICATION and not getattr(user, "email_verified_at", None):
         print("LOGIN_BLOCKED", {
-        "email": user.email,
-        "created_at": str(getattr(user, "created_at", None)),
-        "email_verified_at": str(getattr(user, "email_verified_at", None)),
+            "email": user.email,
+            "created_at": str(getattr(user, "created_at", None)),
+            "email_verified_at": str(getattr(user, "email_verified_at", None)),
         })
         raise HTTPException(status_code=403, detail="Email not verified")
 
@@ -242,11 +239,13 @@ def login(
     }
 
 @router.post("/logout")
+@limiter.limit("30/minute")  # cheap
 def logout(response: Response):
     clear_auth_cookie(response)
     return {"ok": True}
 
 @router.post("/change-password")
+@limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 def change_password(
     payload: ChangePasswordIn,
     user_email: str = Depends(get_current_user),
@@ -262,6 +261,7 @@ def change_password(
     return {"ok": True}
 
 @router.post("/logout-all")
+@limiter.limit("3/minute; 30/hour", key_func=key_user_or_ip)
 def logout_all(
     response: Response,
     user_email: str = Depends(get_current_user),
@@ -277,6 +277,7 @@ def logout_all(
     return {"ok": True}
 
 @router.post("/accept-terms")
+@limiter.limit("20/minute", key_func=key_user_or_ip)
 def accept_terms(
     request: Request,
     user_email: str = Depends(get_current_user),
@@ -309,6 +310,7 @@ def accept_terms(
 # ---------- Email verification endpoints ----------
 
 @router.post("/verify/start", status_code=204)
+@limiter.limit("3/minute; 30/hour")  # avoid email spam & enumeration attempts
 def verify_start(
     body: VerifyStartIn,
     background: BackgroundTasks,
@@ -340,6 +342,7 @@ def verify_start(
     return
 
 @router.post("/verify/confirm")
+@limiter.limit("12/minute; 120/hour")
 def verify_confirm(
     payload: VerifyConfirmIn,
     db: Session = Depends(get_session),
@@ -374,11 +377,13 @@ def verify_confirm(
 # ---- Compatibility aliases (keep UI flexible) ----
 
 @router.post("/resend-verification", status_code=204)
+@limiter.limit("3/minute; 30/hour")
 def resend_verification(body: VerifyStartIn, background: BackgroundTasks, db: Session = Depends(get_session)):
     # Alias of /verify/start to support older clients
     return verify_start(body, background, db)
 
 @router.get("/verify-email")
+@limiter.limit("12/minute; 120/hour")
 def verify_email(token: str, db: Session = Depends(get_session)):
     # Alias that accepts token via query param (GET) for older clients
     return verify_confirm(VerifyConfirmIn(token=token), db)
@@ -386,6 +391,7 @@ def verify_email(token: str, db: Session = Depends(get_session)):
 # ---------- Soft session probe (never 401) ----------
 
 @router.get("/me")
+@limiter.limit("120/minute")
 def soft_me(
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
@@ -418,6 +424,7 @@ def soft_me(
 # ---------- Strict identity (401 if not logged in) ----------
 
 @router.get("/whoami")
+@limiter.limit("120/minute", key_func=key_user_or_ip)
 def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
     user = db.exec(select(User).where(User.email == user_email)).first()
     return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier, "name": user.name or ""}
@@ -425,6 +432,7 @@ def whoami(user_email: str = Depends(get_current_user), db: Session = Depends(ge
 # ---------- Soft alias at /api/v1/me ----------
 
 @alias.get("/me")
+@limiter.limit("120/minute")
 def soft_me_alias(
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),

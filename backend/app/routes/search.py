@@ -1,19 +1,124 @@
 # app/routes/search.py
+from __future__ import annotations
+
 import logging
 import inspect
+import os
 from typing import Dict, Any, List, Optional
+
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
+from sqlalchemy import text
+from datetime import datetime, timedelta
 
 from app.db import get_session
 from app.models import ChatSession, ChatMessage, User
 from app.deps.auth import get_current_user
 from app.vector_store import query_user_docs  # keep your existing import
 
+# 🔒 SlowAPI (endpoint-level guard; plan-aware caps enforced in code)
+from app.rate_limit import limiter
+
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/api/v1", tags=["search"])
 
-# ---------- helpers ----------
+
+# ---------- plan helpers ----------
+def _plan_topk(plan_tier: str) -> int:
+    """
+    Per-request result cap (top_k / limit) by plan.
+    Env overrides (ints): SEARCH_TOPK_FREE, SEARCH_TOPK_MINI, SEARCH_TOPK_PRO
+    Defaults: Free=5, Mini+=8, Pro=12
+    """
+    p = (plan_tier or "free").strip().lower()
+    def geti(name: str, default: int) -> int:
+        v = os.getenv(name, "").strip()
+        return int(v) if v.isdigit() else default
+
+    if p == "pro":
+        return geti("SEARCH_TOPK_PRO", 12)
+    if "mini" in p:
+        return geti("SEARCH_TOPK_MINI", 8)
+    return geti("SEARCH_TOPK_FREE", 5)
+
+
+def _plan_search_knobs(plan_tier: str) -> dict:
+    """
+    Per-plan RPM/RPH for search.
+    Env overrides:
+      SEARCH_RPM_FREE, SEARCH_RPH_FREE
+      SEARCH_RPM_MINI, SEARCH_RPH_MINI
+      SEARCH_RPM_PRO,  SEARCH_RPH_PRO
+    Defaults: Free=20/300, Mini+=40/800, Pro=60/1200
+    """
+    p = (plan_tier or "free").strip().lower()
+    def geti(name: str, default: int) -> int:
+        v = os.getenv(name, "").strip()
+        return int(v) if v.isdigit() else default
+
+    if p == "pro":
+        return {"rpm": geti("SEARCH_RPM_PRO", 60), "rph": geti("SEARCH_RPH_PRO", 1200)}
+    if "mini" in p:
+        return {"rpm": geti("SEARCH_RPM_MINI", 40), "rph": geti("SEARCH_RPH_MINI", 800)}
+    return {"rpm": geti("SEARCH_RPM_FREE", 20), "rph": geti("SEARCH_RPH_FREE", 300)}
+
+
+# ---------- db helpers ----------
+def _ensure_tables(db: Session) -> None:
+    """
+    Creates a lightweight search_log table if it doesn't exist.
+    (Independent from SQLModel metadata to keep this endpoint decoupled.)
+    """
+    db.exec(text("""
+        CREATE TABLE IF NOT EXISTS public.search_log (
+            id BIGSERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            q TEXT NOT NULL,
+            session_id TEXT,
+            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+        );
+    """))
+    db.commit()
+
+
+def _log_search(db: Session, user_id: int, q: str, session_id: Optional[str]) -> None:
+    db.exec(text("""
+        INSERT INTO public.search_log (user_id, q, session_id)
+        VALUES (:u, :q, :s)
+    """).bindparams(u=user_id, q=q[:1000], s=session_id))
+    db.commit()
+
+
+def _enforce_plan_search_rates(db: Session, user_id: int, plan_tier: str) -> None:
+    """
+    Enforce per-plan RPM / RPH using timestamps in search_log.
+    Call this BEFORE executing the search, then record a row.
+    """
+    knobs = _plan_search_knobs(plan_tier)
+    rpm, rph = knobs["rpm"], knobs["rph"]
+
+    now = datetime.utcnow()
+    one_min_ago = now - timedelta(minutes=1)
+    one_hr_ago = now - timedelta(hours=1)
+
+    used_min = db.exec(text("""
+        SELECT COUNT(1) FROM public.search_log
+        WHERE user_id = :u AND created_at >= :t
+    """).bindparams(u=user_id, t=one_min_ago)).one()
+
+    if used_min >= rpm:
+        raise HTTPException(status_code=429, detail=f"Per-minute search limit reached for your plan ({rpm}/minute). Try again soon.")
+
+    used_hr = db.exec(text("""
+        SELECT COUNT(1) FROM public.search_log
+        WHERE user_id = :u AND created_at >= :t
+    """).bindparams(u=user_id, t=one_hr_ago)).one()
+
+    if used_hr >= rph:
+        raise HTTPException(status_code=429, detail=f"Per-hour search limit reached for your plan ({rph}/hour). Please try later.")
+
+
+# ---------- utility helpers (existing patterns) ----------
 def _resolve_user(db: Session, current_user: Any) -> User:
     if isinstance(current_user, User):
         return current_user
@@ -47,18 +152,13 @@ def _call_query_user_docs(user_email: str, question: str, top_k: int, py_filters
     - If it supports 'filter_by' or 'filters', pass them.
     - Else call without and filter in Python.
     """
-    sig = None
     try:
         sig = inspect.signature(query_user_docs)
     except Exception:
         sig = None
 
-    supports_filter_by = False
-    supports_filters = False
-    if sig:
-        params = sig.parameters
-        supports_filter_by = "filter_by" in params
-        supports_filters = "filters" in params
+    supports_filter_by = bool(sig and "filter_by" in sig.parameters)
+    supports_filters = bool(sig and "filters" in sig.parameters)
 
     try_kwargs = dict(user_email=user_email, question=question, top_k=top_k)
     try:
@@ -66,23 +166,36 @@ def _call_query_user_docs(user_email: str, question: str, top_k: int, py_filters
             return query_user_docs(**{**try_kwargs, "filter_by": py_filters}) or []
         if supports_filters:
             return query_user_docs(**{**try_kwargs, "filters": py_filters}) or []
-        # No filter support
         return query_user_docs(**try_kwargs) or []
     except TypeError:
-        # Fallback if signature inspection lied
         return query_user_docs(**try_kwargs) or []
 
+
 @router.get("/search")
+@limiter.limit("40/minute; 600/hour")  # coarse guard; plan-aware caps below
 def global_search(
     q: str = Query(..., min_length=2),
     session_id: Optional[str] = None,
-    plan: str = "Free",
+    plan: str = "Free",  # kept for bw-compat, but we derive from user.tier
     limit: int = 10,
     current_user: Any = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> Dict[str, List[Dict[str, Any]]]:
     try:
+        _ensure_tables(db)
+
         user = _resolve_user(db, current_user)
+        # 👇 Always derive effective plan from the actual user tier
+        plan_tier = (getattr(user, "tier", None) or plan or "Free")
+        plan_tier_lc = plan_tier.lower()
+
+        # ---- Plan-based RPM/RPH (DB-backed)
+        _enforce_plan_search_rates(db, user.id, plan_tier)
+
+        # ---- Plan-based cap for per-request result size
+        plan_cap = _plan_topk(plan_tier)
+        limit = max(1, min(limit, plan_cap))
+
         q_like = f"%{q}%"
 
         # ------ Chat sessions by title
@@ -138,7 +251,7 @@ def global_search(
             })
 
         # ------ Docs via vector search (dynamic-filter support)
-        is_free = (plan or "").lower().startswith("free")
+        is_free = plan_tier_lc.startswith("free")
         py_filters: Dict[str, Any] = {"user_email": user.email}
         if is_free and session_id:
             py_filters["session_id"] = str(session_id)
@@ -146,7 +259,7 @@ def global_search(
         raw_docs: List[Any] = _call_query_user_docs(
             user_email=user.email,
             question=q,
-            top_k=limit,
+            top_k=limit,          # <- plan-capped
             py_filters=py_filters,
         )
 
@@ -180,6 +293,13 @@ def global_search(
                 "chunk_id": meta.get("chunk_id"),
                 "session_id": meta.get("session_id"),
             })
+
+        # Record the search after enforcement to count towards future windows
+        try:
+            _log_search(db, user.id, q, session_id)
+        except Exception:
+            # Never break user flow on logging failure
+            logger.exception("search_log insert failed")
 
         # sort chats by message recency proxy
         chats_sorted = sorted(chats, key=lambda x: x.get("message_id", 0), reverse=True)[:limit]

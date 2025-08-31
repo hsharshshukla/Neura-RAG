@@ -6,9 +6,9 @@ from typing import Any, Dict, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
-from sqlalchemy import select as sa_select
+from sqlalchemy import select as sa_select, text
 import logging
 
 from app.db import get_session
@@ -18,6 +18,7 @@ from app.config import (
     PLAN_MINI, PLAN_PRO, PLAN_FREE,
     monthly_usage_percent,
 )
+from app.rate_limit import limiter  # 🔒 SlowAPI per-endpoint limiter
 
 from app.email.events import (
     send_subscription_activated,
@@ -274,6 +275,46 @@ def _should_fire_activation_email_snapshot(user: User, new_plan: str, incoming_p
         return True
     return False
 
+# -------------------- RL + Webhook infra --------------------
+
+def _ensure_billing_tables(db: Session) -> None:
+    """
+    Minimal table for webhook idempotency & audits.
+    """
+    db.exec(text("""
+        CREATE TABLE IF NOT EXISTS public.billing_event (
+            id BIGSERIAL PRIMARY KEY,
+            event_id TEXT NOT NULL UNIQUE,
+            event_type TEXT,
+            provider TEXT,
+            user_id INTEGER,
+            payload JSONB,
+            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+        );
+    """))
+    db.commit()
+
+def _is_trusted_webhook(req: Request) -> bool:
+    """
+    Used by SlowAPI's exempt_when: bypass RL when a recognizable signature header is present.
+    Cryptographic verification still happens in the handler.
+    """
+    if GATEWAY == "razorpay":
+        return bool(req.headers.get("X-Razorpay-Signature"))
+    # generic / future providers
+    return bool(req.headers.get("X-Signature"))
+
+def _webhook_event_id(raw: bytes, info: Dict[str, Any]) -> str:
+    """
+    Best-effort unique id for idempotency:
+      - prefer payment_id when present
+      - else hash of raw body
+    """
+    pid = (info.get("payment_id") or "").strip()
+    if pid:
+        return f"rzp:{pid}"
+    return hashlib.sha256(raw).hexdigest()
+
 # -------------------- dispatcher (dummy/razorpay) --------------------
 
 async def _create_checkout_url(request: Request, user: User, plan: str) -> str:
@@ -311,6 +352,7 @@ def _verify_and_parse_webhook(request: Request, raw: bytes) -> dict:
 # -------------------- routes --------------------
 
 @router.get("/guard")
+@limiter.limit("120/minute")
 def vpn_guard(request: Request):
     cc = _detect_country(request)
     cur = _currency_for_country(cc)
@@ -325,6 +367,7 @@ def vpn_guard(request: Request):
     }
 
 @router.get("/prices")
+@limiter.limit("60/minute")
 def get_prices(request: Request):
     cc = _detect_country(request)
     currency = _currency_for_country(cc)
@@ -332,6 +375,7 @@ def get_prices(request: Request):
     return {"currency": currency, "country": cc, **p}
 
 @router.get("/status")
+@limiter.limit("60/minute")
 def billing_status(
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -358,6 +402,7 @@ def billing_status(
     return resp
 
 @router.post("/checkout")
+@limiter.limit("6/minute; 60/hour")
 async def start_checkout(
     body: Dict[str, Any],
     request: Request,
@@ -413,6 +458,7 @@ async def start_checkout(
     raise HTTPException(status_code=501, detail=f"Provider {GATEWAY} not implemented")
 
 @router.post("/webhook")
+@limiter.limit("30/minute", exempt_when=_is_trusted_webhook)  # bypass RL for signed gateway calls
 async def handle_webhook(
     request: Request,
     db: Session = Depends(get_session),
@@ -423,37 +469,65 @@ async def handle_webhook(
       • Dummy: ignore paid path (we email in /checkout)
       • Row-lock user to avoid concurrent duplicate sends
       • Snapshot guard to avoid resends on retries/out-of-order deliveries
+      • Idempotent via billing_event(event_id UNIQUE)
     """
     raw = await request.body()
+
+    # Verify + parse provider payload
     info = _verify_and_parse_webhook(request, raw)
+
+    # Ensure idempotency infra
+    _ensure_billing_tables(db)
+    event_id = _webhook_event_id(raw, info)
+    event_type = (info.get("event") or "").lower()
+    provider = GATEWAY
+
+    # Idempotency check
+    already = db.exec(text("SELECT 1 FROM public.billing_event WHERE event_id = :e").bindparams(e=event_id)).first()
+    if already:
+        return {"status": "ok", "idempotent": True}
 
     user_id = info.get("user_id")
     plan = info.get("plan")
-    event = (info.get("event") or "").lower()
     payment_id = info.get("payment_id")
 
     if not user_id:
-        return {"status": "ignored", "reason": "no user_id", "event": event}
+        # Record and acknowledge so gateway doesn't retry forever
+        db.exec(text("""
+            INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+            VALUES (:i, :t, :p, :u, :j)
+        """).bindparams(i=event_id, t=event_type, p=provider, u=None, j=json.dumps(info)))
+        db.commit()
+        return {"status": "ignored", "reason": "no user_id", "event": event_type}
 
     if GATEWAY == "razorpay":
         paid_events = {"payment_link.paid", "order.paid", "payment.captured"}
-        is_paid = (event in paid_events)
+        is_paid = (event_type in paid_events)
     else:
-        # In dummy/dev we already emailed in /checkout to avoid dupes.
         is_paid = False
 
-    # Payment failures (Razorpay) still notify
-    if event in {"payment_link.failed", "order.payment.failed"}:
+    # Payment failures (Razorpay): notify, record, and ack
+    if event_type in {"payment_link.failed", "order.payment.failed"}:
         try:
             user = db.get(User, user_id)
             if user:
                 await send_payment_failed(user.email)
         except Exception as e:
-            log.exception("send_payment_failed failed (event=%s uid=%s): %s", event, user_id, e)
-        return {"status": "ok", "event": event}
+            log.exception("send_payment_failed failed (event=%s uid=%s): %s", event_type, user_id, e)
+        db.exec(text("""
+            INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+            VALUES (:i, :t, :p, :u, :j)
+        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+        db.commit()
+        return {"status": "ok", "event": event_type}
 
     if not (is_paid and plan in {PLAN_MINI, PLAN_PRO}):
-        return {"status": "ignored", "event": event}
+        db.exec(text("""
+            INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+            VALUES (:i, :t, :p, :u, :j)
+        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+        db.commit()
+        return {"status": "ignored", "event": event_type}
 
     # ---- Serialize per-user with row lock ----
     try:
@@ -461,7 +535,13 @@ async def handle_webhook(
             locked_stmt = sa_select(User).where(User.id == user_id).with_for_update()
             user = db.exec(locked_stmt).first()
             if not user:
-                return {"status": "ignored", "reason": "user missing", "event": event}
+                # Still record event so retries won't reprocess
+                db.exec(text("""
+                    INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+                    VALUES (:i, :t, :p, :u, :j)
+                """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+                db.commit()
+                return {"status": "ignored", "reason": "user missing", "event": event_type}
 
             should_notify = _should_fire_activation_email_snapshot(user, plan, payment_id)
             pre_tier = (user.tier or PLAN_FREE).lower()
@@ -478,6 +558,13 @@ async def handle_webhook(
             _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
             db.add(user)
 
+        # Record event AFTER successful state update (keeps idempotency)
+        db.exec(text("""
+            INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+            VALUES (:i, :t, :p, :u, :j)
+        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+        db.commit()
+
         if should_notify:
             try:
                 await send_subscription_activated(user.email, plan)
@@ -486,15 +573,25 @@ async def handle_webhook(
         else:
             log.info(
                 "Skip activation email (duplicate) uid=%s plan=%s event=%s pid=%s [pre: tier=%s cancel=%s pid=%s]",
-                user_id, plan, event, payment_id, pre_tier, pre_cancel, pre_pid
+                user_id, plan, event_type, payment_id, pre_tier, pre_cancel, pre_pid
             )
 
-        return {"status": "ok", "event": event, "tier": user.tier}
+        return {"status": "ok", "event": event_type, "tier": user.tier}
     except Exception as e:
-        log.exception("webhook processing failed (event=%s uid=%s): %s", event, user_id, e)
-        return {"status": "error", "event": event, "detail": str(e)}
+        log.exception("webhook processing failed (event=%s uid=%s): %s", event_type, user_id, e)
+        # Record failure attempt as well (no unique violation since event_id not inserted yet if we crashed earlier)
+        try:
+            db.exec(text("""
+                INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
+                VALUES (:i, :t, :p, :u, :j)
+            """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps({"error": str(e)})))
+            db.commit()
+        except Exception:
+            pass
+        return {"status": "error", "event": event_type, "detail": str(e)}
 
 @router.post("/dev/activate")
+@limiter.limit("10/minute")
 async def dev_activate(
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
@@ -528,6 +625,7 @@ async def dev_activate(
     return {"status": "ok", "tier": user.tier, "dev": True}
 
 @router.post("/cancel")
+@limiter.limit("6/minute; 60/hour")
 async def cancel_subscription(
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
@@ -621,6 +719,7 @@ async def cancel_subscription(
         return {"status": "ok", "refunded": False, "reason": ", ".join(reason)}
 
 @router.post("/dev/test-email")
+@limiter.limit("10/minute")
 async def dev_test_email(
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
