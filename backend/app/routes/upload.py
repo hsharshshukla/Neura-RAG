@@ -32,25 +32,15 @@ ALLOWED_EXTS = {
     ".jpg", ".jpeg", ".png",
 }
 
-# Global ceiling (safety valve) — plan caps must be <= this unless overridden
+# Global ceiling (safety valve)
 GLOBAL_MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "50"))
 GLOBAL_MAX_SIZE_BYTES = GLOBAL_MAX_UPLOAD_MB * 1024 * 1024
 
 
 # ---------- plan helpers ----------
 def _plan_upload_knobs(tier: str) -> dict:
-    """
-    Return plan knobs:
-      - max_mb: per-file size cap
-      - daily_files: per-day upload count
-      - rpm/rph: per-minute/hour request caps for /upload (DB-backed)
-    Env overrides:
-      UPLOAD_MAX_MB_PRO,    UPLOAD_MAX_MB_MINI,    UPLOAD_MAX_MB_FREE
-      UPLOAD_DAILY_PRO,     UPLOAD_DAILY_MINI,     UPLOAD_DAILY_FREE
-      UPLOAD_RPM_PRO,       UPLOAD_RPM_MINI,       UPLOAD_RPM_FREE
-      UPLOAD_RPH_PRO,       UPLOAD_RPH_MINI,       UPLOAD_RPH_FREE
-    """
     t = (tier or "free").strip().lower()
+
     def geti(name: str, default: int) -> int:
         v = os.getenv(name, "").strip()
         return int(v) if v.isdigit() else default
@@ -79,9 +69,6 @@ def _plan_upload_knobs(tier: str) -> dict:
 
 
 def _enforce_plan_upload_rates(db: Session, user_id: int, tier: str) -> None:
-    """
-    Enforce per-plan RPM / RPH for uploads using DB timestamps on upload_link.
-    """
     knobs = _plan_upload_knobs(tier)
     rpm, rph = knobs["rpm"], knobs["rph"]
 
@@ -89,7 +76,6 @@ def _enforce_plan_upload_rates(db: Session, user_id: int, tier: str) -> None:
     one_min_ago = now - timedelta(minutes=1)
     one_hr_ago = now - timedelta(hours=1)
 
-    # Count per-user upload_link inserts (successful uploads) in windows
     used_min = db.exec(text("""
         SELECT COUNT(1)
         FROM public.upload_link
@@ -115,9 +101,6 @@ def _enforce_plan_upload_rates(db: Session, user_id: int, tier: str) -> None:
 
 
 def _enforce_plan_daily_count(db: Session, user_id: int, tier: str) -> None:
-    """
-    Enforce per-plan daily file count using upload_link.created_at (UTC day).
-    """
     knobs = _plan_upload_knobs(tier)
     limit = knobs["daily_files"]
     start = datetime.combine(date.today(), datetime.min.time())
@@ -137,10 +120,6 @@ def _enforce_plan_daily_count(db: Session, user_id: int, tier: str) -> None:
 
 
 def _ensure_tables(db: Session) -> None:
-    """
-    Create minimal tables in Postgres if they don't exist.
-    These are intentionally independent of your SQLModel metadata.
-    """
     db.exec(text("""
         CREATE TABLE IF NOT EXISTS public.blob (
             id BIGSERIAL PRIMARY KEY,
@@ -176,7 +155,7 @@ def _ensure_tables(db: Session) -> None:
 
 
 # ---------- routes ----------
-@router.get("/upload/check")
+@router.get("/upload/check", response_model=None)
 @limiter.limit("60/minute", key_func=key_user_or_ip)  # cheap, but prevent scraping
 def check_duplicate(
     request: Request,  # required by SlowAPI
@@ -192,30 +171,24 @@ def check_duplicate(
     """
     _ensure_tables(db)
 
-    # Ensure user exists (tenant guard)
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Plan caps
     knobs = _plan_upload_knobs(user.tier or "free")
     plan_max_mb = knobs["max_mb"]
-    # Respect the tighter of (plan cap) vs (global ceiling), unless you want plan > global
     effective_max_mb = min(plan_max_mb, GLOBAL_MAX_UPLOAD_MB)
     effective_max_bytes = effective_max_mb * 1024 * 1024
 
-    # Size preflight: fail fast so the UI never tries to upload too-large files
     if size > effective_max_bytes:
         raise HTTPException(status_code=413, detail=f"Max {effective_max_mb} MB for your plan")
 
-    # Duplicate if same sha256+size already stored once.
     blob_stmt = text(
         "SELECT sha256 FROM public.blob WHERE sha256 = :h AND bytes = :b"
     ).bindparams(h=sha256, b=size)
     blob = db.exec(blob_stmt).first()
     exists = bool(blob)
 
-    # Already linked to this session?
     link_stmt = text("""
         SELECT 1 FROM public.upload_link
         WHERE user_id = :u AND session_id = :s AND sha256 = :h
@@ -234,7 +207,7 @@ def check_duplicate(
     }
 
 
-@router.post("/upload")
+@router.post("/upload", response_model=None)
 @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
 async def upload_file(
     request: Request,  # required by SlowAPI
@@ -252,28 +225,23 @@ async def upload_file(
       - compute sha256 while streaming
       - write to temp file, then pass bytes to storage/parser
     """
-    # Streaming chunk size
     CHUNK = 1024 * 1024  # 1 MB
 
     try:
         _ensure_tables(db)
 
-        # 1) Auth
         user = db.exec(select(User).where(User.email == user_email)).first()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         tier = user.tier or "free"
         knobs = _plan_upload_knobs(tier)
 
-        # Effective per-file cap (plan vs global)
         effective_max_mb = min(knobs["max_mb"], GLOBAL_MAX_UPLOAD_MB)
         effective_max_bytes = effective_max_mb * 1024 * 1024
 
-        # Enforce per-plan RPM/RPH and daily count BEFORE reading body fully
         _enforce_plan_upload_rates(db, user.id, tier)
         _enforce_plan_daily_count(db, user.id, tier)
 
-        # 2) Session ownership
         chat = db.exec(
             select(ChatSession).where(
                 ChatSession.id == session_id,
@@ -283,7 +251,6 @@ async def upload_file(
         if not chat:
             raise HTTPException(status_code=404, detail="Chat session not found")
 
-        # 3) Validate headers and extension
         cl = request.headers.get("content-length")
         if cl and int(cl) > effective_max_bytes:
             raise HTTPException(status_code=413, detail=f"File too large (> {effective_max_mb} MB for your plan)")
@@ -295,7 +262,6 @@ async def upload_file(
 
         mime = getattr(file, "content_type", None) or ""
 
-        # 4) Stream to a temp file while hashing and enforcing size cap
         tmp_dir = Path("./uploads/tmp")
         tmp_dir.mkdir(parents=True, exist_ok=True)
         tmp_path = tmp_dir / f"up-{uuid.uuid4()}-{original_name}"
@@ -322,7 +288,6 @@ async def upload_file(
 
         sha_hex = sha.hexdigest()
 
-        # 5) Check for existing blob
         blob_sel = text(
             "SELECT sha256, storage_uri FROM public.blob WHERE sha256 = :h"
         ).bindparams(h=sha_hex)
@@ -331,7 +296,6 @@ async def upload_file(
         blob_exists = bool(blob_row)
         storage_uri = blob_row["storage_uri"] if blob_row else None
 
-        # 6) If blob missing: persist file once
         if not blob_exists:
             storage = get_storage()
             try:
@@ -380,13 +344,11 @@ async def upload_file(
             db.exec(blob_ins)
             db.commit()
 
-        # 7) Ensure embeddings exist for this blob (only once per sha256)
         emb_sel = text("SELECT 1 FROM public.embedding_index WHERE sha256 = :h").bindparams(h=sha_hex)
         embedded = db.exec(emb_sel).first()
 
         chars_indexed = 0
         if not embedded:
-            # Parse text from the temp file
             try:
                 raw = tmp_path.read_bytes()
                 try:
@@ -426,7 +388,6 @@ async def upload_file(
             db.exec(emb_ins)
             db.commit()
 
-        # 8) Create per-user, per-session link to the blob
         doc_id = str(uuid.uuid4())
         link_ins = text("""
             INSERT INTO public.upload_link (user_id, session_id, sha256, doc_id)
@@ -464,7 +425,6 @@ async def upload_file(
         logger.exception("Upload pipeline failed for %s", getattr(file, "filename", "<unknown>"))
         raise HTTPException(status_code=500, detail="Upload failed: server error")
     finally:
-        # best-effort cleanup
         try:
             if 'tmp_path' in locals() and tmp_path.exists():
                 tmp_path.unlink()
