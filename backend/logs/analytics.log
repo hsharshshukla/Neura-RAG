@@ -48544,3 +48544,470 @@ Traceback (most recent call last):
     version = _bcrypt.__about__.__version__
               ^^^^^^^^^^^^^^^^^
 AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 15:21:42,963 - [MAIL] sending password reset email to viruj8151@gmail.com from dev-no-reply@neurokron.com
+2025-08-31 15:34:23,938 - [MAIL] sending password reset to viruj8151@gmail.com from dev-no-reply@neurokron.com
+2025-08-31 15:34:27,781 - [MAIL] sent to viruj8151@gmail.com (subject='[DEV]Reset your password')
+2025-08-31 15:35:40,655 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 15:35:44,792 - [MAIL] sending verification to hoh@g.com from dev-no-reply@neurokron.com
+2025-08-31 15:35:48,625 - [MAIL] sent to hoh@g.com (subject='[DEV]Verify your email')
+2025-08-31 15:45:28,813 - send_cancellation_confirmed(period_end) failed for hoh@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 473, in cancel_subscription
+    await send_cancellation_confirmed(user.email, immediate=False, effective_at=next_renewal)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 203, in send_cancellation_confirmed
+    await _send(subject, to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 15:46:17,524 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-31 15:46:18,359 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-31 15:46:20,154 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333 "HTTP/1.1 200 OK"
+2025-08-31 15:46:20,976 - HTTP Request: GET https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev "HTTP/1.1 200 OK"
+2025-08-31 15:46:20,976 - Vector service initialized. primary=QdrantStore shadows=QdrantStore shadow_read=True
+2025-08-31 15:46:24,809 - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-08-31 15:46:25,976 - HTTP Request: POST https://8e2137a6-c778-44cb-a269-6d8a4fd71712.us-east4-0.gcp.cloud.qdrant.io:6333/collections/dev/points/search "HTTP/1.1 400 Bad Request"
+2025-08-31 15:46:25,977 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 562, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 399, in search
+    res = self.client.search(
+          ^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Bad request: Index required but not found for \\"__ns\\" of one of the following types: [keyword]. Help: Create an index for this key or use a different filter."},"time":8.139e-6}'
+2025-08-31 15:46:26,675 - CHAT | {'user': 'hoh@g.com', 'tier': 'mini', 'session_id': 27, 'question': 'hello', 'chunks_used': 0, 'grounded': False, 'model': 'gpt-4o-mini', 'policy': 'opentext_or_context', 'ctx_present': False, 'scope': {'ctx': []}}
+2025-08-31 15:50:26,663 - send_subscription_activated failed (webhook) for hoh@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 390, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 15:50:26,849 - send_subscription_activated failed (webhook) for hoh@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 390, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:05:11,856 - cancel(period_end): sending cancellation_confirmed to hoh@g.com (effective=2025-09-30 10:35:11.706544+00:00)
+2025-08-31 16:05:11,865 - send_cancellation_confirmed(period_end) failed for hoh@g.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 479, in cancel_subscription
+    await send_cancellation_confirmed(user.email, immediate=False, effective_at=next_renewal)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 203, in send_cancellation_confirmed
+    await _send(subject, to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:12:43,737 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 16:12:46,893 - [MAIL] sending verification to jaamin@123.com from dev-no-reply@neurokron.com
+2025-08-31 16:12:50,950 - [MAIL] sent to jaamin@123.com (subject='[DEV]Verify your email')
+2025-08-31 16:13:47,116 - dev_apply_plan: activating plan=mini for jaamin@123.com
+2025-08-31 16:13:47,278 - dev_apply_plan: sending subscription_activated -> jaamin@123.com
+2025-08-31 16:13:47,282 - subscription_activated send failed (dev) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 263, in _dev_apply_plan_and_email
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:13:47,890 - webhook success: activating plan=mini for jaamin@123.com
+2025-08-31 16:13:47,999 - sending subscription_activated to jaamin@123.com
+2025-08-31 16:13:48,000 - send_subscription_activated failed (webhook) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 424, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:13:48,269 - webhook success: activating plan=mini for jaamin@123.com
+2025-08-31 16:13:48,372 - sending subscription_activated to jaamin@123.com
+2025-08-31 16:13:48,373 - send_subscription_activated failed (webhook) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 424, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your M...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:20:20,266 - cancel(period_end): sending cancellation_confirmed to jaamin@123.com (effective=2025-09-30 10:50:20.125837+00:00)
+2025-08-31 16:20:20,276 - send_cancellation_confirmed(period_end) failed for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 501, in cancel_subscription
+    await send_cancellation_confirmed(user.email, immediate=False, effective_at=next_renewal)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 203, in send_cancellation_confirmed
+    await _send(subject, to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:26:24,027 - [CHECKOUT] raw plan='pro' \u2192 normalized='pro' (gateway=dummy)
+2025-08-31 16:26:24,064 - [UPGRADE] activating plan=pro for jaamin@123.com (dummy mode)
+2025-08-31 16:26:24,298 - [UPGRADE] sending subscription_activated -> jaamin@123.com
+2025-08-31 16:26:24,305 - subscription_activated send failed (dev) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 256, in _dev_apply_plan_and_email
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:26:25,013 - webhook success: activating plan=pro for jaamin@123.com
+2025-08-31 16:26:25,137 - sending subscription_activated to jaamin@123.com
+2025-08-31 16:26:25,138 - send_subscription_activated failed (webhook) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 406, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:26:25,234 - webhook success: activating plan=pro for jaamin@123.com
+2025-08-31 16:26:25,346 - sending subscription_activated to jaamin@123.com
+2025-08-31 16:26:25,346 - send_subscription_activated failed (webhook) for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 406, in handle_webhook
+    await send_subscription_activated(user.email, plan)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 119, in send_subscription_activated
+    await _send(f"Your {plan_name} subscription is active", to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Your P...nks for supporting us!'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:34:04,205 - send_cancellation_confirmed(period_end) failed for jaamin@123.com: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 508, in cancel_subscription
+    await send_cancellation_confirmed(user.email, immediate=False, effective_at=next_renewal)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 203, in send_cancellation_confirmed
+    await _send(subject, to_email, html, txt)
+  File "D:\Neura\ChatBot\backend\app\email\events.py", line 78, in _send
+    msg = EmailMessage(
+          ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EmailMessage
+from
+  Field required [type=missing, input_value={'subject': '[DEV] Cancel...localhost:3000/billing'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-08-31 16:39:34,729 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 16:39:37,843 - [MAIL] sending verification to jami@123.com from dev-no-reply@neurokron.com
+2025-08-31 16:39:41,965 - [MAIL] sent to jami@123.com (subject='[DEV]Verify your email')
+2025-08-31 16:40:15,801 - [MAIL][events] queued 'Your Mini subscription is active' to jami@123.com
+2025-08-31 16:40:16,696 - [MAIL][events] queued 'Your Mini subscription is active' to jami@123.com
+2025-08-31 16:40:17,388 - [MAIL][events] queued 'Your Mini subscription is active' to jami@123.com
+2025-08-31 16:40:19,936 - [MAIL] sent to jami@123.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 16:40:20,784 - [MAIL] sent to jami@123.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 16:40:21,054 - [MAIL] sent to jami@123.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 16:40:57,079 - [MAIL][events] queued 'Cancellation scheduled' to jami@123.com
+2025-08-31 16:41:01,078 - [MAIL] sent to jami@123.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 16:41:42,098 - [MAIL][events] queued 'Your Pro subscription is active' to jami@123.com
+2025-08-31 16:41:42,920 - [MAIL][events] queued 'Your Pro subscription is active' to jami@123.com
+2025-08-31 16:41:43,570 - [MAIL][events] queued 'Your Pro subscription is active' to jami@123.com
+2025-08-31 16:41:46,044 - [MAIL] sent to jami@123.com (subject='[DEV] Your Pro subscription is active')
+2025-08-31 16:41:47,105 - [MAIL] sent to jami@123.com (subject='[DEV] Your Pro subscription is active')
+2025-08-31 16:41:47,357 - [MAIL] sent to jami@123.com (subject='[DEV] Your Pro subscription is active')
+2025-08-31 16:41:58,847 - [MAIL][events] queued 'Cancellation scheduled' to jami@123.com
+2025-08-31 16:42:02,713 - [MAIL] sent to jami@123.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 16:43:13,595 - CONSENT_RECORDED | {'email': 'tak@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-31T11:13:12.890869Z'}
+2025-08-31 16:43:14,132 - [MAIL] sending verification to tak@g.com from dev-no-reply@neurokron.com
+2025-08-31 16:43:18,049 - [MAIL] sent to tak@g.com (subject='[DEV]Verify your email')
+2025-08-31 16:43:36,607 - [MAIL][events] queued 'Your Mini subscription is active' to tak@g.com
+2025-08-31 16:43:37,622 - [MAIL][events] queued 'Your Mini subscription is active' to tak@g.com
+2025-08-31 16:43:37,917 - [MAIL][events] queued 'Your Mini subscription is active' to tak@g.com
+2025-08-31 16:43:41,212 - [MAIL] sent to tak@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 16:43:42,185 - [MAIL] sent to tak@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 16:43:42,256 - [MAIL] sent to tak@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:11:35,252 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 17:11:35,943 - CONSENT_RECORDED | {'email': 'taki@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-31T11:41:35.252012Z'}
+2025-08-31 17:11:36,493 - [MAIL] sending verification to taki@g.com from dev-no-reply@neurokron.com
+2025-08-31 17:11:40,730 - [MAIL] sent to taki@g.com (subject='[DEV]Verify your email')
+2025-08-31 17:12:11,616 - [MAIL][events] queued 'Your Mini subscription is active' to taki@g.com
+2025-08-31 17:12:12,756 - [MAIL][events] queued 'Your Mini subscription is active' to taki@g.com
+2025-08-31 17:12:13,623 - [MAIL][events] queued 'Your Mini subscription is active' to taki@g.com
+2025-08-31 17:12:16,105 - [MAIL] sent to taki@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:12:16,877 - [MAIL] sent to taki@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:12:17,191 - [MAIL] sent to taki@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:18:25,091 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 17:18:25,752 - CONSENT_RECORDED | {'email': 'takis@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-31T11:48:25.091637Z'}
+2025-08-31 17:18:26,158 - [MAIL] sending verification to takis@g.com from dev-no-reply@neurokron.com
+2025-08-31 17:18:30,642 - [MAIL] sent to takis@g.com (subject='[DEV]Verify your email')
+2025-08-31 17:19:01,003 - [MAIL][events] queued 'Your Mini subscription is active' to takis@g.com
+2025-08-31 17:19:01,230 - [MAIL][events] queued 'Your Mini subscription is active' to takis@g.com
+2025-08-31 17:19:05,378 - [MAIL] sent to takis@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:19:05,636 - [MAIL] sent to takis@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:20:10,785 - [MAIL][events] queued 'Cancellation scheduled' to takis@g.com
+2025-08-31 17:20:14,596 - [MAIL] sent to takis@g.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 17:37:06,114 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 17:37:06,813 - CONSENT_RECORDED | {'email': 'tani@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-31T12:07:06.114177Z'}
+2025-08-31 17:37:07,259 - [MAIL] sending verification to tani@g.com from dev-no-reply@neurokron.com
+2025-08-31 17:37:11,373 - [MAIL] sent to tani@g.com (subject='[DEV]Verify your email')
+2025-08-31 17:37:39,439 - webhook processing failed (event=dummy uid=35): tier
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 199, in _key_not_found
+    self._key_fallback(key, None)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 138, in _key_fallback
+    raise KeyError(key) from err
+KeyError: 'tier'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 452, in handle_webhook
+    pre_tier = (user.tier or PLAN_FREE).lower()
+                ^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 66, in sqlalchemy.cyextension.resultproxy.BaseRow.__getattr__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 63, in sqlalchemy.cyextension.resultproxy.BaseRow._get_by_key_impl
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 201, in _key_not_found
+    raise AttributeError(ke.args[0]) from ke
+AttributeError: tier
+2025-08-31 17:37:39,610 - webhook processing failed (event=dummy uid=35): tier
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 199, in _key_not_found
+    self._key_fallback(key, None)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 138, in _key_fallback
+    raise KeyError(key) from err
+KeyError: 'tier'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 452, in handle_webhook
+    pre_tier = (user.tier or PLAN_FREE).lower()
+                ^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 66, in sqlalchemy.cyextension.resultproxy.BaseRow.__getattr__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 63, in sqlalchemy.cyextension.resultproxy.BaseRow._get_by_key_impl
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 201, in _key_not_found
+    raise AttributeError(ke.args[0]) from ke
+AttributeError: tier
+2025-08-31 17:38:32,196 - [MAIL][events] queued 'Cancellation scheduled' to tani@g.com
+2025-08-31 17:38:36,079 - [MAIL] sent to tani@g.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 17:39:08,532 - webhook processing failed (event=dummy uid=35): tier
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 199, in _key_not_found
+    self._key_fallback(key, None)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 138, in _key_fallback
+    raise KeyError(key) from err
+KeyError: 'tier'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 452, in handle_webhook
+    pre_tier = (user.tier or PLAN_FREE).lower()
+                ^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 66, in sqlalchemy.cyextension.resultproxy.BaseRow.__getattr__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 63, in sqlalchemy.cyextension.resultproxy.BaseRow._get_by_key_impl
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 201, in _key_not_found
+    raise AttributeError(ke.args[0]) from ke
+AttributeError: tier
+2025-08-31 17:39:08,641 - webhook processing failed (event=dummy uid=35): tier
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 199, in _key_not_found
+    self._key_fallback(key, None)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 138, in _key_fallback
+    raise KeyError(key) from err
+KeyError: 'tier'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\routes\billing.py", line 452, in handle_webhook
+    pre_tier = (user.tier or PLAN_FREE).lower()
+                ^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 66, in sqlalchemy.cyextension.resultproxy.BaseRow.__getattr__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 63, in sqlalchemy.cyextension.resultproxy.BaseRow._get_by_key_impl
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 201, in _key_not_found
+    raise AttributeError(ke.args[0]) from ke
+AttributeError: tier
+2025-08-31 17:40:05,482 - [MAIL][events] queued 'Cancellation scheduled' to tani@g.com
+2025-08-31 17:40:09,328 - [MAIL] sent to tani@g.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 17:43:05,204 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-08-31 17:43:05,869 - CONSENT_RECORDED | {'email': 'tanik@g.com', 'ip': '127.0.0.1', 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0', 'tos_version': '2025-08-01', 'privacy_version': '2025-08-01', 'at': '2025-08-31T12:13:05.204196Z'}
+2025-08-31 17:43:06,298 - [MAIL] sending verification to tanik@g.com from dev-no-reply@neurokron.com
+2025-08-31 17:43:10,250 - [MAIL] sent to tanik@g.com (subject='[DEV]Verify your email')
+2025-08-31 17:43:44,875 - [MAIL][events] queued 'Your Mini subscription is active' to tanik@g.com
+2025-08-31 17:43:48,809 - [MAIL] sent to tanik@g.com (subject='[DEV] Your Mini subscription is active')
+2025-08-31 17:44:13,730 - [MAIL][events] queued 'Cancellation scheduled' to tanik@g.com
+2025-08-31 17:44:17,458 - [MAIL] sent to tanik@g.com (subject='[DEV] Cancellation scheduled')
+2025-08-31 17:44:25,694 - [MAIL][events] queued 'Your Pro subscription is active' to tanik@g.com
+2025-08-31 17:44:29,422 - [MAIL] sent to tanik@g.com (subject='[DEV] Your Pro subscription is active')
+2025-08-31 17:44:34,730 - [MAIL][events] queued 'Cancellation scheduled' to tanik@g.com
+2025-08-31 17:44:38,427 - [MAIL] sent to tanik@g.com (subject='[DEV] Cancellation scheduled')

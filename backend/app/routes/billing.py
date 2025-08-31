@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
+from sqlalchemy import select as sa_select
 import logging
 
 from app.db import get_session
@@ -116,7 +117,7 @@ async def _rzp_create_payment_link(user: User, plan: str, currency: str, amount_
         "accept_partial": False,
         "reference_id": f"user_{user.id}_{plan}_{int(datetime.utcnow().timestamp())}",
         "description": f"{plan.capitalize()} plan",
-        "customer": {"name": user.name or user.email.split("@")[0], "email": user.email},
+        "customer": {"name": user.name or user.email.split('@')[0], "email": user.email},
         "notify": {"email": True, "sms": False},
         "callback_url": f"{APP_BASE_URL}/billing/success",
         "callback_method": "get",
@@ -140,9 +141,13 @@ def _rzp_verify(signature_header: str, raw_body: bytes) -> bool:
     return hmac.compare_digest(mac, signature_header or "")
 
 def _rzp_extract(evt: Dict[str, Any]) -> dict:
+    """
+    Normalize Razorpay events. Try to pull user_id/plan from any entity that has notes.
+    """
     out = {"event": evt.get("event")}
     p = evt.get("payload", {}) or {}
 
+    # payment_link.* events
     if "payment_link" in p:
         ent = (p["payment_link"].get("entity") or {})
         notes = ent.get("notes") or {}
@@ -153,12 +158,24 @@ def _rzp_extract(evt: Dict[str, Any]) -> dict:
         if payments and isinstance(payments, list):
             out["payment_id"] = payments[0].get("id")
 
+    # order.* events
     if "order" in p and not out.get("user_id"):
         ent = (p["order"].get("entity") or {})
         notes = ent.get("notes") or {}
         out["user_id"] = int(notes.get("user_id")) if str(notes.get("user_id") or "").isdigit() else None
         out["plan"] = (notes.get("plan") or "").lower() or None
         out["status"] = ent.get("status")
+
+    # payment.* events (e.g., payment.captured)
+    if "payment" in p:
+        ent = (p["payment"].get("entity") or {})
+        out["payment_id"] = out.get("payment_id") or ent.get("id")
+        notes = ent.get("notes") or {}
+        if not out.get("user_id"):
+            out["user_id"] = int(notes.get("user_id")) if str(notes.get("user_id") or "").isdigit() else None
+        if not out.get("plan"):
+            out["plan"] = (notes.get("plan") or "").lower() or None
+        out["status"] = out.get("status") or ent.get("status")
 
     return out
 
@@ -242,6 +259,21 @@ def _read_cancel_status(user: User) -> Tuple[Optional[str], Optional[datetime], 
 
     return (scheduled_plan, next_renewal, cancel_flag)
 
+# ---- Idempotency guard (pre-change snapshot) ----
+
+def _should_fire_activation_email_snapshot(user: User, new_plan: str, incoming_payment_id: Optional[str]) -> bool:
+    old_tier = (getattr(user, "tier", None) or PLAN_FREE).lower()
+    old_cancel = bool(getattr(user, "cancel_at_period_end", False))
+    old_pid = getattr(user, "last_payment_id", None)
+
+    if old_tier != new_plan:
+        return True
+    if old_cancel:
+        return True
+    if incoming_payment_id and old_pid != incoming_payment_id:
+        return True
+    return False
+
 # -------------------- dispatcher (dummy/razorpay) --------------------
 
 async def _create_checkout_url(request: Request, user: User, plan: str) -> str:
@@ -254,7 +286,6 @@ async def _create_checkout_url(request: Request, user: User, plan: str) -> str:
         return await _rzp_create_payment_link(user, plan, currency, amount_minor)
 
     if GATEWAY == "dummy":
-        # Immediate redirect URL for local testing
         return f"{APP_BASE_URL}/billing/success?plan={plan}&user={user.id}&currency={currency}&amount={amount_minor}"
 
     raise HTTPException(status_code=501, detail=f"Provider {GATEWAY} not implemented")
@@ -335,6 +366,9 @@ async def start_checkout(
 ):
     """
     body = { "plan": "mini" | "pro" }
+
+    Razorpay: return payment link (no state, no email).
+    Dummy: apply plan + renewal AND send activation email (no webhook in dev).
     """
     if _vpn_detected(request) and VPN_BLOCK_ENABLED:
         raise HTTPException(status_code=403, detail="Billing disabled while VPN/proxy is detected. Please disable VPN and retry.")
@@ -347,38 +381,18 @@ async def start_checkout(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    url = await _create_checkout_url(request, user, plan)
-    return {"url": url}
+    if GATEWAY == "razorpay":
+        url = await _create_checkout_url(request, user, plan)
+        return {"url": url}
 
-@router.post("/webhook")
-async def handle_webhook(
-    request: Request,
-    db: Session = Depends(get_session),
-):
-    """
-    Provider-agnostic webhook:
-      - Verifies HMAC (razorpay) or trusts test JSON (dummy)
-      - Extracts (user_id, plan, payment_id)
-      - On payment success → set tier to plan, stamp payment metadata,
-        clear cancel flags, and set next_renewal_at = now + 30d (cycle end).
-    """
-    raw = await request.body()
-    info = _verify_and_parse_webhook(request, raw)
+    if GATEWAY == "dummy":
+        cc = _detect_country(request, user)
+        currency = _currency_for_country(cc)
+        prices = _prices_for_currency(currency)
+        amount_minor = prices["mini_minor"] if plan == PLAN_MINI else prices["pro_minor"]
 
-    user_id = info.get("user_id")
-    plan = info.get("plan")
-    event = info.get("event")
-    payment_id = info.get("payment_id")
-
-    if not user_id:
-        return {"status": "ignored", "reason": "no user_id", "event": event}
-    user = db.get(User, user_id)
-    if not user:
-        return {"status": "ignored", "reason": "user missing", "event": event}
-
-    if event in {"payment_link.paid", "order.paid", "dummy"} and plan in {PLAN_MINI, PLAN_PRO}:
         user.tier = plan
-        _set_payment_meta_safe(user, payment_id)
+        _set_payment_meta_safe(user, f"dummy_{int(_now_utc().timestamp())}")
         try:
             if hasattr(user, "next_renewal_at"):
                 setattr(user, "next_renewal_at", _now_utc() + timedelta(days=30))
@@ -386,20 +400,99 @@ async def handle_webhook(
             pass
         _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
         db.add(user); db.commit()
+
+        # Send immediately in dummy mode (no webhook)
         try:
             await send_subscription_activated(user.email, plan)
         except Exception as e:
-            log.exception("send_subscription_activated failed (webhook) for %s: %s", user.email, e)
-        return {"status": "ok", "event": event, "tier": user.tier}
+            log.exception("send_subscription_activated failed (dummy checkout) for %s: %s", user.email, e)
 
+        url = f"{APP_BASE_URL}/billing/success?plan={plan}&user={user.id}&currency={currency}&amount={amount_minor}"
+        return {"url": url}
+
+    raise HTTPException(status_code=501, detail=f"Provider {GATEWAY} not implemented")
+
+@router.post("/webhook")
+async def handle_webhook(
+    request: Request,
+    db: Session = Depends(get_session),
+):
+    """
+    Webhook:
+      • Razorpay: accept 'payment_link.paid', 'order.paid', 'payment.captured'
+      • Dummy: ignore paid path (we email in /checkout)
+      • Row-lock user to avoid concurrent duplicate sends
+      • Snapshot guard to avoid resends on retries/out-of-order deliveries
+    """
+    raw = await request.body()
+    info = _verify_and_parse_webhook(request, raw)
+
+    user_id = info.get("user_id")
+    plan = info.get("plan")
+    event = (info.get("event") or "").lower()
+    payment_id = info.get("payment_id")
+
+    if not user_id:
+        return {"status": "ignored", "reason": "no user_id", "event": event}
+
+    if GATEWAY == "razorpay":
+        paid_events = {"payment_link.paid", "order.paid", "payment.captured"}
+        is_paid = (event in paid_events)
+    else:
+        # In dummy/dev we already emailed in /checkout to avoid dupes.
+        is_paid = False
+
+    # Payment failures (Razorpay) still notify
     if event in {"payment_link.failed", "order.payment.failed"}:
         try:
-            await send_payment_failed(user.email)
+            user = db.get(User, user_id)
+            if user:
+                await send_payment_failed(user.email)
         except Exception as e:
-            log.exception("send_payment_failed failed for %s: %s", user.email, e)
+            log.exception("send_payment_failed failed (event=%s uid=%s): %s", event, user_id, e)
         return {"status": "ok", "event": event}
 
-    return {"status": "ignored", "event": event}
+    if not (is_paid and plan in {PLAN_MINI, PLAN_PRO}):
+        return {"status": "ignored", "event": event}
+
+    # ---- Serialize per-user with row lock ----
+    try:
+        with db.begin():
+            locked_stmt = sa_select(User).where(User.id == user_id).with_for_update()
+            user = db.exec(locked_stmt).first()
+            if not user:
+                return {"status": "ignored", "reason": "user missing", "event": event}
+
+            should_notify = _should_fire_activation_email_snapshot(user, plan, payment_id)
+            pre_tier = (user.tier or PLAN_FREE).lower()
+            pre_cancel = bool(getattr(user, "cancel_at_period_end", False))
+            pre_pid = getattr(user, "last_payment_id", None)
+
+            user.tier = plan
+            _set_payment_meta_safe(user, payment_id)
+            try:
+                if hasattr(user, "next_renewal_at"):
+                    setattr(user, "next_renewal_at", _now_utc() + timedelta(days=30))
+            except Exception:
+                pass
+            _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
+            db.add(user)
+
+        if should_notify:
+            try:
+                await send_subscription_activated(user.email, plan)
+            except Exception as e:
+                log.exception("send_subscription_activated failed (webhook) for %s: %s", user.email, e)
+        else:
+            log.info(
+                "Skip activation email (duplicate) uid=%s plan=%s event=%s pid=%s [pre: tier=%s cancel=%s pid=%s]",
+                user_id, plan, event, payment_id, pre_tier, pre_cancel, pre_pid
+            )
+
+        return {"status": "ok", "event": event, "tier": user.tier}
+    except Exception as e:
+        log.exception("webhook processing failed (event=%s uid=%s): %s", event, user_id, e)
+        return {"status": "error", "event": event, "detail": str(e)}
 
 @router.post("/dev/activate")
 async def dev_activate(
@@ -408,7 +501,7 @@ async def dev_activate(
     db: Session = Depends(get_session),
 ):
     """
-    DEV only: immediately set a plan and send the activation email.
+    DEV only: immediately set a plan. (No email here; use /dev/test-email to test templates.)
     Requires PAYMENT_GATEWAY=dummy.
     """
     if GATEWAY != "dummy":
@@ -431,12 +524,6 @@ async def dev_activate(
         pass
     _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
     db.add(user); db.commit()
-
-    # Send the "subscription activated" email in dev
-    try:
-        await send_subscription_activated(user.email, plan)
-    except Exception as e:
-        log.exception("send_subscription_activated failed (dev) for %s: %s", user.email, e)
 
     return {"status": "ok", "tier": user.tier, "dev": True}
 
