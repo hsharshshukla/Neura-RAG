@@ -6,7 +6,7 @@ import inspect
 import os
 from typing import Dict, Any, List, Optional
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlmodel import Session, select
 from sqlalchemy import text
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ from app.deps.auth import get_current_user
 from app.vector_store import query_user_docs  # keep your existing import
 
 # 🔒 SlowAPI (endpoint-level guard; plan-aware caps enforced in code)
-from app.rate_limit import limiter
+from app.rate_limit import limiter, key_user_or_ip
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/api/v1", tags=["search"])
@@ -172,8 +172,9 @@ def _call_query_user_docs(user_email: str, question: str, top_k: int, py_filters
 
 
 @router.get("/search")
-@limiter.limit("40/minute; 600/hour")  # coarse guard; plan-aware caps below
+@limiter.limit("40/minute; 600/hour", key_func=key_user_or_ip)  # SlowAPI requires request in signature
 def global_search(
+    request: Request,  # <-- required by SlowAPI
     q: str = Query(..., min_length=2),
     session_id: Optional[str] = None,
     plan: str = "Free",  # kept for bw-compat, but we derive from user.tier
