@@ -1,8 +1,10 @@
 # app/routes/upload.py
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Request
-from fastapi import status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, status
+from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlmodel import Session, select
 from sqlalchemy import text
 from pathlib import Path
@@ -211,19 +213,15 @@ def check_duplicate(
 @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
 async def upload_file(
     request: Request,  # required by SlowAPI
-    session_id: int = Form(...),
-    file: UploadFile = File(...),
+    session_id: Annotated[int, Form(...)],
+    file: Annotated[StarletteUploadFile, File(...)],
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
     """
     Stores content only once by sha256; links content to user+session.
     Response: { ok, duplicate, session_id, doc_id, chars_indexed }
-    Streaming implementation to avoid 413/memory blow-ups:
-      - header pre-check (Content-Length)
-      - chunked read with hard cap (plan-aware)
-      - compute sha256 while streaming
-      - write to temp file, then pass bytes to storage/parser
+    Streaming implementation to avoid 413/memory blow-ups.
     """
     CHUNK = 1024 * 1024  # 1 MB
 
