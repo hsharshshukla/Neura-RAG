@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import logging
+import inspect
 from typing import Iterable, Optional, Set
 
 from fastapi import FastAPI, Request
@@ -52,7 +53,6 @@ app.add_middleware(SlowAPIMiddleware)
 # JSON 429 (nicer than the default HTML)
 @app.exception_handler(RateLimitExceeded)
 async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    # SlowAPI sets headers (X-RateLimit-*) automatically
     reset_in = None
     if isinstance(exc.detail, dict):
         reset_in = exc.detail.get("reset_in")
@@ -73,6 +73,24 @@ def _as_limits(s: str | Iterable[str] | None) -> list[str]:
         return [chunk.strip() for chunk in s.split(";") if chunk.strip()]
     return [str(x).strip() for x in s if str(x).strip()]
 
+def _callable_has_req_param(fn) -> bool:
+    """
+    SlowAPI's decorator requires the endpoint to accept a `request` or `websocket` param.
+    Inspect the *original* function (unwrap decorators) and verify presence.
+    """
+    # Unwrap functools.wraps, FastAPI wrappers, etc.
+    seen = set()
+    while hasattr(fn, "__wrapped__") and fn not in seen:
+        seen.add(fn)
+        fn = fn.__wrapped__  # type: ignore[attr-defined]
+
+    try:
+        params = inspect.signature(fn).parameters
+        return ("request" in params) or ("websocket" in params)
+    except (TypeError, ValueError):
+        # Builtins/callables without inspectable signature: play it safe and skip
+        return False
+
 def _limit_router(
     router,
     limits: str | Iterable[str],
@@ -83,6 +101,7 @@ def _limit_router(
     Wrap each APIRoute.endpoint in `router` with the given SlowAPI limits.
     - methods: if provided, only routes matching any of these HTTP methods are wrapped.
     - path_prefix: if provided, only paths starting with this prefix are wrapped.
+    Skips endpoints that do not accept a `request`/`websocket` parameter.
     """
     rules = _as_limits(limits)
     if not rules:
@@ -94,6 +113,15 @@ def _limit_router(
         if methods and route.methods.isdisjoint({m.upper() for m in methods}):
             continue
         if path_prefix and not route.path.startswith(path_prefix):
+            continue
+
+        # Only decorate if endpoint signature is compatible with SlowAPI
+        if not _callable_has_req_param(route.endpoint):
+            log.warning(
+                "Skipping RL for %s %s (no 'request' or 'websocket' argument).",
+                ",".join(route.methods),
+                route.path,
+            )
             continue
 
         wrapped = route.endpoint
