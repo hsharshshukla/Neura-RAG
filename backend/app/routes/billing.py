@@ -18,7 +18,7 @@ from app.config import (
     PLAN_MINI, PLAN_PRO, PLAN_FREE,
     monthly_usage_percent,
 )
-from app.rate_limit import limiter  # 🔒 SlowAPI per-endpoint limiter
+from app.rate_limit import limiter, key_user_or_ip  # 🔒 SlowAPI per-endpoint limiter
 
 from app.email.events import (
     send_subscription_activated,
@@ -591,8 +591,9 @@ async def handle_webhook(
         return {"status": "error", "event": event_type, "detail": str(e)}
 
 @router.post("/dev/activate")
-@limiter.limit("10/minute")
+@limiter.limit("10/minute", key_func=key_user_or_ip)
 async def dev_activate(
+    request: Request,                          # <-- required by SlowAPI
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -625,8 +626,9 @@ async def dev_activate(
     return {"status": "ok", "tier": user.tier, "dev": True}
 
 @router.post("/cancel")
-@limiter.limit("6/minute; 60/hour")
+@limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 async def cancel_subscription(
+    request: Request,                          # <-- required by SlowAPI
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -719,8 +721,9 @@ async def cancel_subscription(
         return {"status": "ok", "refunded": False, "reason": ", ".join(reason)}
 
 @router.post("/dev/test-email")
-@limiter.limit("10/minute")
+@limiter.limit("10/minute", key_func=key_user_or_ip)
 async def dev_test_email(
+    request: Request,                          # <-- required by SlowAPI
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
