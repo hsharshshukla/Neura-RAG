@@ -7,7 +7,7 @@ from typing import Optional, List, Tuple
 from datetime import datetime, date, timedelta
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Body
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select, func
 from openai import OpenAI
@@ -220,8 +220,8 @@ def rename_chat_session(
 async def ask(
     request: Request,  # required by SlowAPI
     response: Response,
-    # payload: ChatIn,
-    payload: ChatIn = Body(...),
+    payload: ChatIn,
+    # payload: ChatIn = Body(...),
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
