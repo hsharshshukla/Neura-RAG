@@ -246,6 +246,7 @@ def logout(request: Request, response: Response):  # <-- added request
 @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 def change_password(
     request: Request,  # <-- added
+    response: Response,
     payload: ChangePasswordIn,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -280,6 +281,7 @@ def logout_all(
 @limiter.limit("20/minute", key_func=key_user_or_ip)
 def accept_terms(
     request: Request,
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
@@ -313,6 +315,7 @@ def accept_terms(
 @limiter.limit("3/minute; 30/hour")  # avoid email spam & enumeration attempts
 def verify_start(
     request: Request,  # <-- added
+    response: Response,
     body: VerifyStartIn,
     background: BackgroundTasks,
     db: Session = Depends(get_session),
@@ -345,6 +348,7 @@ def verify_start(
 @limiter.limit("12/minute; 120/hour")
 def verify_confirm(
     request: Request,  # <-- added
+    response: Response,
     payload: VerifyConfirmIn,
     db: Session = Depends(get_session),
 ):
@@ -380,22 +384,24 @@ def verify_confirm(
 @limiter.limit("3/minute; 30/hour")
 def resend_verification(
     request: Request,  # <-- added
+    response: Response,
     body: VerifyStartIn,
     background: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
     # Alias of /verify/start to support older clients
-    return verify_start(request=request, body=body, background=background, db=db)
+    return verify_start(request=request,response=response, body=body, background=background, db=db)
 
 @router.get("/verify-email")
 @limiter.limit("12/minute; 120/hour")
 def verify_email(
     request: Request,  # <-- added
+    response: Response,
     token: str,
     db: Session = Depends(get_session),
 ):
     # Alias that accepts token via query param (GET) for older clients
-    return verify_confirm(request=request, payload=VerifyConfirmIn(token=token), db=db)
+    return verify_confirm(request=request,response=response, payload=VerifyConfirmIn(token=token), db=db)
 
 # ---------- Soft session probe (never 401) ----------
 
@@ -403,6 +409,7 @@ def verify_email(
 @limiter.limit("120/minute")
 def soft_me(
     request: Request,  # <-- added
+    response: Response,
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):
@@ -437,6 +444,7 @@ def soft_me(
 @limiter.limit("120/minute", key_func=key_user_or_ip)
 def whoami(
     request: Request,  # <-- added
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
@@ -449,6 +457,7 @@ def whoami(
 @limiter.limit("120/minute")
 def soft_me_alias(
     request: Request,  # <-- added
+    response: Response,
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):

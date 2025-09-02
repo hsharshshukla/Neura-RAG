@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, status
+
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlmodel import Session, select
 from sqlalchemy import text
@@ -161,6 +162,7 @@ def _ensure_tables(db: Session) -> None:
 @limiter.limit("60/minute", key_func=key_user_or_ip)  # cheap, but prevent scraping
 def check_duplicate(
     request: Request,  # required by SlowAPI
+    response: Response,
     session_id: int,
     sha256: str,
     size: int,
@@ -213,6 +215,7 @@ def check_duplicate(
 @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
 async def upload_file(
     request: Request,  # required by SlowAPI
+    response: Response, 
     session_id: Annotated[int, Form(...)],
     file: Annotated[StarletteUploadFile, File(...)],
     db: Session = Depends(get_session),

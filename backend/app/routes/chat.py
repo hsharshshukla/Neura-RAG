@@ -7,7 +7,7 @@ from typing import Optional, List, Tuple
 from datetime import datetime, date, timedelta
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select, func
 from openai import OpenAI
@@ -157,6 +157,7 @@ async def _maybe_bucket(request: Request, key: str):
 @limiter.limit("60/minute", key_func=key_user_or_ip)
 def get_sessions(
     request: Request,  # required by SlowAPI
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
@@ -174,6 +175,7 @@ def get_sessions(
 @limiter.limit("60/minute", key_func=key_user_or_ip)
 def get_chat_messages(
     request: Request,  # required by SlowAPI
+    response: Response,
     session_id: int,
     db: Session = Depends(get_session),
 ):
@@ -188,6 +190,7 @@ def get_chat_messages(
 @limiter.limit("15/minute; 200/hour", key_func=key_user_or_ip)
 def rename_chat_session(
     request: Request,  # required by SlowAPI
+    response: Response,
     session_id: int,
     payload: RenameIn,
     db: Session = Depends(get_session),
@@ -216,6 +219,7 @@ def rename_chat_session(
 @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)  # coarse global cap; plan-aware caps enforced below
 async def ask(
     request: Request,  # required by SlowAPI
+    response: Response,
     payload: ChatIn,
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),

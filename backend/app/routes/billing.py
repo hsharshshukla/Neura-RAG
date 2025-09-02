@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlmodel import Session, select
 from sqlalchemy import select as sa_select, text
 import logging
@@ -353,7 +353,7 @@ def _verify_and_parse_webhook(request: Request, raw: bytes) -> dict:
 
 @router.get("/guard")
 @limiter.limit("120/minute")
-def vpn_guard(request: Request):
+def vpn_guard(request: Request, response: Response):
     cc = _detect_country(request)
     cur = _currency_for_country(cc)
     vpn = _vpn_detected(request)
@@ -368,7 +368,7 @@ def vpn_guard(request: Request):
 
 @router.get("/prices")
 @limiter.limit("60/minute")
-def get_prices(request: Request):
+def get_prices(request: Request, response: Response):
     cc = _detect_country(request)
     currency = _currency_for_country(cc)
     p = _prices_for_currency(currency)
@@ -377,9 +377,10 @@ def get_prices(request: Request):
 @router.get("/status")
 @limiter.limit("60/minute")
 def billing_status(
+    request: Request,
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
-    request: Request = None,
 ):
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
@@ -404,10 +405,11 @@ def billing_status(
 @router.post("/checkout")
 @limiter.limit("6/minute; 60/hour")
 async def start_checkout(
-    body: Dict[str, Any],
-    request: Request,
+    body: Dict[str, Any], 
+    request: Request, 
+    response: Response, 
     user_email: str = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_session)
 ):
     """
     body = { "plan": "mini" | "pro" }
@@ -460,9 +462,11 @@ async def start_checkout(
 @router.post("/webhook")
 @limiter.limit("30/minute", exempt_when=_is_trusted_webhook)  # bypass RL for signed gateway calls
 async def handle_webhook(
-    request: Request,
-    db: Session = Depends(get_session),
+    request: Request, 
+    response: Response, 
+    db: Session = Depends(get_session)
 ):
+     
     """
     Webhook:
       • Razorpay: accept 'payment_link.paid', 'order.paid', 'payment.captured'
@@ -593,11 +597,13 @@ async def handle_webhook(
 @router.post("/dev/activate")
 @limiter.limit("10/minute", key_func=key_user_or_ip)
 async def dev_activate(
-    request: Request,                          # <-- required by SlowAPI
-    body: Dict[str, Any],
-    user_email: str = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    request: Request, 
+    response: Response, 
+    body: Dict[str, Any], 
+    user_email: str = Depends(get_current_user), 
+    db: Session = Depends(get_session)
 ):
+  
     """
     DEV only: immediately set a plan. (No email here; use /dev/test-email to test templates.)
     Requires PAYMENT_GATEWAY=dummy.
@@ -628,11 +634,12 @@ async def dev_activate(
 @router.post("/cancel")
 @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 async def cancel_subscription(
-    request: Request,                          # <-- required by SlowAPI
+    request: Request, response: Response,
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_session)
 ):
+  
     """
     body = { "mode": "immediate" | "period_end" }
     - period_end: keep plan active until next_renewal; schedule downgrade (no mid-month switch)
@@ -722,12 +729,8 @@ async def cancel_subscription(
 
 @router.post("/dev/test-email")
 @limiter.limit("10/minute", key_func=key_user_or_ip)
-async def dev_test_email(
-    request: Request,                          # <-- required by SlowAPI
-    body: Dict[str, Any],
-    user_email: str = Depends(get_current_user),
-    db: Session = Depends(get_session),
-):
+async def dev_test_email(request: Request, response: Response, body: Dict[str, Any], user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
+  
     """
     Dev-only helper to verify email sending and template fallbacks.
     body = { "kind": "activated" | "cancel_immediate" | "cancel_period_end" | "payment_failed" | "refund" }
