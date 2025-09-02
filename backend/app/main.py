@@ -167,13 +167,13 @@ from app.routes import (
 )
 
 # Hot / expensive endpoints (POSTs only):
-_limit_router(chat.router,   RL_CHAT,   methods={"POST"})
-_limit_router(upload.router, RL_UPLOAD, methods={"POST"})
-_limit_router(auth.router,   RL_AUTH,   methods={"POST"})
-_limit_router(auth_password.router, RL_FORGOT, methods={"POST"})
-# Search can be GET or POST depending on your impl; here we rate-limit both:
-_limit_router(search.router, RL_SEARCH, methods={"GET", "POST"})
-_limit_router(billing.router, RL_BILL, methods={"POST"}, path_prefix="/api/v1/billing")
+# _limit_router(chat.router,   RL_CHAT,   methods={"POST"})
+# _limit_router(upload.router, RL_UPLOAD, methods={"POST"})
+# _limit_router(auth.router,   RL_AUTH,   methods={"POST"})
+# _limit_router(auth_password.router, RL_FORGOT, methods={"POST"})
+# # Search can be GET or POST depending on your impl; here we rate-limit both:
+# _limit_router(search.router, RL_SEARCH, methods={"GET", "POST"})
+# _limit_router(billing.router, RL_BILL, methods={"POST"}, path_prefix="/api/v1/billing")
 
 # Now mount all routers
 app.include_router(auth.router)        # /api/v1/auth/*
