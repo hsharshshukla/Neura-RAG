@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os, time
 from textwrap import shorten
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any, Dict
 from datetime import datetime, date, timedelta
 from contextlib import asynccontextmanager
 
@@ -43,7 +43,7 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 # -----------------------------
-# Models
+# Models (kept for compatibility/docs elsewhere if needed)
 # -----------------------------
 class ChatIn(BaseModel):
     message: str
@@ -219,19 +219,40 @@ def rename_chat_session(
     db.commit()
     return {"ok": True, "title": new_title}
 
-print("")
 
 @router.post("")
 # @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)
 async def ask(
     request: Request,
     response: Response,
-    payload: ChatIn,  # ✅ JSON body (no longer parsed as query)
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
-    message = (payload.message or "").strip()
-    session_id = payload.session_id
+    # --- Accept legacy and new payload shapes ---
+    try:
+        body: Dict[str, Any] = await request.json()
+    except Exception:
+        body = {}
+
+    # message can be at:
+    #   A) body["message"]
+    #   B) body["payload"]
+    #   C) body["query"]["payload"]
+    message = (
+        (body.get("message") or "")
+        or (body.get("payload") or "")
+        or ((body.get("query") or {}).get("payload") or "")
+    )
+    message = str(message).strip()
+
+    raw_sid = body.get("session_id")
+    try:
+        session_id: Optional[int] = int(raw_sid) if raw_sid is not None else None
+    except (TypeError, ValueError):
+        session_id = None
+
+    if not message:
+        raise HTTPException(status_code=422, detail="message/payload is required")
 
     # --- Auth / user ---
     user = db.exec(select(User).where(User.email == user_email)).first()
@@ -262,6 +283,7 @@ async def ask(
             )
 
     # --- Ensure a session exists ---
+    created_new_session = False
     if not session_id:
         new_session = ChatSession(
             user_id=user.id,
@@ -272,6 +294,7 @@ async def ask(
         db.commit()
         db.refresh(new_session)
         session_id = new_session.id
+        created_new_session = True
 
     # --- Retrieval scope: Free/Mini = session-only, Pro = global
     if is_session_scoped(user.tier):
@@ -449,4 +472,7 @@ async def ask(
         },
     )
 
-    return {"response": ai, "session_id": session_id}
+    result: Dict[str, Any] = {"response": ai, "session_id": session_id}
+    if created_new_session:
+        result["title"] = _title_from_text(message)
+    return result
