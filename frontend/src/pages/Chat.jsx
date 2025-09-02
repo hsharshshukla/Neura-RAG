@@ -185,7 +185,12 @@ const Chat = () => {
   const ensureSession = async () => {
     if (activeChatId) return activeChatId;
     try {
-      const res = await secureAxios.post('/chat', { message: ' ' });
+      // const res = await secureAxios.post('/chat', { message: ' ' });
+      const res = await secureAxios.post(
+           '/chat',
+           { message: 'New chat' },
+           { headers: { 'Content-Type': 'application/json' } }
+         );
       const { session_id, title } = res.data || {};
       if (session_id) {
         setActiveChatId(session_id);
@@ -213,7 +218,12 @@ const Chat = () => {
 
     try {
       if (!activeChatId) {
-        const res = await secureAxios.post('/chat', { message: text });
+        // const res = await secureAxios.post('/chat', { message: text });
+        const res = await secureAxios.post(
+             '/chat',
+             { message: text },
+             { headers: { 'Content-Type': 'application/json' } }
+           );
         const { session_id, response, title } = res.data || {};
         if (session_id) {
           setActiveChatId(session_id);
@@ -225,7 +235,12 @@ const Chat = () => {
         }
         setChat(prev => [...prev, { role: 'assistant', content: response ?? '' }]);
       } else {
-        const res = await secureAxios.post('/chat', { message: text, session_id: activeChatId });
+        // const res = await secureAxios.post('/chat', { message: text, session_id: activeChatId });
+        const res = await secureAxios.post(
+             '/chat',
+             { message: text, session_id: activeChatId },
+             { headers: { 'Content-Type': 'application/json' } }
+           );
         const ai = res.data?.response ?? '';
         setChat(prev => [...prev, { role: 'assistant', content: ai }]);
         setChatsList(prev => reorderWithActiveTop(upsertAndBump(prev, activeChatId), activeChatId));

@@ -5,7 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, status
 
-from starlette.datastructures import UploadFile as StarletteUploadFile
+# from starlette.datastructures import UploadFile as StarletteUploadFile
+from fastapi import UploadFile
 from sqlmodel import Session, select
 from sqlalchemy import text
 from pathlib import Path
@@ -217,7 +218,8 @@ async def upload_file(
     request: Request,  # required by SlowAPI
     response: Response, 
     session_id: Annotated[int, Form(...)],
-    file: Annotated[StarletteUploadFile, File(...)],
+    # file: Annotated[StarletteUploadFile, File(...)],
+    file: Annotated[UploadFile, File(...)],
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):

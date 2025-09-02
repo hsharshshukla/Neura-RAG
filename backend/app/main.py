@@ -16,6 +16,13 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.rate_limit import limiter  # uses user-or-IP keying and Redis/memory storage
 
+# main.py (or where you create FastAPI app)
+from fastapi.exceptions import RequestValidationError
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("neura.main")
 
@@ -64,6 +71,20 @@ async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
             "retry_after_seconds": reset_in,
         },
     )
+
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body = await request.body()
+    except Exception:
+        body = b''
+    logger.error("422 Validation error on %s %s\nErrors: %s\nContent-Type: %s\nBody: %r",
+                 request.method, request.url.path, exc.errors(),
+                 request.headers.get("content-type"), body[:1000])
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
 
 def _as_limits(s: str | Iterable[str] | None) -> list[str]:
     if not s:
