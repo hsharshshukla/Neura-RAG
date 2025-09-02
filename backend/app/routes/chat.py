@@ -342,6 +342,7 @@ async def ask(
 
     model_name = plan_model(user.tier)
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    print("Open api key --------*******---: ",client)
 
     grounded = False
     ai = ""
