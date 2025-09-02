@@ -3,10 +3,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, status
-
-# from starlette.datastructures import UploadFile as StarletteUploadFile
-from fastapi import UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, status, UploadFile
 from sqlmodel import Session, select
 from sqlalchemy import text
 from pathlib import Path
@@ -160,9 +157,9 @@ def _ensure_tables(db: Session) -> None:
 
 # ---------- routes ----------
 @router.get("/upload/check", response_model=None)
-@limiter.limit("60/minute", key_func=key_user_or_ip)  # cheap, but prevent scraping
+@limiter.limit("60/minute", key_func=key_user_or_ip)
 def check_duplicate(
-    request: Request,  # required by SlowAPI
+    request: Request,
     response: Response,
     session_id: int,
     sha256: str,
@@ -213,13 +210,12 @@ def check_duplicate(
 
 
 @router.post("/upload", response_model=None)
-# @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
+# @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)
 async def upload_file(
-    request: Request,  # required by SlowAPI
-    response: Response, 
-    session_id: Annotated[int, Form(...)],
-    # file: Annotated[StarletteUploadFile, File(...)],
-    file: Annotated[UploadFile, File(...)],
+    request: Request,
+    response: Response,
+    session_id: Annotated[int, Form(...)],     # ✅ parsed from multipart form
+    file: Annotated[UploadFile, File(...)],    # ✅ parsed from multipart form
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):

@@ -21,11 +21,11 @@ from app.utils.logger import log_event
 from app.prompting.product import infer_scope_products, make_system_prompt
 from app.utils.redaction import redact_source_identity
 
-# Plan config & helpers (standardized to app.config.*)
+# Plan config & helpers
 from app.config.plan_policy import (
-    plan_limit,          # daily chat limit (-1 = unlimited)
-    plan_model,          # pick model by tier
-    is_session_scoped,   # Free/Mini = session-only; Pro = global
+    plan_limit,
+    plan_model,
+    is_session_scoped,
     monthly_token_limit_for,
     monthly_tokens_used,
 )
@@ -52,6 +52,11 @@ class ChatIn(BaseModel):
 
 class RenameIn(BaseModel):
     title: str
+
+
+# ✅ Make Pydantic resolve models when using future annotations
+ChatIn.model_rebuild()
+RenameIn.model_rebuild()
 
 
 # -----------------------------
@@ -156,7 +161,7 @@ async def _maybe_bucket(request: Request, key: str):
 @router.get("/sessions", response_model=List[ChatSessionOut])
 @limiter.limit("60/minute", key_func=key_user_or_ip)
 def get_sessions(
-    request: Request,  # required by SlowAPI
+    request: Request,
     response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -174,7 +179,7 @@ def get_sessions(
 @router.get("/{session_id}", response_model=List[ChatMessageOut])
 @limiter.limit("60/minute", key_func=key_user_or_ip)
 def get_chat_messages(
-    request: Request,  # required by SlowAPI
+    request: Request,
     response: Response,
     session_id: int,
     db: Session = Depends(get_session),
@@ -189,7 +194,7 @@ def get_chat_messages(
 @router.patch("/{session_id}/title")
 @limiter.limit("15/minute; 200/hour", key_func=key_user_or_ip)
 def rename_chat_session(
-    request: Request,  # required by SlowAPI
+    request: Request,
     response: Response,
     session_id: int,
     payload: RenameIn,
@@ -216,12 +221,11 @@ def rename_chat_session(
 
 
 @router.post("")
-# @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)  # coarse global cap; plan-aware caps enforced below
+# @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)
 async def ask(
-    request: Request,  # required by SlowAPI
+    request: Request,
     response: Response,
-    payload: ChatIn,
-    # payload: ChatIn = Body(...),
+    payload: ChatIn,  # ✅ JSON body (no longer parsed as query)
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
@@ -425,10 +429,9 @@ async def ask(
                 retrieved_tokens=0,
             )
     except Exception:
-        # Don't block user flow if analytics write fails
         pass
 
-    # --- App event log (unchanged)
+    # --- App event log
     log_event(
         "chat",
         {
