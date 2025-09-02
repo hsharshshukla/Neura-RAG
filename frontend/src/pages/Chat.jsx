@@ -186,7 +186,8 @@ const Chat = () => {
     try {
       // IMPORTANT: backend expects { query: { payload: string } }
       const res = await secureAxios.post('/chat', {
-        query: { payload: 'New chat' }
+        // query: { payload: 'New chat' }
+        payload: 'New chat'
       });
       const { session_id, title } = res.data || {};
       if (session_id) {
@@ -217,7 +218,8 @@ const Chat = () => {
       if (!activeChatId) {
         // First message creates a session; backend needs query.payload
         const res = await secureAxios.post('/chat', {
-          query: { payload: text }
+          // query: { payload: text }
+          payload : text
         });
         const { session_id, response, title } = res.data || {};
         if (session_id) {
@@ -232,7 +234,8 @@ const Chat = () => {
       } else {
         // Follow-up message in an existing session
         const res = await secureAxios.post('/chat', {
-          query: { payload: text },
+          // query: { payload: text },
+          payload: text,
           session_id: activeChatId
         });
         const ai = res.data?.response ?? '';
