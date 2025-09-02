@@ -7,7 +7,7 @@ from typing import Optional, List, Tuple
 from datetime import datetime, date, timedelta
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Body
 from pydantic import BaseModel
 from sqlmodel import Session, select, func
 from openai import OpenAI
@@ -216,11 +216,12 @@ def rename_chat_session(
 
 
 @router.post("")
-@limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)  # coarse global cap; plan-aware caps enforced below
+# @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)  # coarse global cap; plan-aware caps enforced below
 async def ask(
     request: Request,  # required by SlowAPI
     response: Response,
-    payload: ChatIn,
+    # payload: ChatIn,
+    payload: ChatIn = Body(...),
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):

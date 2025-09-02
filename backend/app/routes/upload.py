@@ -213,7 +213,7 @@ def check_duplicate(
 
 
 @router.post("/upload", response_model=None)
-@limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
+# @limiter.limit("8/minute; 80/hour", key_func=key_user_or_ip)  # coarse guard; plan-aware caps enforced below
 async def upload_file(
     request: Request,  # required by SlowAPI
     response: Response, 
