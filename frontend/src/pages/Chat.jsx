@@ -322,7 +322,7 @@ const Chat = () => {
 
         await secureAxios.post('/upload', fd, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            // 'Content-Type': 'multipart/form-data',
             // If your server reads this header, it can correlate to its own digest:
             'X-Content-Digest': digestHex,
           },
