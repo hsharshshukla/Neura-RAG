@@ -89,10 +89,9 @@ async function isDuplicateOnServer(sessionId, digestHex, size) {
       `/upload/check`,
       { params: { session_id: sessionId, sha256: digestHex, size } }
     );
-    // Expecting { duplicate: boolean } from server; treat truthy as duplicate
+    // Expecting { duplicate: boolean } from server
     return !!data?.duplicate;
-  } catch (err) {
-    // If the endpoint doesn’t exist (404) or anything else, just proceed as not duplicate.
+  } catch {
     return false;
   }
 }
@@ -109,7 +108,7 @@ const Chat = () => {
   const [chat, setChat] = useState([]);
   const [chatsList, setChatsList] = useState([]);
   const chatEndRef = useRef(null);
-  const [isTyping, setIsTyping] = useState(false); // 🔑 governs send availability
+  const [isTyping, setIsTyping] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
 
   // rename UI state
@@ -152,7 +151,7 @@ const Chat = () => {
   const fetchChats = async () => {
     try {
       const res = await secureAxios.get('/chat/sessions');
-    const sorted = reorderWithActiveTop(res.data || [], activeChatId);
+      const sorted = reorderWithActiveTop(res.data || [], activeChatId);
       setChatsList(sorted);
     } catch (err) {
       console.error('Failed to fetch chats', err);
@@ -185,12 +184,10 @@ const Chat = () => {
   const ensureSession = async () => {
     if (activeChatId) return activeChatId;
     try {
-      // const res = await secureAxios.post('/chat', { message: ' ' });
-      const res = await secureAxios.post(
-           '/chat',
-           { message: 'New chat' },
-           { headers: { 'Content-Type': 'application/json' } }
-         );
+      // IMPORTANT: backend expects { query: { payload: string } }
+      const res = await secureAxios.post('/chat', {
+        query: { payload: 'New chat' }
+      });
       const { session_id, title } = res.data || {};
       if (session_id) {
         setActiveChatId(session_id);
@@ -210,7 +207,7 @@ const Chat = () => {
   // ---- Send a message ----
   const send = async () => {
     const text = message.trim();
-    if (!text || isTyping) return; // 🔑 guard double-send during response
+    if (!text || isTyping) return;
 
     setIsTyping(true);
     setChat(prev => [...prev, { role: 'user', content: text }]);
@@ -218,12 +215,10 @@ const Chat = () => {
 
     try {
       if (!activeChatId) {
-        // const res = await secureAxios.post('/chat', { message: text });
-        const res = await secureAxios.post(
-             '/chat',
-             { message: text },
-             { headers: { 'Content-Type': 'application/json' } }
-           );
+        // First message creates a session; backend needs query.payload
+        const res = await secureAxios.post('/chat', {
+          query: { payload: text }
+        });
         const { session_id, response, title } = res.data || {};
         if (session_id) {
           setActiveChatId(session_id);
@@ -235,12 +230,11 @@ const Chat = () => {
         }
         setChat(prev => [...prev, { role: 'assistant', content: response ?? '' }]);
       } else {
-        // const res = await secureAxios.post('/chat', { message: text, session_id: activeChatId });
-        const res = await secureAxios.post(
-             '/chat',
-             { message: text, session_id: activeChatId },
-             { headers: { 'Content-Type': 'application/json' } }
-           );
+        // Follow-up message in an existing session
+        const res = await secureAxios.post('/chat', {
+          query: { payload: text },
+          session_id: activeChatId
+        });
         const ai = res.data?.response ?? '';
         setChat(prev => [...prev, { role: 'assistant', content: ai }]);
         setChatsList(prev => reorderWithActiveTop(upsertAndBump(prev, activeChatId), activeChatId));
@@ -248,7 +242,7 @@ const Chat = () => {
     } catch (err) {
       console.error('Send failed:', err);
     } finally {
-      setIsTyping(false); // 🔑 re-enable sending
+      setIsTyping(false);
     }
   };
 
@@ -287,7 +281,7 @@ const Chat = () => {
       return;
     }
 
-    // De-dup within this batch by name+size to avoid instant accidental dupes
+    // De-dup within this batch by name+size
     const uniqueByKey = {};
     const deduped = [];
     for (const f of files) {
@@ -316,11 +310,9 @@ const Chat = () => {
         // 1) Checking
         setUploads(prev => prev.map(u => u.id === item.id ? { ...u, status: 'checking', progress: 0 } : u));
 
-        // Hash the file (client-side)
         const digestHex = await sha256Hex(item.file);
         item.digest = digestHex;
 
-        // Ask server if duplicate (if endpoint missing, this returns false and we continue)
         const duplicate = await isDuplicateOnServer(sid, digestHex, item.size);
         if (duplicate) {
           skipped++;
@@ -337,8 +329,6 @@ const Chat = () => {
 
         await secureAxios.post('/upload', fd, {
           headers: {
-            // 'Content-Type': 'multipart/form-data',
-            // If your server reads this header, it can correlate to its own digest:
             'X-Content-Digest': digestHex,
           },
           onUploadProgress: (evt) => {
@@ -361,12 +351,10 @@ const Chat = () => {
 
     setChatsList(prev => reorderWithActiveTop(upsertAndBump(prev, sid), sid));
 
-    // Clean up chips after a short delay
     setTimeout(() => {
       setUploads(prev => prev.filter(u => u.status !== 'done' && u.status !== 'error' && u.status !== 'duplicate'));
     }, 800);
 
-    // Inform the user in the chat stream
     const okText = ok === 1 ? '1 file' : `${ok} files`;
     const skipText = skipped ? `, skipped ${skipped} duplicate${skipped > 1 ? 's' : ''}` : '';
     const failText = fail ? ` (❌ ${fail} failed)` : '';
@@ -519,14 +507,7 @@ const Chat = () => {
                 return cur?.title || 'New Chat';
               })()}
             </div>
-
-            {/* Optional: show user + tier + scope
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 hidden sm:inline">{user?.email || ''}</span>
-              <TierPill tier={tier} />
-              <ScopeBadge tier={tier} />
-            </div>
-            */}
+            {/* Optional user/tier/scope */}
           </div>
 
           {/* 429 banner */}
@@ -585,7 +566,7 @@ const Chat = () => {
           )}
         </div>
 
-        {/* Upload chips (preview + progress) */}
+        {/* Upload chips */}
         {uploads.length > 0 && (
           <div className="px-4 pb-2 space-y-2">
             {uploads.map(u => (
@@ -657,7 +638,7 @@ const Chat = () => {
                   e.key === 'Enter' &&
                   !e.shiftKey &&
                   message.trim().length > 0 &&
-                  !isTyping // 🔑 block send while Neura is responding
+                  !isTyping
                 ) {
                   e.preventDefault();
                   send();
@@ -670,7 +651,7 @@ const Chat = () => {
 
             <button
               onClick={send}
-              disabled={message.trim().length === 0 || isTyping} // 🔑 keep disabled while responding
+              disabled={message.trim().length === 0 || isTyping}
               aria-disabled={message.trim().length === 0 || isTyping}
               aria-busy={isTyping}
               title="Send"
@@ -680,7 +661,6 @@ const Chat = () => {
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
-              {/* Always show "Send" — do not change label while typing */}
               Send
             </button>
           </div>
