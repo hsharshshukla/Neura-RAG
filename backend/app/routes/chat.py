@@ -219,6 +219,7 @@ def rename_chat_session(
     db.commit()
     return {"ok": True, "title": new_title}
 
+print("")
 
 @router.post("")
 # @limiter.limit("5/minute; 120/hour", key_func=key_user_or_ip)
