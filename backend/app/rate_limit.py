@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from typing import Iterable
 from fastapi import Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+# from slowapi import Limiter
+# from slowapi.util import get_remote_address
 
 def _as_limits(s: str | Iterable[str] | None) -> list[str]:
     if not s:
@@ -46,12 +46,12 @@ def key_user_or_ip(request: Request) -> str:
     return "ip:" + client_ip(request)
 
 # Export a process-wide Limiter
-limiter = Limiter(
-    key_func=key_user_or_ip,           # per user if authed, else IP
-    storage_uri=storage_uri(),
-    headers_enabled=True,
-    in_memory_fallback_enabled=True,
-)
+# limiter = Limiter(
+#     key_func=key_user_or_ip,           # per user if authed, else IP
+#     storage_uri=storage_uri(),
+#     headers_enabled=True,
+#     in_memory_fallback_enabled=True,
+# )
 
 # Convenience: parse RL_* env strings like "20/minute; 200/hour"
 def env_limits(name: str, default_value: str | None) -> list[str]:

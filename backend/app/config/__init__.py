@@ -24,28 +24,55 @@ S3_FORCE_PATH_STYLE = os.getenv("S3_FORCE_PATH_STYLE", "false").lower() == "true
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-# ----- Plans & Models (env only; logic lives below) -----
+# =========================
+# Plans & Models (env)
+# Two-tier world: BASE / PRO
+# Keep legacy envs as fallbacks so nothing breaks.
+# =========================
+
+def _geti(default: int, *names: str) -> int:
+    for n in names:
+        v = os.getenv(n, "").strip()
+        if v and (v.lstrip("-").isdigit()):
+            try:
+                return int(v)
+            except Exception:
+                pass
+    return default
+
+def _gets(default: str, *names: str) -> str:
+    for n in names:
+        v = os.getenv(n, "").strip()
+        if v:
+            return v
+    return default
+
 # Daily chat limits (-1 => unlimited)
-FREE_DAILY_CHATS = int(os.getenv("FREE_DAILY_CHATS", "20"))
-MINI_DAILY_CHATS = int(os.getenv("MINI_DAILY_CHATS", "-1"))
-PRO_DAILY_CHATS  = int(os.getenv("PRO_DAILY_CHATS", "-1"))
+BASE_DAILY_CHATS = _geti(20,  "BASE_DAILY_CHATS", "FREE_DAILY_CHATS")
+PRO_DAILY_CHATS  = _geti(-1,  "PRO_DAILY_CHATS")
 
-# Model names per tier
-MODEL_FREE = os.getenv("MODEL_FREE", "gpt-4o-mini")
-MODEL_MINI = os.getenv("MODEL_MINI", "gpt-4o-mini")
-MODEL_PRO  = os.getenv("MODEL_PRO",  "gpt-4o")
+# Model names per tier (prefer OPENAI_MODEL_*; fall back to older names)
+OPENAI_MODEL_BASE = _gets("gpt-4.1-mini", "OPENAI_MODEL_BASE", "MODEL_BASE", "MODEL_FREE")
+OPENAI_MODEL_PRO  = _gets("gpt-5",        "OPENAI_MODEL_PRO",  "MODEL_PRO")
 
-# Monthly token caps (optional; used by plan_policy)
-PLAN_FREE_MONTHLY_TOKEN_LIMIT = int(os.getenv("PLAN_FREE_MONTHLY_TOKEN_LIMIT", "200000"))
-PLAN_MINI_MONTHLY_TOKEN_LIMIT = int(os.getenv("PLAN_MINI_MONTHLY_TOKEN_LIMIT", "500000"))
-PLAN_PRO_MONTHLY_TOKEN_LIMIT  = int(os.getenv("PLAN_PRO_MONTHLY_TOKEN_LIMIT", "1000000"))
+# Monthly token caps (optional; 0 => treat as unlimited in policy)
+PLAN_BASE_MONTHLY_TOKEN_LIMIT = _geti(200_000, "PLAN_BASE_MONTHLY_TOKEN_LIMIT", "PLAN_FREE_MONTHLY_TOKEN_LIMIT")
+PLAN_PRO_MONTHLY_TOKEN_LIMIT  = _geti(1_000_000, "PLAN_PRO_MONTHLY_TOKEN_LIMIT")
 
 # =======================================================
 # Plan policy logic (lives in a separate module, re-exported)
 # =======================================================
 from .plan_policy import (
-    PLAN_FREE, PLAN_MINI, PLAN_PRO,
+    PLAN_BASE, PLAN_PRO,
     plan_limit, plan_model, is_session_scoped,
     get_or_create_usage, check_and_increment_chat_quota,
     monthly_token_limit_for, monthly_tokens_used, monthly_usage_percent,
+    plan_for, caps_for, is_pro_active,
 )
+
+# ---- Back-compat aliases so old imports keep working ----
+PLAN_FREE = PLAN_BASE
+PLAN_MINI = PLAN_BASE
+MODEL_FREE = OPENAI_MODEL_BASE
+MODEL_MINI = OPENAI_MODEL_BASE
+MODEL_PRO  = OPENAI_MODEL_PRO

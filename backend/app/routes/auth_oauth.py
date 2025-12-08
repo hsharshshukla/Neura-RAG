@@ -13,7 +13,7 @@ from app.models import User
 from app.utils.logger import log_event
 
 # 🔒 SlowAPI per-endpoint limiter
-from app.rate_limit import limiter  # (key_func default = client IP is fine for OAuth)
+# from app.rate_limit import limiter  # (key_func default = client IP is fine for OAuth)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -118,7 +118,7 @@ def _upsert_user(db: Session, *, email: str, name: str, provider: str, provider_
 
 # ---------- Google ----------
 @router.get("/google/start")
-@limiter.limit("12/minute; 120/hour")  # protect provider initiation
+# @limiter.limit("12/minute; 120/hour")  # protect provider initiation
 async def google_start(request: Request):
     if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI):
         # Surface a readable error instead of a 500
@@ -136,7 +136,7 @@ async def google_start(request: Request):
         raise
 
 @router.get("/google/callback")
-@limiter.limit("60/minute")  # modest cap; provider redirects user-agents here
+# @limiter.limit("60/minute")  # modest cap; provider redirects user-agents here
 async def google_callback(request: Request, db: Session = Depends(get_session)):
     token = await oauth.google.authorize_access_token(request)
     id_token = token.get("id_token")
@@ -153,7 +153,7 @@ async def google_callback(request: Request, db: Session = Depends(get_session)):
 
 # ---------- Apple ----------
 @router.get("/apple/start")
-@limiter.limit("12/minute; 120/hour")
+# @limiter.limit("12/minute; 120/hour")
 async def apple_start(request: Request):
     if not (APPLE_CLIENT_ID and APPLE_REDIRECT_URI):
         missing = [k for k, v in {
@@ -171,7 +171,7 @@ async def apple_start(request: Request):
 
 @router.post("/apple/callback")
 @router.get("/apple/callback")
-@limiter.limit("60/minute")  # GET/POST callback
+# @limiter.limit("60/minute")  # GET/POST callback
 async def apple_callback(request: Request, db: Session = Depends(get_session)):
     oauth.apple.client_secret = _apple_client_secret()
     token = await oauth.apple.authorize_access_token(request)

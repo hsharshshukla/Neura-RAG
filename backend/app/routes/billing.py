@@ -1,25 +1,50 @@
 # app/routes/billing.py
 from __future__ import annotations
 
-import os, json, hmac, hashlib
-from typing import Any, Dict, Optional, Tuple
-from datetime import datetime, timedelta, timezone
+import os, json, hmac, hashlib, logging
+from typing import Any, Dict, Optional
+from datetime import datetime, timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session, select
 from sqlalchemy import select as sa_select, text
-import logging
 
 from app.db import get_session
 from app.models import User
 from app.deps.auth import get_current_user
-from app.config import (
-    PLAN_MINI, PLAN_PRO, PLAN_FREE,
-    monthly_usage_percent,
-)
-from app.rate_limit import limiter, key_user_or_ip  # 🔒 SlowAPI per-endpoint limiter
+from app.rate_limit import key_user_or_ip  # SlowAPI per-endpoint limiter
 
+# -------------------- Plan constants / helpers --------------------
+# We normalize storage to only: "free" | "pro"
+try:
+    from app.config.plan_policy import PLAN_FREE, PLAN_MINI, PLAN_PRO
+except Exception:
+    PLAN_FREE = "free"
+    PLAN_MINI = "mini"
+    PLAN_PRO  = "pro"
+
+# Optional import for usage-aware refunds (best-effort)
+try:
+    from app.config.plan_policy import monthly_usage_percent as _monthly_usage_percent
+except Exception:
+    _monthly_usage_percent = None  # fallback below
+
+def _canon_plan_for_storage(plan_str: str) -> str:
+    """
+    Map UI/checkout plan names to canonical DB tier.
+    We store only "free" or "pro".
+    """
+    p = (plan_str or "").strip().lower()
+    if p in {"pro"}:
+        return PLAN_PRO
+    # Treat "base" and "mini" as free-tier in storage.
+    return PLAN_FREE
+
+def _is_pro(user: User) -> bool:
+    return (getattr(user, "tier", "") or "").lower() == PLAN_PRO
+
+# -------------------- Email notifications (best-effort) --------------------
 from app.email.events import (
     send_subscription_activated,
     send_payment_failed,
@@ -30,15 +55,22 @@ from app.email.events import (
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
+# -------------------- local time helper & trial config --------------------
+def _now_utc() -> datetime:
+    # naive UTC; DB columns are TIMESTAMP WITHOUT TIME ZONE
+    return datetime.utcnow()
+
+PRO_TRIAL_DAYS = int(os.getenv("PRO_TRIAL_DAYS", "7"))
+
 # -------------------- env & pricing helpers --------------------
+# Provider: "dummy" (dev) or "razorpay" (prod)
+GATEWAY = os.getenv("PAYMENT_GATEWAY", "dummy").lower()
+APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:3000")
 
-GATEWAY = os.getenv("PAYMENT_GATEWAY", "dummy").lower()   # dummy | razorpay
-APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:5173")
-
-# Minor units (paise/cents)
-PRICE_MINI_INR = int(os.getenv("PRICE_MINI_INR", "14900"))   # ₹149.00
+# Prices in minor units (paise/cents)
+PRICE_BASE_INR = int(os.getenv("PRICE_BASE_INR", "15000"))   # ₹150.00
 PRICE_PRO_INR  = int(os.getenv("PRICE_PRO_INR",  "50000"))   # ₹500.00
-PRICE_MINI_USD = int(os.getenv("PRICE_MINI_USD", "500"))     # $5.00
+PRICE_BASE_USD = int(os.getenv("PRICE_BASE_USD", "300"))     # $3.00
 PRICE_PRO_USD  = int(os.getenv("PRICE_PRO_USD",  "1500"))    # $15.00
 
 # Refund / cancellation policy
@@ -46,7 +78,7 @@ REFUND_WINDOW_DAYS       = int(os.getenv("REFUND_WINDOW_DAYS", "2"))
 REFUND_USAGE_MAX_PERCENT = float(os.getenv("REFUND_USAGE_MAX_PERCENT", "20"))
 BILLING_RETRY_GRACE_DAYS = int(os.getenv("BILLING_RETRY_GRACE_DAYS", "7"))
 
-# Razorpay credentials (used only when PAYMENT_GATEWAY=razorpay)
+# Razorpay credentials (when PAYMENT_GATEWAY=razorpay)
 RZP_KEY_ID         = os.getenv("RZP_KEY_ID", "")
 RZP_KEY_SECRET     = os.getenv("RZP_KEY_SECRET", "")
 RZP_WEBHOOK_SECRET = os.getenv("RZP_WEBHOOK_SECRET", "")
@@ -58,25 +90,24 @@ VPN_TRUE_VALUES        = {v.strip().lower() for v in os.getenv("VPN_TRUE_VALUES"
 DEV_FORCE_VPN          = (os.getenv("DEV_FORCE_VPN", "false").lower() in ("1","true","yes"))
 DEV_FORCE_COUNTRY      = (os.getenv("DEV_FORCE_COUNTRY") or "").upper().strip()
 
-# -------------------- geo / currency (server authority) --------------------
-
-def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
-
+# -------------------- geo / currency --------------------
 def _detect_country(request: Request, user: Optional[User] = None) -> str:
     if DEV_FORCE_COUNTRY:
         return DEV_FORCE_COUNTRY
 
+    # Prefer edge header (Cloudflare etc)
     for h in ("CF-IPCountry", "X-Country-Code", "X-Geo-Country"):
         v = request.headers.get(h)
         if v:
             return v.upper()
 
+    # Fallback to stored user country
     if user is not None:
         c = (getattr(user, "country", None) or "").upper()
         if c:
             return c
 
+    # Weak Accept-Language inference; default India
     al = request.headers.get("Accept-Language", "")
     if "-IN" in al.upper():
         return "IN"
@@ -89,17 +120,17 @@ def _currency_for_country(cc: str) -> str:
 def _prices_for_currency(curr: str) -> dict:
     if curr == "INR":
         return {
-            "mini_minor": PRICE_MINI_INR,
+            "base_minor": PRICE_BASE_INR,
             "pro_minor":  PRICE_PRO_INR,
-            "mini_display": f"₹{PRICE_MINI_INR // 100}/mo",
+            "base_display": f"₹{PRICE_BASE_INR // 100}/mo",
             "pro_display":  f"₹{PRICE_PRO_INR // 100}/mo",
         }
     def fmt(n: int) -> str:
         return f"${(n/100):.0f}/mo" if n % 100 == 0 else f"${n/100:.2f}/mo"
     return {
-        "mini_minor": PRICE_MINI_USD,
+        "base_minor": PRICE_BASE_USD,
         "pro_minor":  PRICE_PRO_USD,
-        "mini_display": fmt(PRICE_MINI_USD),
+        "base_display": fmt(PRICE_BASE_USD),
         "pro_display":  fmt(PRICE_PRO_USD),
     }
 
@@ -110,27 +141,27 @@ def _vpn_detected(request: Request) -> bool:
     return bool(header_val) and (header_val in VPN_TRUE_VALUES)
 
 # -------------------- Razorpay provider --------------------
-
-async def _rzp_create_payment_link(user: User, plan: str, currency: str, amount_minor: int) -> str:
+async def _rzp_create_payment_link(user: User, ui_plan: str, currency: str, amount_minor: int) -> str:
+    """
+    ui_plan is "base" or "pro" for display; we still store canonical tier in DB after webhook.
+    """
     payload = {
         "amount": amount_minor,
         "currency": currency,
         "accept_partial": False,
-        "reference_id": f"user_{user.id}_{plan}_{int(datetime.utcnow().timestamp())}",
-        "description": f"{plan.capitalize()} plan",
+        "reference_id": f"user_{user.id}_{ui_plan}_{int(_now_utc().timestamp())}",
+        "description": f"{ui_plan.capitalize()} plan",
         "customer": {"name": user.name or user.email.split('@')[0], "email": user.email},
         "notify": {"email": True, "sms": False},
         "callback_url": f"{APP_BASE_URL}/billing/success",
         "callback_method": "get",
-        "notes": {"user_id": str(user.id), "plan": plan},
+        "notes": {"user_id": str(user.id), "plan": ui_plan},
     }
     auth = (RZP_KEY_ID, RZP_KEY_SECRET)
     async with httpx.AsyncClient(timeout=30.0, auth=auth) as client:
         r = await client.post("https://api.razorpay.com/v1/payment_links", json=payload)
-
     if r.status_code >= 300:
         raise HTTPException(status_code=502, detail={"provider": "razorpay", "error": r.text})
-
     data = r.json()
     short_url = data.get("short_url")
     if not short_url:
@@ -143,12 +174,10 @@ def _rzp_verify(signature_header: str, raw_body: bytes) -> bool:
 
 def _rzp_extract(evt: Dict[str, Any]) -> dict:
     """
-    Normalize Razorpay events. Try to pull user_id/plan from any entity that has notes.
+    Extract minimal fields across payment_link/order/payment events.
     """
     out = {"event": evt.get("event")}
     p = evt.get("payload", {}) or {}
-
-    # payment_link.* events
     if "payment_link" in p:
         ent = (p["payment_link"].get("entity") or {})
         notes = ent.get("notes") or {}
@@ -158,16 +187,12 @@ def _rzp_extract(evt: Dict[str, Any]) -> dict:
         payments = ent.get("payments", [])
         if payments and isinstance(payments, list):
             out["payment_id"] = payments[0].get("id")
-
-    # order.* events
     if "order" in p and not out.get("user_id"):
         ent = (p["order"].get("entity") or {})
         notes = ent.get("notes") or {}
         out["user_id"] = int(notes.get("user_id")) if str(notes.get("user_id") or "").isdigit() else None
         out["plan"] = (notes.get("plan") or "").lower() or None
         out["status"] = ent.get("status")
-
-    # payment.* events (e.g., payment.captured)
     if "payment" in p:
         ent = (p["payment"].get("entity") or {})
         out["payment_id"] = out.get("payment_id") or ent.get("id")
@@ -177,7 +202,6 @@ def _rzp_extract(evt: Dict[str, Any]) -> dict:
         if not out.get("plan"):
             out["plan"] = (notes.get("plan") or "").lower() or None
         out["status"] = out.get("status") or ent.get("status")
-
     return out
 
 async def _rzp_refund(payment_id: str, amount_minor: Optional[int] = None) -> dict:
@@ -194,7 +218,6 @@ async def _rzp_refund(payment_id: str, amount_minor: Optional[int] = None) -> di
     return r.json()
 
 # -------------------- helpers --------------------
-
 def _set_payment_meta_safe(user: User, payment_id: Optional[str]) -> None:
     try:
         if hasattr(user, "last_payment_at"):
@@ -212,17 +235,14 @@ def _calc_next_renewal(user: User) -> datetime:
         last_paid_at: datetime | None = getattr(user, "last_payment_at", None)
     except Exception:
         last_paid_at = None
-
     if isinstance(last_paid_at, datetime):
         return last_paid_at + timedelta(days=30)
-
     try:
         existing: datetime | None = getattr(user, "next_renewal_at", None)
         if isinstance(existing, datetime):
             return existing
     except Exception:
         pass
-
     return _now_utc() + timedelta(days=30)
 
 def _set_cancel_flags_safe(user: User, enabled: bool, next_renewal: Optional[datetime]) -> None:
@@ -237,50 +257,8 @@ def _set_cancel_flags_safe(user: User, enabled: bool, next_renewal: Optional[dat
         except Exception:
             pass
 
-def _read_cancel_status(user: User) -> Tuple[Optional[str], Optional[datetime], bool]:
-    scheduled_plan = None
-    next_renewal = None
-    cancel_flag = False
-
-    try:
-        if hasattr(user, "scheduled_plan"):
-            scheduled_plan = getattr(user, "scheduled_plan")
-    except Exception:
-        pass
-    try:
-        if hasattr(user, "next_renewal_at"):
-            next_renewal = getattr(user, "next_renewal_at")
-    except Exception:
-        pass
-    try:
-        if hasattr(user, "cancel_at_period_end"):
-            cancel_flag = bool(getattr(user, "cancel_at_period_end"))
-    except Exception:
-        pass
-
-    return (scheduled_plan, next_renewal, cancel_flag)
-
-# ---- Idempotency guard (pre-change snapshot) ----
-
-def _should_fire_activation_email_snapshot(user: User, new_plan: str, incoming_payment_id: Optional[str]) -> bool:
-    old_tier = (getattr(user, "tier", None) or PLAN_FREE).lower()
-    old_cancel = bool(getattr(user, "cancel_at_period_end", False))
-    old_pid = getattr(user, "last_payment_id", None)
-
-    if old_tier != new_plan:
-        return True
-    if old_cancel:
-        return True
-    if incoming_payment_id and old_pid != incoming_payment_id:
-        return True
-    return False
-
-# -------------------- RL + Webhook infra --------------------
-
 def _ensure_billing_tables(db: Session) -> None:
-    """
-    Minimal table for webhook idempotency & audits.
-    """
+    # Persist webhook events idempotently
     db.exec(text("""
         CREATE TABLE IF NOT EXISTS public.billing_event (
             id BIGSERIAL PRIMARY KEY,
@@ -295,64 +273,19 @@ def _ensure_billing_tables(db: Session) -> None:
     db.commit()
 
 def _is_trusted_webhook(req: Request) -> bool:
-    """
-    Used by SlowAPI's exempt_when: bypass RL when a recognizable signature header is present.
-    Cryptographic verification still happens in the handler.
-    """
     if GATEWAY == "razorpay":
         return bool(req.headers.get("X-Razorpay-Signature"))
-    # generic / future providers
     return bool(req.headers.get("X-Signature"))
 
 def _webhook_event_id(raw: bytes, info: Dict[str, Any]) -> str:
-    """
-    Best-effort unique id for idempotency:
-      - prefer payment_id when present
-      - else hash of raw body
-    """
     pid = (info.get("payment_id") or "").strip()
     if pid:
         return f"rzp:{pid}"
     return hashlib.sha256(raw).hexdigest()
 
-# -------------------- dispatcher (dummy/razorpay) --------------------
-
-async def _create_checkout_url(request: Request, user: User, plan: str) -> str:
-    cc = _detect_country(request, user)
-    currency = _currency_for_country(cc)
-    prices = _prices_for_currency(currency)
-    amount_minor = prices["mini_minor"] if plan == PLAN_MINI else prices["pro_minor"]
-
-    if GATEWAY == "razorpay":
-        return await _rzp_create_payment_link(user, plan, currency, amount_minor)
-
-    if GATEWAY == "dummy":
-        return f"{APP_BASE_URL}/billing/success?plan={plan}&user={user.id}&currency={currency}&amount={amount_minor}"
-
-    raise HTTPException(status_code=501, detail=f"Provider {GATEWAY} not implemented")
-
-def _verify_and_parse_webhook(request: Request, raw: bytes) -> dict:
-    if GATEWAY == "razorpay":
-        sig = request.headers.get("X-Razorpay-Signature", "")
-        if not sig or not _rzp_verify(sig, raw):
-            raise HTTPException(status_code=400, detail="Invalid Razorpay signature")
-        evt = json.loads(raw.decode("utf-8"))
-        return _rzp_extract(evt)
-
-    # dummy mode (tests)
-    evt = json.loads(raw.decode("utf-8"))
-    return {
-        "event": evt.get("event", "dummy"),
-        "user_id": evt.get("user_id"),
-        "plan": (evt.get("plan") or "").lower() or None,
-        "payment_id": evt.get("payment_id"),
-        "status": evt.get("status"),
-    }
-
 # -------------------- routes --------------------
-
 @router.get("/guard")
-@limiter.limit("120/minute")
+# @limiter.limit("120/minute")
 def vpn_guard(request: Request, response: Response):
     cc = _detect_country(request)
     cur = _currency_for_country(cc)
@@ -367,7 +300,7 @@ def vpn_guard(request: Request, response: Response):
     }
 
 @router.get("/prices")
-@limiter.limit("60/minute")
+# @limiter.limit("60/minute")
 def get_prices(request: Request, response: Response):
     cc = _detect_country(request)
     currency = _currency_for_country(cc)
@@ -375,7 +308,7 @@ def get_prices(request: Request, response: Response):
     return {"currency": currency, "country": cc, **p}
 
 @router.get("/status")
-@limiter.limit("60/minute")
+# @limiter.limit("60/minute")
 def billing_status(
     request: Request,
     response: Response,
@@ -386,14 +319,19 @@ def billing_status(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    scheduled_plan, next_renewal_dt, cancel_flag = _read_cancel_status(user)
+    scheduled_plan = getattr(user, "scheduled_plan", None)
+    next_renewal_dt = getattr(user, "next_renewal_at", None)
+    cancel_flag = bool(getattr(user, "cancel_at_period_end", False))
 
     resp = {
-        "tier": user.tier or "free",
+        # Always report canonical storage tier ("free" or "pro")
+        "tier": (user.tier or PLAN_FREE),
         "manage_url": None,
         "scheduled_plan": scheduled_plan,
         "next_renewal": next_renewal_dt.isoformat() if isinstance(next_renewal_dt, datetime) else None,
-        "cancel_at_period_end": bool(cancel_flag),
+        "cancel_at_period_end": cancel_flag,
+        # trial flag (true if a trial exists and hasn't been cancelled)
+        "pro_trial_active": bool(getattr(user, "pro_trial_started_at", None)) and not bool(getattr(user, "pro_trial_cancelled", False)),
     }
     if request is not None:
         cc = _detect_country(request, user)
@@ -403,42 +341,47 @@ def billing_status(
     return resp
 
 @router.post("/checkout")
-@limiter.limit("6/minute; 60/hour")
+# @limiter.limit("6/minute; 60/hour")
 async def start_checkout(
-    body: Dict[str, Any], 
-    request: Request, 
-    response: Response, 
+    body: Dict[str, Any],
+    request: Request,
+    response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     """
-    body = { "plan": "mini" | "pro" }
-
-    Razorpay: return payment link (no state, no email).
-    Dummy: apply plan + renewal AND send activation email (no webhook in dev).
+    body = { "plan": "base" | "pro" }
+    - UI sends "base" or "pro".
+    - We always store "free" or "pro" on the user record.
     """
     if _vpn_detected(request) and VPN_BLOCK_ENABLED:
         raise HTTPException(status_code=403, detail="Billing disabled while VPN/proxy is detected. Please disable VPN and retry.")
 
-    plan = (body.get("plan") or "").lower().strip()
-    if plan not in {PLAN_MINI, PLAN_PRO}:
-        raise HTTPException(status_code=400, detail="Plan must be 'mini' or 'pro'")
+    ui_plan = (body.get("plan") or "").lower().strip()
+    if ui_plan not in {"base", "pro"}:
+        raise HTTPException(status_code=400, detail="Plan must be 'base' or 'pro'")
 
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
+    cc = _detect_country(request, user)
+    currency = _currency_for_country(cc)
+    prices = _prices_for_currency(currency)
+    amount_minor = prices["base_minor"] if ui_plan == "base" else prices["pro_minor"]
+
+    # If user is on a trial and buys Pro, convert to paid immediately
+    if getattr(user, "pro_trial_started_at", None) and ui_plan == "pro":
+        setattr(user, "pro_trial_cancelled", True)
+
     if GATEWAY == "razorpay":
-        url = await _create_checkout_url(request, user, plan)
+        url = await _rzp_create_payment_link(user, ui_plan, currency, amount_minor)
         return {"url": url}
 
+    # Dummy provider: flip the tier immediately
     if GATEWAY == "dummy":
-        cc = _detect_country(request, user)
-        currency = _currency_for_country(cc)
-        prices = _prices_for_currency(currency)
-        amount_minor = prices["mini_minor"] if plan == PLAN_MINI else prices["pro_minor"]
-
-        user.tier = plan
+        user.tier = _canon_plan_for_storage(ui_plan)
+        setattr(user, "is_pro_paid_active", _is_pro(user))
         _set_payment_meta_safe(user, f"dummy_{int(_now_utc().timestamp())}")
         try:
             if hasattr(user, "next_renewal_at"):
@@ -448,37 +391,91 @@ async def start_checkout(
         _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
         db.add(user); db.commit()
 
-        # Send immediately in dummy mode (no webhook)
         try:
-            await send_subscription_activated(user.email, plan)
+            await send_subscription_activated(user.email, user.tier)
         except Exception as e:
             log.exception("send_subscription_activated failed (dummy checkout) for %s: %s", user.email, e)
 
-        url = f"{APP_BASE_URL}/billing/success?plan={plan}&user={user.id}&currency={currency}&amount={amount_minor}"
+        url = f"{APP_BASE_URL}/billing/success?plan={ui_plan}&user={user.id}&currency={currency}&amount={amount_minor}"
         return {"url": url}
 
     raise HTTPException(status_code=501, detail=f"Provider {GATEWAY} not implemented")
 
+@router.post("/trial/start")
+# @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
+async def start_pro_trial(
+    request: Request,
+    response: Response,
+    user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    user = db.exec(select(User).where(User.email == user_email)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # already paid Pro
+    if getattr(user, "is_pro_paid_active", False) or _is_pro(user):
+        raise HTTPException(status_code=400, detail="You already have Pro.")
+
+    # already have an active trial
+    if getattr(user, "pro_trial_started_at", None) and not getattr(user, "pro_trial_cancelled", False):
+        raise HTTPException(status_code=400, detail="Pro trial already active.")
+
+    setattr(user, "pro_trial_started_at", _now_utc())
+    setattr(user, "pro_trial_cancelled", False)
+
+    # OPTIONAL: lift UI plan during trial (keeps experience consistent)
+    user.tier = PLAN_PRO
+    db.add(user); db.commit()
+
+    trial_ends_at = getattr(user, "pro_trial_started_at") + timedelta(days=PRO_TRIAL_DAYS)
+    return {"ok": True, "trial_ends_at": trial_ends_at.isoformat()}
+
+@router.post("/trial/cancel")
+# @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
+async def cancel_pro_trial(
+    request: Request,
+    response: Response,
+    user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    user = db.exec(select(User).where(User.email == user_email)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if not getattr(user, "pro_trial_started_at", None):
+        raise HTTPException(status_code=400, detail="No trial to cancel.")
+
+    setattr(user, "pro_trial_cancelled", True)
+    # Keep tier as-is; you can run a scheduler to flip to free at trial end if desired
+    db.add(user); db.commit()
+    return {"ok": True}
+
 @router.post("/webhook")
-@limiter.limit("30/minute", exempt_when=_is_trusted_webhook)  # bypass RL for signed gateway calls
+# @limiter.limit("30/minute", exempt_when=_is_trusted_webhook)
 async def handle_webhook(
-    request: Request, 
-    response: Response, 
+    request: Request,
+    response: Response,
     db: Session = Depends(get_session)
 ):
-     
-    """
-    Webhook:
-      • Razorpay: accept 'payment_link.paid', 'order.paid', 'payment.captured'
-      • Dummy: ignore paid path (we email in /checkout)
-      • Row-lock user to avoid concurrent duplicate sends
-      • Snapshot guard to avoid resends on retries/out-of-order deliveries
-      • Idempotent via billing_event(event_id UNIQUE)
-    """
     raw = await request.body()
 
     # Verify + parse provider payload
-    info = _verify_and_parse_webhook(request, raw)
+    if GATEWAY == "razorpay":
+        sig = request.headers.get("X-Razorpay-Signature", "")
+        if not sig or not _rzp_verify(sig, raw):
+            raise HTTPException(status_code=400, detail="Invalid Razorpay signature")
+        evt = json.loads(raw.decode("utf-8"))
+        info = _rzp_extract(evt)
+    else:
+        evt = json.loads(raw.decode("utf-8"))
+        info = {
+            "event": evt.get("event", "dummy"),
+            "user_id": evt.get("user_id"),
+            "plan": (evt.get("plan") or "").lower() or None,
+            "payment_id": evt.get("payment_id"),
+            "status": evt.get("status"),
+        }
 
     # Ensure idempotency infra
     _ensure_billing_tables(db)
@@ -486,73 +483,55 @@ async def handle_webhook(
     event_type = (info.get("event") or "").lower()
     provider = GATEWAY
 
-    # Idempotency check
     already = db.exec(text("SELECT 1 FROM public.billing_event WHERE event_id = :e").bindparams(e=event_id)).first()
     if already:
         return {"status": "ok", "idempotent": True}
 
     user_id = info.get("user_id")
-    plan = info.get("plan")
+    ui_plan = info.get("plan")  # may be "base" or "pro"
     payment_id = info.get("payment_id")
 
+    # Always store the raw event for debugging
+    to_store = {"event": event_type, "info": info, "provider": provider}
+
     if not user_id:
-        # Record and acknowledge so gateway doesn't retry forever
         db.exec(text("""
             INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
             VALUES (:i, :t, :p, :u, :j)
-        """).bindparams(i=event_id, t=event_type, p=provider, u=None, j=json.dumps(info)))
+        """).bindparams(i=event_id, t=event_type, p=provider, u=None, j=json.dumps(to_store)))
         db.commit()
         return {"status": "ignored", "reason": "no user_id", "event": event_type}
 
+    is_paid = False
     if GATEWAY == "razorpay":
-        paid_events = {"payment_link.paid", "order.paid", "payment.captured"}
-        is_paid = (event_type in paid_events)
-    else:
-        is_paid = False
+        is_paid = event_type in {"payment_link.paid", "order.paid", "payment.captured"}
 
-    # Payment failures (Razorpay): notify, record, and ack
-    if event_type in {"payment_link.failed", "order.payment.failed"}:
-        try:
-            user = db.get(User, user_id)
-            if user:
-                await send_payment_failed(user.email)
-        except Exception as e:
-            log.exception("send_payment_failed failed (event=%s uid=%s): %s", event_type, user_id, e)
+    if not (is_paid and ui_plan in {"base", "pro"}):
         db.exec(text("""
             INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
             VALUES (:i, :t, :p, :u, :j)
-        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
-        db.commit()
-        return {"status": "ok", "event": event_type}
-
-    if not (is_paid and plan in {PLAN_MINI, PLAN_PRO}):
-        db.exec(text("""
-            INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
-            VALUES (:i, :t, :p, :u, :j)
-        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(to_store)))
         db.commit()
         return {"status": "ignored", "event": event_type}
 
-    # ---- Serialize per-user with row lock ----
+    # Canonical storage tier
+    canonical = _canon_plan_for_storage(ui_plan)
+
     try:
         with db.begin():
             locked_stmt = sa_select(User).where(User.id == user_id).with_for_update()
             user = db.exec(locked_stmt).first()
             if not user:
-                # Still record event so retries won't reprocess
                 db.exec(text("""
                     INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
                     VALUES (:i, :t, :p, :u, :j)
-                """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+                """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps({**to_store, "err": "user_missing"})))
                 db.commit()
                 return {"status": "ignored", "reason": "user missing", "event": event_type}
 
-            should_notify = _should_fire_activation_email_snapshot(user, plan, payment_id)
-            pre_tier = (user.tier or PLAN_FREE).lower()
-            pre_cancel = bool(getattr(user, "cancel_at_period_end", False))
-            pre_pid = getattr(user, "last_payment_id", None)
-
-            user.tier = plan
+            # Apply plan
+            user.tier = canonical  # "free" or "pro"
+            setattr(user, "is_pro_paid_active", canonical == PLAN_PRO)
             _set_payment_meta_safe(user, payment_id)
             try:
                 if hasattr(user, "next_renewal_at"):
@@ -560,30 +539,27 @@ async def handle_webhook(
             except Exception:
                 pass
             _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
+
+            # If they had a trial, mark it cancelled since they paid
+            if getattr(user, "pro_trial_started_at", None):
+                setattr(user, "pro_trial_cancelled", True)
+
             db.add(user)
 
-        # Record event AFTER successful state update (keeps idempotency)
         db.exec(text("""
             INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
             VALUES (:i, :t, :p, :u, :j)
-        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(info)))
+        """).bindparams(i=event_id, t=event_type, p=provider, u=user_id, j=json.dumps(to_store)))
         db.commit()
 
-        if should_notify:
-            try:
-                await send_subscription_activated(user.email, plan)
-            except Exception as e:
-                log.exception("send_subscription_activated failed (webhook) for %s: %s", user.email, e)
-        else:
-            log.info(
-                "Skip activation email (duplicate) uid=%s plan=%s event=%s pid=%s [pre: tier=%s cancel=%s pid=%s]",
-                user_id, plan, event_type, payment_id, pre_tier, pre_cancel, pre_pid
-            )
+        try:
+            await send_subscription_activated(user.email, user.tier)
+        except Exception as e:
+            log.exception("send_subscription_activated failed (webhook) for %s: %s", user.email, e)
 
         return {"status": "ok", "event": event_type, "tier": user.tier}
     except Exception as e:
         log.exception("webhook processing failed (event=%s uid=%s): %s", event_type, user_id, e)
-        # Record failure attempt as well (no unique violation since event_id not inserted yet if we crashed earlier)
         try:
             db.exec(text("""
                 INSERT INTO public.billing_event (event_id, event_type, provider, user_id, payload)
@@ -594,71 +570,33 @@ async def handle_webhook(
             pass
         return {"status": "error", "event": event_type, "detail": str(e)}
 
-@router.post("/dev/activate")
-@limiter.limit("10/minute", key_func=key_user_or_ip)
-async def dev_activate(
-    request: Request, 
-    response: Response, 
-    body: Dict[str, Any], 
-    user_email: str = Depends(get_current_user), 
-    db: Session = Depends(get_session)
-):
-  
-    """
-    DEV only: immediately set a plan. (No email here; use /dev/test-email to test templates.)
-    Requires PAYMENT_GATEWAY=dummy.
-    """
-    if GATEWAY != "dummy":
-        raise HTTPException(status_code=404, detail="Not available")
-
-    plan = (body.get("plan") or "").lower().strip()
-    if plan not in {PLAN_MINI, PLAN_PRO}:
-        raise HTTPException(status_code=400, detail="Plan must be 'mini' or 'pro'")
-
-    user = db.exec(select(User).where(User.email == user_email)).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    user.tier = plan
-    _set_payment_meta_safe(user, f"dummy_{int(datetime.now().timestamp())}")
-    try:
-        if hasattr(user, "next_renewal_at"):
-            setattr(user, "next_renewal_at", _now_utc() + timedelta(days=30))
-    except Exception:
-        pass
-    _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
-    db.add(user); db.commit()
-
-    return {"status": "ok", "tier": user.tier, "dev": True}
-
 @router.post("/cancel")
-@limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
+# @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 async def cancel_subscription(
     request: Request, response: Response,
     body: Dict[str, Any],
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
-  
     """
     body = { "mode": "immediate" | "period_end" }
-    - period_end: keep plan active until next_renewal; schedule downgrade (no mid-month switch)
-    - immediate: downgrade right now; refund eligibility window still applies
     """
     mode = (body.get("mode") or "period_end").lower()
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    if user.tier not in {PLAN_MINI, PLAN_PRO}:
+    # If already free, normalize flags and return
+    if (user.tier or PLAN_FREE).lower() == PLAN_FREE:
         user.tier = PLAN_FREE
+        setattr(user, "is_pro_paid_active", False)
+        _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
         db.add(user); db.commit()
-        return {"status": "ok", "message": "Already on free"}
+        return {"status": "ok", "message": "Already on Free"}
 
     last_paid_at: datetime | None = getattr(user, "last_payment_at", None)
     payment_id: str | None = getattr(user, "last_payment_id", None)
 
-    # === No mid-month switch (requested behavior) ===
     if mode == "period_end":
         next_renewal = _calc_next_renewal(user)
         _set_cancel_flags_safe(user, enabled=True, next_renewal=next_renewal)
@@ -675,9 +613,10 @@ async def cancel_subscription(
             "next_renewal": next_renewal.isoformat(),
         }
 
-    # === immediate path w/ refund rules ===
+    # immediate cancellation path
     if not last_paid_at:
         user.tier = PLAN_FREE
+        setattr(user, "is_pro_paid_active", False)
         _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
         db.add(user); db.commit()
         try:
@@ -687,7 +626,15 @@ async def cancel_subscription(
         return {"status": "ok", "refunded": False, "reason": "no last payment record"}
 
     within_window = (_now_utc() - last_paid_at) <= timedelta(days=REFUND_WINDOW_DAYS)
-    usage_pct = monthly_usage_percent(db, user)
+
+    # Try to compute real usage if helper exists; else default to 'low usage'
+    if _monthly_usage_percent is not None:
+        try:
+            usage_pct = float(_monthly_usage_percent(db, user))  # type: ignore[arg-type]
+        except Exception:
+            usage_pct = 0.0
+    else:
+        usage_pct = 0.0
     low_usage = usage_pct <= REFUND_USAGE_MAX_PERCENT
 
     if within_window and low_usage and payment_id:
@@ -696,7 +643,9 @@ async def cancel_subscription(
                 refund_resp = await _rzp_refund(payment_id)
             else:
                 refund_resp = {"id": f"rfnd_{payment_id or 'dummy'}", "provider": "dummy", "status": "processed"}
+
             user.tier = PLAN_FREE
+            setattr(user, "is_pro_paid_active", False)
             _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
             db.add(user); db.commit()
             try:
@@ -706,6 +655,7 @@ async def cancel_subscription(
             return {"status": "ok", "refunded": True, "refund_id": refund_resp.get("id")}
         except HTTPException as e:
             user.tier = PLAN_FREE
+            setattr(user, "is_pro_paid_active", False)
             _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
             db.add(user); db.commit()
             try:
@@ -715,6 +665,7 @@ async def cancel_subscription(
             return {"status": "ok", "refunded": False, "error": e.detail}
     else:
         user.tier = PLAN_FREE
+        setattr(user, "is_pro_paid_active", False)
         _set_cancel_flags_safe(user, enabled=False, next_renewal=None)
         db.add(user); db.commit()
         try:
@@ -726,40 +677,3 @@ async def cancel_subscription(
         if not low_usage: reason.append("usage above threshold")
         if not payment_id: reason.append("no payment id")
         return {"status": "ok", "refunded": False, "reason": ", ".join(reason)}
-
-@router.post("/dev/test-email")
-@limiter.limit("10/minute", key_func=key_user_or_ip)
-async def dev_test_email(request: Request, response: Response, body: Dict[str, Any], user_email: str = Depends(get_current_user), db: Session = Depends(get_session)):
-  
-    """
-    Dev-only helper to verify email sending and template fallbacks.
-    body = { "kind": "activated" | "cancel_immediate" | "cancel_period_end" | "payment_failed" | "refund" }
-    Requires PAYMENT_GATEWAY=dummy.
-    """
-    if GATEWAY != "dummy":
-        raise HTTPException(status_code=404, detail="Not available")
-
-    kind = (body.get("kind") or "").lower().strip()
-    user = db.exec(select(User).where(User.email == user_email)).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    try:
-        if kind == "activated":
-            await send_subscription_activated(user.email, user.tier or PLAN_PRO)
-        elif kind == "cancel_immediate":
-            await send_cancellation_confirmed(user.email, immediate=True, effective_at=None)
-        elif kind == "cancel_period_end":
-            effective = _calc_next_renewal(user)
-            await send_cancellation_confirmed(user.email, immediate=False, effective_at=effective)
-        elif kind == "payment_failed":
-            await send_payment_failed(user.email)
-        elif kind == "refund":
-            await send_refund_issued(user.email, user.tier or PLAN_PRO, refund_id="rfnd_dev_123")
-        else:
-            raise HTTPException(status_code=400, detail="Unknown kind")
-    except Exception as e:
-        log.exception("dev_test_email failed (%s) for %s: %s", kind, user.email, e)
-        return {"status": "error", "kind": kind, "detail": str(e)}
-
-    return {"status": "ok", "kind": kind}

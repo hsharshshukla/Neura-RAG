@@ -56,40 +56,40 @@ def _diagnose(dsn: str) -> None:
         except Exception:
             pass
 
-        print("=== DB DIAG START ===")
-        print(f"Driver     : {u.drivername}")               # e.g. postgresql+psycopg
-        print(f"Username   : {u.username or ''}")
-        print(f"Database   : {u.database or ''}")
-        print(f"Host       : {u.host or ''}")
-        print(f"Port       : {u.port or ''}")
-        if sslmode:
-            print(f"SSL Mode   : {sslmode}")
-        # Show whether any PG* envs are present (without values)
-        pg_envs = [k for k in os.environ.keys() if k.startswith("PG")]
-        if pg_envs:
-            print(f"PG* envs   : {', '.join(pg_envs)}")
+        # print("=== DB DIAG START ===")
+        # print(f"Driver     : {u.drivername}")               # e.g. postgresql+psycopg
+        # print(f"Username   : {u.username or ''}")
+        # print(f"Database   : {u.database or ''}")
+        # print(f"Host       : {u.host or ''}")
+        # print(f"Port       : {u.port or ''}")
+        # if sslmode:
+        #     print(f"SSL Mode   : {sslmode}")
+        # # Show whether any PG* envs are present (without values)
+        # pg_envs = [k for k in os.environ.keys() if k.startswith("PG")]
+        # if pg_envs:
+        #     print(f"PG* envs   : {', '.join(pg_envs)}")
 
-        host = u.host or ""
-        port = u.port or 5432
-        if host:
-            try:
-                infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
-                v4 = sorted({addr[0] for fam, _, _, _, addr in infos if fam == socket.AF_INET})
-                v6 = sorted({addr[0] for fam, _, _, _, addr in infos if fam == socket.AF_INET6})
-                if v4:
-                    print(f"DNS IPv4   : {', '.join(v4)}")
-                if v6:
-                    print(f"DNS IPv6   : {', '.join(v6)}")
-                if not v4 and not v6:
-                    print("DNS        : (no A/AAAA records returned)")
-            except Exception as e:
-                print(f"DNS error  : {type(e).__name__}: {e}")
-        else:
-            print("Host       : (empty)")
+        # host = u.host or ""
+        # port = u.port or 5432
+        # if host:
+        #     try:
+        #         infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+        #         v4 = sorted({addr[0] for fam, _, _, _, addr in infos if fam == socket.AF_INET})
+        #         v6 = sorted({addr[0] for fam, _, _, _, addr in infos if fam == socket.AF_INET6})
+        #         if v4:
+        #             print(f"DNS IPv4   : {', '.join(v4)}")
+        #         if v6:
+        #             print(f"DNS IPv6   : {', '.join(v6)}")
+        #         if not v4 and not v6:
+        #             print("DNS        : (no A/AAAA records returned)")
+        #     except Exception as e:
+        #         print(f"DNS error  : {type(e).__name__}: {e}")
+        # else:
+        #     print("Host       : (empty)")
 
-        # Print the redacted DSN we will actually pass to SQLAlchemy
-        print(f"DSN (redac): {_redact_password(dsn)}")
-        print("=== DB DIAG END ===")
+        # # Print the redacted DSN we will actually pass to SQLAlchemy
+        # print(f"DSN (redac): {_redact_password(dsn)}")
+        # print("=== DB DIAG END ===")
     except Exception as e:
         print(f"DB DIAG failure: {type(e).__name__}: {e}")
 

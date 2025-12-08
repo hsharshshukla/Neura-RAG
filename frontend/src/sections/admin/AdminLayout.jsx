@@ -9,6 +9,7 @@ const nav = [
   { to: '/admin/files', label: 'Files & Vector' },
   { to: '/admin/sessions', label: 'Chat Sessions' },
   { to: '/admin/billing', label: 'Billing' },
+  { to: '/admin/coupons', label: 'Coupons' },   
   { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/settings', label: 'Settings' },
 ];

@@ -1,11 +1,12 @@
 # app/routes/auth.py
-from __future__ import annotations
+# from __future__ import annotations
 
-import os, hashlib, secrets
+import os, hashlib, secrets, base64
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie, BackgroundTasks
+from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie
+
 from jose import jwt, JWTError
 from pydantic import BaseModel, Field, EmailStr
 from sqlmodel import Session, select
@@ -18,8 +19,7 @@ from app.utils.security import get_password_hash, verify_password
 from app.utils.logger import log_event
 from app.utils.mailer import send_email_verification
 
-# 🔒 SlowAPI per-endpoint limiter
-from app.rate_limit import limiter, key_user_or_ip
+from app.rate_limit import  key_user_or_ip
 
 # ---- config ----
 LEGACY_VERIFY_CUTOFF = os.getenv("LEGACY_VERIFY_CUTOFF_ISO", "2025-08-24T00:00:00Z")
@@ -32,19 +32,19 @@ SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
 ALGORITHM = os.getenv("JWT_ALG", "HS256")
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
 
-# Email verification
 VERIFY_TOKEN_TTL_HOURS = int(os.getenv("VERIFY_TOKEN_TTL_HOURS", "24"))
 FRONTEND_URL = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
 
-# Cookie settings (dev-friendly defaults)
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 COOKIE_PATH = "/"
 
+CONSOLE_ENABLED_DEFAULT = os.getenv("CONSOLE_ENABLED_DEFAULT", "true").lower() in ("1","true","yes","on")
+
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-alias = APIRouter(prefix="/api/v1", tags=["auth"])  # Soft alias for /api/v1/me
+alias = APIRouter(prefix="/api/v1", tags=["auth"])
 
 # ---- helpers ----
 def create_access_token(user: User, expires_in: int = ACCESS_TOKEN_EXPIRE_SECONDS) -> str:
@@ -77,6 +77,16 @@ def client_ip(request: Request) -> str:
 def _sha256(s: str) -> str:
     h = hashlib.sha256(); h.update(s.encode("utf-8")); return h.hexdigest()
 
+def _generate_verify_token() -> str:
+    """
+    Generate an email-safe verification token.
+    Uses urlsafe base64 and strips padding.
+    """
+    raw = os.urandom(32)
+    token = base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+    return token
+
+
 def _ensure_email_verify_table(db: Session) -> None:
     db.exec(text("""
         CREATE TABLE IF NOT EXISTS public.email_verify_token (
@@ -93,19 +103,23 @@ def _ensure_email_verify_table(db: Session) -> None:
     db.commit()
 
 def _set_user_verified(user: User) -> None:
-    if hasattr(user, "email_verified"):
-        setattr(user, "email_verified", True)
-    if hasattr(user, "verified"):
-        setattr(user, "verified", True)
     now = datetime.now(timezone.utc)
-    if hasattr(user, "email_verified_at"):
-        setattr(user, "email_verified_at", now)
-    if hasattr(user, "verified_at"):
-        setattr(user, "verified_at", now)
+    if hasattr(user, "email_verified"): user.email_verified = True
+    if hasattr(user, "verified"): user.verified = True
+    if hasattr(user, "email_verified_at"): user.email_verified_at = now
+    if hasattr(user, "verified_at"): user.verified_at = now
 
 def _is_verified(user: User) -> bool:
-    # Strict: only accept the canonical field we write on confirm/backfill
     return bool(getattr(user, "email_verified_at", None))
+
+def _feature_flags(user: Optional[User]) -> dict:
+    flags = {"console_enabled": bool(CONSOLE_ENABLED_DEFAULT)}
+    if not user:
+        return flags
+    role = (getattr(user, "role", "") or "").lower()
+    if role in {"owner", "admin", "support", "finance", "analyst", "readonly"}:
+        flags["console_enabled"] = True
+    return flags
 
 # ---- models ----
 class ChangePasswordIn(BaseModel):
@@ -117,12 +131,181 @@ class VerifyStartIn(BaseModel):
 class VerifyConfirmIn(BaseModel):
     token: str
 
-# ---- routes (authn) ----
+# ---- routes ----
+
+# @router.post("/signup")
+# # @limiter.limit("6/minute; 60/hour")
+# def signup(
+#     request: Request,
+#     response: Response,
+#     email: str = Form(...),
+#     password: str = Form(...),
+#     name: Optional[str] = Form(None),
+#     agree: bool = Form(False),
+#     marketingOptIn: bool = Form(False),
+#     tosVersion: Optional[str] = Form(None),
+#     privacyVersion: Optional[str] = Form(None),
+#     db: Session = Depends(get_session),
+# ):
+#     email_norm = email.strip().lower()
+
+#     if not agree:
+#         raise HTTPException(status_code=400, detail="You must accept the Terms & Privacy.")
+
+#     if tosVersion != CURRENT_TOS_VERSION or privacyVersion != CURRENT_PRIVACY_VERSION:
+#         raise HTTPException(status_code=400, detail="Legal version mismatch.")
+
+#     existing = db.exec(select(User).where(User.email == email_norm)).first()
+#     if existing:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+
+#     now = datetime.utcnow()
+#     user = User(
+#         email=email_norm,
+#         password=get_password_hash(password),
+#         tier="free",
+#         name=(name or email_norm.split("@")[0].capitalize()),
+#         created_at=now,
+#         token_version=0,
+#         tos_version=CURRENT_TOS_VERSION,
+#         privacy_version=CURRENT_PRIVACY_VERSION,
+#         tos_accepted_at=now,
+#         privacy_accepted_at=now,
+#         marketing_opt_in=marketingOptIn,
+#         consent_ip=client_ip(request),
+#         consent_ua=request.headers.get("user-agent"),
+#     )
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+
+
+#     # db.add(user); db.commit(); db.refresh(user)
+
+#     # if REQUIRE_EMAIL_VERIFICATION:
+#     #     _ensure_email_verify_table(db)
+#     #     db.exec(text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()").bindparams(u=user.id))
+
+#     #     raw = secrets.token_urlsafe(32)
+#     #     tok_hash = _sha256(raw)
+#     #     expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
+#     #     db.exec(text("""
+#     #         INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
+#     #         VALUES (:u, :h, :e)
+#     #     """).bindparams(u=user.id, h=tok_hash, e=expires))
+#     #     db.commit()
+
+#     #     link = f"{FRONTEND_URL}/verify?token={raw}"
+#     #     send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+
+#         # return {"ok": True, "verify_sent": True, "email": user.email}
+
+#     if REQUIRE_EMAIL_VERIFICATION:
+#         _ensure_email_verify_table(db)
+#         db.exec(
+#             text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()")
+#             .bindparams(u=user.id)
+#         )
+
+#         token = _generate_verify_token()
+#         tok_hash = _sha256(token)
+#         expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
+#         db.exec(text("""
+#             INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
+#             VALUES (:u, :h, :e)
+#         """).bindparams(u=user.id, h=tok_hash, e=expires))
+#         db.commit()
+
+#         link = f"{FRONTEND_URL}/verify?token={token}"
+#         send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+
+#         return {"ok": True, "verify_sent": True, "email": user.email}
+
+
+#     token = create_access_token(user)
+#     set_auth_cookie(response, token)
+#     return {"email": user.email, "tier": user.tier, "name": user.name}
+
+# @router.post("/signup")
+# def signup(
+#     request: Request,
+#     response: Response,
+#     email: str = Form(...),
+#     password: str = Form(...),
+#     name: Optional[str] = Form(None),
+#     agree: bool = Form(False),
+#     marketingOptIn: bool = Form(False),
+#     tosVersion: Optional[str] = Form(None),
+#     privacyVersion: Optional[str] = Form(None),
+#     db: Session = Depends(get_session),
+# ):
+#     email_norm = email.strip().lower()
+
+#     if not agree:
+#         raise HTTPException(status_code=400, detail="You must accept the Terms & Privacy.")
+
+#     if tosVersion != CURRENT_TOS_VERSION or privacyVersion != CURRENT_PRIVACY_VERSION:
+#         raise HTTPException(status_code=400, detail="Legal version mismatch.")
+
+#     existing = db.exec(select(User).where(User.email == email_norm)).first()
+#     if existing:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+
+#     now = datetime.utcnow()
+#     user = User(
+#         email=email_norm,
+#         password=get_password_hash(password),
+#         tier="free",
+#         name=(name or email_norm.split("@")[0].capitalize()),
+#         created_at=now,
+#         token_version=0,
+#         tos_version=CURRENT_TOS_VERSION,
+#         privacy_version=CURRENT_PRIVACY_VERSION,
+#         tos_accepted_at=now,
+#         privacy_accepted_at=now,
+#         marketing_opt_in=marketingOptIn,
+#         consent_ip=client_ip(request),
+#         consent_ua=request.headers.get("user-agent"),
+#     )
+
+#     # SAVE USER FIRST
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+
+#     # NOW create verification token
+#     if REQUIRE_EMAIL_VERIFICATION:
+#         _ensure_email_verify_table(db)
+
+#         db.exec(
+#             text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()")
+#             .bindparams(u=user.id)
+#         )
+
+#         token = _generate_verify_token()
+#         tok_hash = _sha256(token)
+#         expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
+#         db.exec(text("""
+#             INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
+#             VALUES (:u, :h, :e)
+#         """).bindparams(u=user.id, h=tok_hash, e=expires))
+#         db.commit()
+
+#         link = f"{FRONTEND_URL}/verify?token={token}"
+#         send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+
+#         return {"ok": True, "verify_sent": True, "email": user.email}
+
+#     token = create_access_token(user)
+#     set_auth_cookie(response, token)
+#     return {"email": user.email, "tier": user.tier, "name": user.name}
 
 @router.post("/signup")
-@limiter.limit("6/minute; 60/hour")  # tight, anonymous
 def signup(
-    request: Request,  # required by SlowAPI decorator
+    request: Request,
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
@@ -132,13 +315,14 @@ def signup(
     tosVersion: Optional[str] = Form(None),
     privacyVersion: Optional[str] = Form(None),
     db: Session = Depends(get_session),
-    background: BackgroundTasks = None,
 ):
-    email_norm = (email or "").strip().lower()
+    email_norm = email.strip().lower()
+
     if not agree:
-        raise HTTPException(status_code=400, detail="You must accept the Terms & Privacy to create an account.")
+        raise HTTPException(status_code=400, detail="You must accept the Terms & Privacy.")
+
     if tosVersion != CURRENT_TOS_VERSION or privacyVersion != CURRENT_PRIVACY_VERSION:
-        raise HTTPException(status_code=400, detail="Legal version mismatch. Please refresh and try again.")
+        raise HTTPException(status_code=400, detail="Legal version mismatch.")
 
     existing = db.exec(select(User).where(User.email == email_norm)).first()
     if existing:
@@ -147,7 +331,7 @@ def signup(
     now = datetime.utcnow()
     user = User(
         email=email_norm,
-        password=get_password_hash(password),  # model uses `password` field
+        password=get_password_hash(password),
         tier="free",
         name=(name or email_norm.split("@")[0].capitalize()),
         created_at=now,
@@ -156,96 +340,108 @@ def signup(
         privacy_version=CURRENT_PRIVACY_VERSION,
         tos_accepted_at=now,
         privacy_accepted_at=now,
-        marketing_opt_in=bool(marketingOptIn),
+        marketing_opt_in=marketingOptIn,
         consent_ip=client_ip(request),
         consent_ua=request.headers.get("user-agent"),
     )
-    db.add(user); db.commit(); db.refresh(user)
 
-    log_event("CONSENT_RECORDED", {
-        "email": user.email,
-        "ip": user.consent_ip,
-        "ua": user.consent_ua,
-        "tos_version": user.tos_version,
-        "privacy_version": user.privacy_version,
-        "at": now.isoformat() + "Z",
-    })
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
-    # Send verification on signup
     if REQUIRE_EMAIL_VERIFICATION:
         _ensure_email_verify_table(db)
-        db.exec(text("DELETE FROM public.email_verify_token WHERE user_id = :u OR expires_at < NOW()").bindparams(u=user.id))
-        raw = secrets.token_urlsafe(32)
-        tok_hash = _sha256(raw)
+
+        db.exec(
+            text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()")
+            .bindparams(u=user.id)
+        )
+
+        token = _generate_verify_token()
+        tok_hash = _sha256(token)
         expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
         db.exec(text("""
             INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
             VALUES (:u, :h, :e)
         """).bindparams(u=user.id, h=tok_hash, e=expires))
         db.commit()
 
-        link = f"{FRONTEND_URL}/verify?token={raw}"
-        if background:
-            background.add_task(send_email_verification, user.email, link, VERIFY_TOKEN_TTL_HOURS)
-        else:
-            send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+        link = f"{FRONTEND_URL}/verify?token={token}"
+        send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
 
-        # Do NOT log the user in yet
         return {"ok": True, "verify_sent": True, "email": user.email}
 
     token = create_access_token(user)
     set_auth_cookie(response, token)
-    return {"email": user.email, "tier": user.tier, "name": user.name or "", "role": getattr(user, "role", "user")}
+    return {"email": user.email, "tier": user.tier, "name": user.name}
+
 
 @router.post("/login")
-@limiter.limit("12/minute; 120/hour")  # brute-force guard per IP
+# @limiter.limit("12/minute; 120/hour")
 def login(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
 ):
-    email_norm = (email or "").strip().lower()
+    email_norm = email.strip().lower()
     user = db.exec(select(User).where(User.email == email_norm)).first()
+
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
+    #     raise HTTPException(status_code=403, detail="Email not verified")
+
     if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
-        print("LOGIN_BLOCKED", {
-            "email": user.email,
-            "created_at": str(getattr(user, "created_at", None)),
-            "email_verified_at": str(getattr(user, "email_verified_at", None)),
-        })
-        raise HTTPException(status_code=403, detail="Email not verified")
+        _ensure_email_verify_table(db)
 
-    needs_reconsent = (
-        (user.tos_version or "") != CURRENT_TOS_VERSION
-        or (user.privacy_version or "") != CURRENT_PRIVACY_VERSION
-    )
+        db.exec(
+            text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()")
+            .bindparams(u=user.id)
+        )
 
+        token = _generate_verify_token()
+        tok_hash = _sha256(token)
+        expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
+        db.exec(text("""
+            INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
+            VALUES (:u, :h, :e)
+        """).bindparams(u=user.id, h=tok_hash, e=expires))
+        db.commit()
+
+        link = f"{FRONTEND_URL}/verify?token={token}"
+        send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+
+        raise HTTPException(
+            status_code=403,
+            detail="Email not verified. A new verification link was sent."
+        )
+
+    
     token = create_access_token(user)
     set_auth_cookie(response, token)
     return {
         "email": user.email,
         "tier": user.tier,
-        "name": user.name or "",
+        "name": user.name,
         "role": getattr(user, "role", "user"),
-        "needs_reconsent": needs_reconsent,
         "access_token": token,
-        "token_type": "bearer",
     }
 
 @router.post("/logout")
-@limiter.limit("30/minute")  # cheap
-def logout(request: Request, response: Response):  # <-- added request
+# @limiter.limit("30/minute")
+def logout(request: Request, response: Response):
     clear_auth_cookie(response)
     return {"ok": True}
 
 @router.post("/change-password")
-@limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
+# @limiter.limit("6/minute; 60/hour", key_func=key_user_or_ip)
 def change_password(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     payload: ChangePasswordIn,
     user_email: str = Depends(get_current_user),
@@ -261,9 +457,9 @@ def change_password(
     return {"ok": True}
 
 @router.post("/logout-all")
-@limiter.limit("3/minute; 30/hour", key_func=key_user_or_ip)
+# @limiter.limit("3/minute; 30/hour", key_func=key_user_or_ip)
 def logout_all(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
@@ -272,13 +468,13 @@ def logout_all(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    user.token_version = (user.token_version or 0) + 1
+    user.token_version += 1
     db.add(user); db.commit()
     clear_auth_cookie(response)
     return {"ok": True}
 
 @router.post("/accept-terms")
-@limiter.limit("20/minute", key_func=key_user_or_ip)
+# @limiter.limit("20/minute", key_func=key_user_or_ip)
 def accept_terms(
     request: Request,
     response: Response,
@@ -298,117 +494,117 @@ def accept_terms(
     user.consent_ua = request.headers.get("user-agent")
     db.add(user); db.commit()
 
-    log_event("CONSENT_RENEWED", {
-        "email": user.email,
-        "ip": user.consent_ip,
-        "ua": user.consent_ua,
-        "tos_version": user.tos_version,
-        "privacy_version": user.privacy_version,
-        "at": now.isoformat() + "Z",
-    })
-
     return {"ok": True}
 
-# ---------- Email verification endpoints ----------
-
 @router.post("/verify/start", status_code=204)
-@limiter.limit("3/minute; 30/hour")  # avoid email spam & enumeration attempts
+# @limiter.limit("3/minute; 30/hour")
 def verify_start(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     body: VerifyStartIn,
-    background: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    """
-    Always 204 (avoid user enumeration). If user exists and unverified, send a link.
-    """
     _ensure_email_verify_table(db)
-    email_norm = str(body.email).strip().lower()
+
+    email_norm = body.email.strip().lower()
     user = db.exec(select(User).where(User.email == email_norm)).first()
+
     if not user or _is_verified(user):
         return
 
-    db.exec(text("DELETE FROM public.email_verify_token WHERE user_id = :u OR expires_at < NOW()")
-            .bindparams(u=user.id))
-    raw = secrets.token_urlsafe(32)
-    tok_hash = _sha256(raw)
+    # db.exec(text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()").bindparams(u=user.id))
+    # raw = secrets.token_urlsafe(32)
+    # tok_hash = _sha256(raw)
+    # expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
+    # db.exec(text("""
+    #     INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
+    #     VALUES (:u, :h, :e)
+    # """).bindparams(u=user.id, h=tok_hash, e=expires))
+    # db.commit()
+
+    # link = f"{FRONTEND_URL}/verify?token={raw}"
+    # send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
+    # return
+    db.exec(
+        text("DELETE FROM public.email_verify_token WHERE user_id=:u OR expires_at<NOW()")
+        .bindparams(u=user.id)
+    )
+
+    token = _generate_verify_token()
+    tok_hash = _sha256(token)
     expires = datetime.utcnow() + timedelta(hours=VERIFY_TOKEN_TTL_HOURS)
+
     db.exec(text("""
         INSERT INTO public.email_verify_token (user_id, token_hash, expires_at)
         VALUES (:u, :h, :e)
     """).bindparams(u=user.id, h=tok_hash, e=expires))
     db.commit()
 
-    link = f"{FRONTEND_URL}/verify?token={raw}"
-    background.add_task(send_email_verification, user.email, link, VERIFY_TOKEN_TTL_HOURS)
+    link = f"{FRONTEND_URL}/verify?token={token}"
+    send_email_verification(user.email, link, VERIFY_TOKEN_TTL_HOURS)
     return
 
+
 @router.post("/verify/confirm")
-@limiter.limit("12/minute; 120/hour")
+# @limiter.limit("12/minute; 120/hour")
 def verify_confirm(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     payload: VerifyConfirmIn,
     db: Session = Depends(get_session),
 ):
+    # _ensure_email_verify_table(db)
+    # tok_hash = _sha256(payload.token)
     _ensure_email_verify_table(db)
-    tok_hash = _sha256(payload.token)
+    token = payload.token.strip()
+    tok_hash = _sha256(token)
 
     rec = db.exec(text("""
         SELECT id, user_id
         FROM public.email_verify_token
-        WHERE token_hash = :h
-          AND used_at IS NULL
-          AND expires_at > NOW()
+        WHERE token_hash=:h AND used_at IS NULL AND expires_at > NOW()
         LIMIT 1
     """).bindparams(h=tok_hash)).mappings().first()
 
     if not rec:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        raise HTTPException(status_code=400, detail="Invalid/expired token")
 
     user = db.exec(select(User).where(User.id == rec["user_id"])).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid token")
 
     _set_user_verified(user)
     db.add(user)
-    db.exec(text("UPDATE public.email_verify_token SET used_at = NOW() WHERE id = :i")
-            .bindparams(i=rec["id"]))
+    db.exec(text("UPDATE public.email_verify_token SET used_at=NOW() WHERE id=:i").bindparams(i=rec["id"]))
     db.commit()
+
     return {"ok": True}
 
-# ---- Compatibility aliases (keep UI flexible) ----
-
 @router.post("/resend-verification", status_code=204)
-@limiter.limit("3/minute; 30/hour")
 def resend_verification(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     body: VerifyStartIn,
-    background: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    # Alias of /verify/start to support older clients
-    return verify_start(request=request,response=response, body=body, background=background, db=db)
+    return verify_start(request=request, response=response, body=body, db=db)
 
 @router.get("/verify-email")
-@limiter.limit("12/minute; 120/hour")
 def verify_email(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     token: str,
     db: Session = Depends(get_session),
 ):
-    # Alias that accepts token via query param (GET) for older clients
-    return verify_confirm(request=request,response=response, payload=VerifyConfirmIn(token=token), db=db)
-
-# ---------- Soft session probe (never 401) ----------
+    return verify_confirm(
+        request=request,
+        response=response,
+        payload=VerifyConfirmIn(token=token),
+        db=db
+    )
 
 @router.get("/me")
-@limiter.limit("120/minute")
 def soft_me(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
@@ -418,16 +614,15 @@ def soft_me(
 
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+    except:
         return {"authenticated": False}
 
-    email = (payload.get("sub") or "").lower()
+    email = payload.get("sub", "").lower()
     ver = int(payload.get("ver", 0))
-    if not email:
-        return {"authenticated": False}
 
     user = db.exec(select(User).where(User.email == email)).first()
-    if not user or int(user.token_version or 0) != ver:
+
+    if not user or int(user.token_version) != ver:
         return {"authenticated": False}
 
     return {
@@ -435,49 +630,30 @@ def soft_me(
         "email": user.email,
         "role": getattr(user, "role", "user"),
         "tier": user.tier,
-        "name": user.name or "",
+        "name": user.name,
+        "featureFlags": _feature_flags(user),
     }
 
-# ---------- Strict identity (401 if not logged in) ----------
-
 @router.get("/whoami")
-@limiter.limit("120/minute", key_func=key_user_or_ip)
 def whoami(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
     user = db.exec(select(User).where(User.email == user_email)).first()
-    return {"email": user.email, "role": getattr(user, "role", "user"), "tier": user.tier, "name": user.name or ""}
-
-# ---------- Soft alias at /api/v1/me ----------
+    return {
+        "email": user.email,
+        "role": getattr(user, "role", "user"),
+        "tier": user.tier,
+        "name": user.name,
+    }
 
 @alias.get("/me")
-@limiter.limit("120/minute")
 def soft_me_alias(
-    request: Request,  # <-- added
+    request: Request,
     response: Response,
     access_token: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
     db: Session = Depends(get_session),
 ):
-    if not access_token:
-        return {"authenticated": False}
-    try:
-        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        return {"authenticated": False}
-    email = (payload.get("sub") or "").lower()
-    ver = int(payload.get("ver", 0))
-    if not email:
-        return {"authenticated": False}
-    user = db.exec(select(User).where(User.email == email)).first()
-    if not user or int(user.token_version or 0) != ver:
-        return {"authenticated": False}
-    return {
-        "authenticated": True,
-        "email": user.email,
-        "role": getattr(user, "role", "user"),
-        "tier": user.tier,
-        "name": user.name or "",
-    }
+    return soft_me(request, response, access_token, db)

@@ -24,6 +24,17 @@ class StorageResult(Tuple[str, str]):
 class LocalStorage:
     def __init__(self, root: str):
         self.root = Path(root)
+    
+    def save_stream(self, user_id: int, session_id: int, filename: str, stream, mime=None):
+        stream.seek(0)
+        data = stream.read()
+        return self.save(
+            user_id=user_id,
+            session_id=session_id,
+            filename=filename,
+            data=data
+        )
+
 
     def save(self, *, user_id: int, session_id: int, filename: str, data: bytes) -> StorageResult:
         ext = _ext_from_name(filename)
@@ -49,6 +60,26 @@ class S3Storage:
             endpoint_url=S3_ENDPOINT_URL,
             config=None
         )
+    def save_stream(self, user_id: int, session_id: int, filename: str, stream, mime=None):
+        import mimetypes
+        stream.seek(0)
+        data = stream.read()
+
+        ext = _ext_from_name(filename)
+        doc_id = str(uuid.uuid4())
+        key = f"uploads/{user_id}/{session_id}/{doc_id}{ext}"
+
+        content_type = mime or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+        self.s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=data,
+            ContentType=content_type
+        )
+
+        return doc_id, f"s3://{S3_BUCKET}/{key}"
+
 
     def save(self, *, user_id: int, session_id: int, filename: str, data: bytes) -> StorageResult:
         import mimetypes

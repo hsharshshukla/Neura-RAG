@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import secureAxios from '../utils/secureAxios';
+
 // import ScopeBadge from '../components/ScopeBadge'; // optional
 
 const ACCEPT = [
@@ -21,6 +22,7 @@ const iconForExt = (name = '') => {
   if (['png', 'jpg', 'jpeg'].includes(e)) return '🖼️';
   return '📎';
 };
+
 const fmtBytes = (n) => {
   if (!n && n !== 0) return '';
   const u = ['B', 'KB', 'MB', 'GB'];
@@ -65,41 +67,19 @@ const upsertAndBump = (list, id, patch = {}) => {
   return bumped;
 };
 
-// Optional tiny pill if you want to show plan in the header
-const TierPill = ({ tier }) => {
-  const t = (tier || 'free').toLowerCase();
-  return (
-    <span className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 border" title="Your plan">
-      {t.toUpperCase()}
-    </span>
-  );
-};
-
-// --- Duplicate helpers (safe fallback if endpoint is missing) ---
-async function sha256Hex(file) {
-  const buf = await file.arrayBuffer();
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  const bytes = new Uint8Array(hash);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function isDuplicateOnServer(sessionId, digestHex, size) {
-  try {
-    const { data } = await secureAxios.get(
-      `/upload/check`,
-      { params: { session_id: sessionId, sha256: digestHex, size } }
-    );
-    // Expecting { duplicate: boolean } from server
-    return !!data?.duplicate;
-  } catch {
-    return false;
+function pickAnswer(data) {
+  if (!data) return "";
+  const keys = ['response', 'answer', 'message', 'output', 'content'];
+  for (const k of keys) {
+    if (typeof data[k] === 'string' && data[k].trim()) return data[k];
   }
+  if (typeof data.payload?.response === 'string') return data.payload.response;
+  return "";
 }
 
 const Chat = () => {
   const { id: routeId } = useParams();
 
-  // user + rate-limit banner
   const [user, setUser] = useState(null); // {email, tier}
   const tier = (user?.tier || 'free').toLowerCase();
   const [rateLimitBanner, setRateLimitBanner] = useState('');
@@ -111,15 +91,95 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
 
+  // retry: keep last failed text + session
+  const [retryInfo, setRetryInfo] = useState(null); // { text: string, sessionId: number | null }
+
   // rename UI state
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  // ---- Rename handlers ----
+  const startEditing = (chat) => {
+    setEditingId(chat.id);
+    setEditValue(chat.title || '');
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+  const saveRename = async () => {
+    if (!editingId) return;
+  
+    const trimmed = editValue.trim();
+    const finalTitle = trimmed || 'Untitled';
+    const id = editingId;
+  
+    // Optimistic UI update
+    setChatsList((prev) =>
+      prev.map((c) =>
+        String(c.id) === String(id)
+          ? { ...c, title: finalTitle, updated_at: nowISO() }
+          : c
+      )
+    );
+  
+    setEditingId(null);
+    setEditValue('');
+  
+    try {
+      // secureAxios baseURL is likely /api/v1, so this becomes /api/v1/chat/{id}/title
+      await secureAxios.patch(`/chat/${id}/title`, {
+        title: finalTitle,
+      });
+    } catch (err) {
+      console.error('Failed to rename chat title:', err);
+      // optional: rollback if you want to be fancy
+    }
+  };
+  
+  // const saveRename = async () => {
+  //   if (!editingId) return;
+
+  //   const trimmed = editValue.trim();
+  //   const finalTitle = trimmed || 'Untitled';
+  //   const id = editingId;
+
+  //   // Optimistic UI update
+  //   setChatsList((prev) =>
+  //     prev.map((c) =>
+  //       String(c.id) === String(id)
+  //         ? { ...c, title: finalTitle, updated_at: nowISO() }
+  //         : c
+  //     )
+  //   );
+
+  //   setEditingId(null);
+  //   setEditValue('');
+
+  //   try {
+  //     // adjust endpoint if your backend uses a different route
+  //     await secureAxios.put(`/chat/${id}/title`, { title: finalTitle });
+  //   } catch (err) {
+  //     console.error('Failed to rename chat title:', err);
+  //     // optional: rollback or show toast, but at least UI doesn't explode
+  //   }
+  // };
+
+  const onEditKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveRename();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditing();
+    }
+  };
 
   // uploads UI
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
-  // status: queued | checking | duplicate | uploading | done | error
-  const [uploads, setUploads] = useState([]);
+  const [uploads, setUploads] = useState([]); // status: queued|checking|duplicate|uploading|done|error
 
   // Fetch user (tier) once
   useEffect(() => {
@@ -134,7 +194,7 @@ const Chat = () => {
           const plan = (raw.tier || raw.plan || 'free').toLowerCase();
           setUser({ email: raw.email, tier: plan });
         }
-      } catch { /* ignored */ }
+      } catch {}
     }
     loadUser();
     return () => { cancelled = true; };
@@ -178,16 +238,16 @@ const Chat = () => {
     setChat([]);
     setMessage('');
     setEditingId(null);
+    setRetryInfo(null);
   };
 
   // Ensure a session exists (used by uploads)
   const ensureSession = async () => {
     if (activeChatId) return activeChatId;
     try {
-      // IMPORTANT: backend expects { query: { payload: string } }
       const res = await secureAxios.post('/chat', {
-        // query: { payload: 'New chat' }
-        payload: 'New chat'
+        payload: 'New chat',
+        message: 'New chat'
       });
       const { session_id, title } = res.data || {};
       if (session_id) {
@@ -205,23 +265,36 @@ const Chat = () => {
     return null;
   };
 
-  // ---- Send a message ----
-  const send = async () => {
-    const text = message.trim();
+  // ---- Retry handler ----
+  const retryLast = useCallback(() => {
+    if (!retryInfo?.text) return;
+    // optional "retrying…" system bubble
+    setChat(prev => [...prev, { role: 'assistant', content: '↻ Retrying…' }]);
+    send(retryInfo.text);
+    setRetryInfo(null);
+  }, [retryInfo]); 
+
+  // ---- Send a message (supports resend/override) ----
+  const send = async (overrideText) => {
+    const text = (overrideText ?? message).trim();
     if (!text || isTyping) return;
 
+    // Optimistic user bubble only when sending from composer (not from retry banner)
+    const isManual = overrideText == null;
+    if (isManual) {
+      setChat(prev => [...prev, { role: 'user', content: text }]);
+      setMessage('');
+    }
+
     setIsTyping(true);
-    setChat(prev => [...prev, { role: 'user', content: text }]);
-    setMessage('');
+    setRetryInfo(null); // clear previous retry
 
     try {
       if (!activeChatId) {
-        // First message creates a session; backend needs query.payload
-        const res = await secureAxios.post('/chat', {
-          // query: { payload: text }
-          payload : text
-        });
-        const { session_id, response, title } = res.data || {};
+        const res = await secureAxios.post('/chat', { payload: text, message: text });
+        const { session_id, title } = res.data || {};
+        const answer = pickAnswer(res.data);
+
         if (session_id) {
           setActiveChatId(session_id);
           localStorage.setItem('active_chat_id', String(session_id));
@@ -230,50 +303,60 @@ const Chat = () => {
             session_id
           ));
         }
-        setChat(prev => [...prev, { role: 'assistant', content: response ?? '' }]);
+
+        setChat(prev => [...prev, { role: 'assistant', content: answer }]);
       } else {
-        // Follow-up message in an existing session
         const res = await secureAxios.post('/chat', {
-          // query: { payload: text },
           payload: text,
+          message: text,
           session_id: activeChatId
         });
-        const ai = res.data?.response ?? '';
+        const ai = pickAnswer(res.data);
+
         setChat(prev => [...prev, { role: 'assistant', content: ai }]);
         setChatsList(prev => reorderWithActiveTop(upsertAndBump(prev, activeChatId), activeChatId));
       }
     } catch (err) {
       console.error('Send failed:', err);
+
+      // remember what to retry in the same session
+      setRetryInfo({ text, sessionId: activeChatId ?? null });
+
+      // show friendly error bubble with inline retry button
+      setChat(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: '⚠️ Something went wrong. Please try again.',
+          _error: true
+        }
+      ]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  // --- Rename handlers ---
-  const startEditing = (c) => { setEditingId(c.id); setEditValue(c.title || ''); };
-  const cancelEditing = () => { setEditingId(null); setEditValue(''); };
-  const saveRename = async () => {
-    const id = editingId;
-    const title = (editValue || '').trim();
-    if (!id) return cancelEditing();
-    try {
-      setChatsList((list) => list.map(c => String(c.id) === String(id) ? { ...c, title } : c));
-      await secureAxios.patch(`/chat/${id}/title`, { title });
-      setChatsList(prev => reorderWithActiveTop(prev, activeChatId));
-    } catch (err) {
-      console.error('Rename failed:', err);
-      fetchChats();
-    } finally {
-      cancelEditing();
-    }
-  };
-  const onEditKeyDown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
-    else if (e.key === 'Escape') { e.preventDefault(); cancelEditing(); }
-  };
-
   // ---- Uploads ----
   const onClickAttach = () => fileInputRef.current?.click();
+
+  async function sha256Hex(file) {
+    const buf = await file.arrayBuffer();
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    const bytes = new Uint8Array(hash);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function isDuplicateOnServer(sessionId, digestHex, size) {
+    try {
+      const { data } = await secureAxios.get(
+        `/upload/check`,
+        { params: { session_id: sessionId, sha256: digestHex, size } }
+      );
+      return !!data?.duplicate;
+    } catch {
+      return false;
+    }
+  }
 
   const handleFiles = async (files) => {
     if (!files?.length) return;
@@ -310,7 +393,6 @@ const Chat = () => {
 
     const tasks = items.map((item) => (async () => {
       try {
-        // 1) Checking
         setUploads(prev => prev.map(u => u.id === item.id ? { ...u, status: 'checking', progress: 0 } : u));
 
         const digestHex = await sha256Hex(item.file);
@@ -323,7 +405,6 @@ const Chat = () => {
           return;
         }
 
-        // 2) Uploading
         setUploads(prev => prev.map(u => u.id === item.id ? { ...u, status: 'uploading' } : u));
 
         const fd = new FormData();
@@ -331,9 +412,7 @@ const Chat = () => {
         fd.append('file', item.file);
 
         await secureAxios.post('/upload', fd, {
-          headers: {
-            'X-Content-Digest': digestHex,
-          },
+          headers: { 'X-Content-Digest': digestHex },
           onUploadProgress: (evt) => {
             if (!evt.total) return;
             const pct = Math.min(99, Math.round((evt.loaded / evt.total) * 100));
@@ -400,7 +479,6 @@ const Chat = () => {
 
   // ---- INIT ----
   useEffect(() => { fetchChats(); }, []);
-
   useEffect(() => {
     if (routeId) {
       localStorage.setItem('active_chat_id', String(routeId));
@@ -510,15 +588,14 @@ const Chat = () => {
                 return cur?.title || 'New Chat';
               })()}
             </div>
-            {/* Optional user/tier/scope */}
           </div>
 
-          {/* 429 banner */}
-          {rateLimitBanner && (
-            <div className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-              {rateLimitBanner} Upgrade to <strong>Mini+</strong> or <strong>Pro</strong> for unlimited chats.
-            </div>
-          )}
+        {/* 429 banner */}
+        {rateLimitBanner && (
+          <div className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            {rateLimitBanner} Upgrade to <strong>Mini+</strong> or <strong>Pro</strong> for unlimited chats.
+          </div>
+        )}
         </div>
 
         {/* Messages */}
@@ -536,12 +613,23 @@ const Chat = () => {
                           : 'bg-white text-gray-800 border border-gray-100 rounded-bl-md'
                       }`}
                     >
-                      <div className="text-[11px] opacity-80 mb-1">
+                      <div className="text+[11px] opacity-80 mb-1">
                         {isUser ? 'You' : 'Neura'}
                       </div>
                       {m.role === 'assistant' ? (
                         <div className={`prose prose-sm ${isUser ? 'prose-invert' : ''}`}>
                           <ReactMarkdown>{m.content}</ReactMarkdown>
+                          {m._error && (
+                            <div className="mt-2">
+                              <button
+                                onClick={retryLast}
+                                className="text-xs px-2 py-1 rounded-md border border-gray-300 hover:bg-gray-50"
+                                title="Retry the last request"
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm leading-relaxed">{m.content}</span>
@@ -569,41 +657,24 @@ const Chat = () => {
           )}
         </div>
 
-        {/* Upload chips */}
-        {uploads.length > 0 && (
-          <div className="px-4 pb-2 space-y-2">
-            {uploads.map(u => (
-              <div
-                key={u.id}
-                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm"
+        {/* Retry banner (only when a request failed) */}
+        {retryInfo && (
+          <div className="px-4">
+            <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm px-3 py-2 flex items-center gap-3">
+              <span>Last request failed.</span>
+              <button
+                onClick={retryLast}
+                className="px-2 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700"
               >
-                <div className="text-lg">{iconForExt(u.name)}</div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="truncate text-sm font-medium text-gray-800" title={u.name}>{u.name}</div>
-                    <div className="text-xs text-gray-500 shrink-0">{fmtBytes(u.size)}</div>
-                    <div className="text-xs ml-auto">
-                      {u.status === 'done' && <span className="text-green-600">Done</span>}
-                      {u.status === 'duplicate' && <span className="text-amber-600">Duplicate</span>}
-                      {u.status === 'error' && <span className="text-red-600">Failed</span>}
-                      {u.status === 'uploading' && <span className="text-gray-500">{u.progress}%</span>}
-                      {u.status === 'checking' && <span className="text-gray-500">Checking…</span>}
-                      {u.status === 'queued' && <span className="text-gray-400">Queued</span>}
-                    </div>
-                  </div>
-                  <div className="mt-1 h-2 w-full rounded bg-gray-200 overflow-hidden">
-                    <div
-                      className={`h-2 transition-all ${
-                        u.status === 'error' ? 'bg-red-500'
-                          : u.status === 'duplicate' ? 'bg-amber-500'
-                          : 'bg-indigo-500'
-                      }`}
-                      style={{ width: `${u.status === 'done' || u.status === 'duplicate' ? 100 : u.progress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+                Retry
+              </button>
+              <button
+                onClick={() => setRetryInfo(null)}
+                className="ml-auto text-xs text-amber-800 hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
@@ -637,6 +708,7 @@ const Chat = () => {
               value={message}
               onChange={e => setMessage(e.target.value)}
               onKeyDown={(e) => {
+                // Enter to send
                 if (
                   e.key === 'Enter' &&
                   !e.shiftKey &&
@@ -646,6 +718,16 @@ const Chat = () => {
                   e.preventDefault();
                   send();
                 }
+                // Optional: ArrowUp to recall last failed prompt when textarea is empty
+                if (
+                  e.key === 'ArrowUp' &&
+                  !e.shiftKey &&
+                  message.trim().length === 0 &&
+                  retryInfo?.text
+                ) {
+                  e.preventDefault();
+                  setMessage(retryInfo.text);
+                }
               }}
               rows={1}
               placeholder="Ask about your documents…"
@@ -653,7 +735,7 @@ const Chat = () => {
             />
 
             <button
-              onClick={send}
+              onClick={() => send()}
               disabled={message.trim().length === 0 || isTyping}
               aria-disabled={message.trim().length === 0 || isTyping}
               aria-busy={isTyping}

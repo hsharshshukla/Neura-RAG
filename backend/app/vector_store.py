@@ -5,14 +5,15 @@ Public API kept compatible:
   - embed_and_store(user_email, text, metadata)
   - query_user_docs(user_email, question, top_k=4, filter_by_user=True, extra_filters=None)
   - get_vector_stats()
+  - search_vectors(question, top_k=10, filters=None)   # back-compat shim for retrieval.py
 
 Env knobs (examples):
   VECTOR_PRIMARY=chroma|pgvector|qdrant
   VECTOR_SHADOWS=qdrant
   VECTOR_SHADOW_READ=true
   VECTOR_NAMESPACE=prod
-  EMBEDDING_MODEL=text-embedding-3-small
-  EMBED_DIM=1536
+  EMBEDDING_MODEL=text-embedding-3-large
+  EMBED_DIM=3072
 
 Qdrant Cloud:
   QDRANT_URL=https://<cluster>.<region>.cloud.qdrant.io
@@ -28,15 +29,17 @@ pgvector:
 from __future__ import annotations
 from typing import List, Dict, Optional, Any, Iterable, Tuple, Protocol
 from dataclasses import dataclass
-import os, json, math, hashlib, logging, time
+import os, json, math, hashlib, logging, time, re
 from datetime import datetime
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
-# LangChain bits (used for Chroma and embeddings across all backends)
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+
 
 # SQLModel Session (we'll obtain engine/session via app.db.get_session dynamically)
 from sqlmodel import Session
@@ -51,8 +54,8 @@ CHROMA_DIR = os.getenv(
 )
 
 # Model env: support both names
-EMBED_MODEL = os.getenv("EMBEDDING_MODEL") or os.getenv("EMBED_MODEL", "text-embedding-3-small")
-EMBED_DIM = int(os.getenv("EMBED_DIM", "1536"))  # keep in sync with your embedding model
+EMBED_MODEL = os.getenv("EMBEDDING_MODEL") or os.getenv("EMBED_MODEL", "text-embedding-3-large")
+EMBED_DIM = int(os.getenv("EMBED_DIM", "3072"))  # keep in sync with your embedding model
 
 # Backend selection
 VECTOR_PRIMARY = (os.getenv("VECTOR_PRIMARY") or os.getenv("VECTOR_BACKEND") or "chroma").strip().lower()
@@ -67,9 +70,11 @@ PGVECTOR_TABLE = os.getenv("PGVECTOR_TABLE", "embedding_index")
 try:
     import qdrant_client
     from qdrant_client.http import models as qm
+    from qdrant_client.http.exceptions import UnexpectedResponse
 except Exception:
     qdrant_client = None
     qm = None
+    UnexpectedResponse = Exception  # fallback
 
 # ----------------------- Interface -----------------------
 @dataclass(frozen=True)
@@ -136,6 +141,7 @@ def _get_embeddings() -> OpenAIEmbeddings:
 def _normalize_metadata(md: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     md = (md or {}).copy()
     if "session_id" in md and md["session_id"] is not None:
+        # We treat session_id as string for uniformity across backends and indexing as KEYWORD in Qdrant
         md["session_id"] = str(md["session_id"])
     md["__ns"] = VECTOR_NAMESPACE
     return md
@@ -170,7 +176,7 @@ def stable_chunk_id(doc_id: str, idx: int, text: str) -> str:
 class ChromaStore(VectorStore):
     """LangChain Chroma wrapper (default)."""
     def __init__(self, persist_dir: str = CHROMA_DIR):
-        from langchain.vectorstores import Chroma  # local import to avoid hard dep if unused
+        # from langchain.vectorstores import Chroma  # local import to avoid hard dep if unused
         self._Chroma = Chroma
         self.persist_dir = persist_dir
         self.db = self._Chroma(persist_directory=self.persist_dir, embedding_function=_get_embeddings())
@@ -353,10 +359,8 @@ class QdrantStore(VectorStore):
         url = os.getenv("QDRANT_URL")  # e.g., https://<cluster>.<region>.cloud.qdrant.io
         api_key = os.getenv("QDRANT_API_KEY")
         if url:
-            # Cloud URL path
             self.client = qdrant_client.QdrantClient(url=url, api_key=api_key, prefer_grpc=False)
         else:
-            # Local/self-hosted path
             host = os.getenv("QDRANT_HOST", "localhost")
             port = int(os.getenv("QDRANT_PORT", "6333"))
             self.client = qdrant_client.QdrantClient(host=host, port=port)
@@ -372,6 +376,55 @@ class QdrantStore(VectorStore):
                 collection_name=self.collection,
                 vectors_config=qm.VectorParams(size=self._dim, distance=qm.Distance.COSINE),
             )
+
+        # Ensure required payload indexes exist (idempotent)
+        self._ensure_payload_indexes()
+
+    def _ensure_payload_indexes(self):
+        index_specs = [
+            ("__ns",       "keyword"),
+            ("user_email", "keyword"),
+            ("session_id", "keyword"),  # stored as string in our code
+            ("user_id",    "keyword"),  # flip to "integer" if you truly store ints
+            ("owner",      "keyword"),
+            ("is_public",  "bool"),
+            ("doc_id",     "keyword"),
+            ("chunk_id",   "keyword"),
+        ]
+        for field, schema in index_specs:
+            try:
+                self.client.create_payload_index(collection_name=self.collection,
+                                                 field_name=field,
+                                                 field_schema=schema)
+            except Exception as e:
+                if "already exists" in str(e).lower():
+                    continue
+                # Qdrant Cloud returns 400 on wrong type: don't fail startup, just log.
+                log.debug("Index create ignored for %s (%s): %s", field, schema, str(e)[:200])
+
+    def _safe_search(self, **kwargs):
+        """
+        Wrap client.search: if Qdrant complains about a missing index, auto-create it and retry once.
+        """
+        try:
+            return self.client.search(**kwargs)
+        except UnexpectedResponse as e:
+            msg = str(e)
+            # Try to extract the missing field name from error: "Index required but not found for \"__ns\" ..."
+            m = re.search(r'Index required but not found for \\\?"([^"\\]+)\\\?"', msg) or \
+                re.search(r'Index required but not found for "([^"]+)"', msg)
+            if m:
+                missing = m.group(1)
+                # Default to keyword; this is safe for most of our string filters
+                try:
+                    self.client.create_payload_index(collection_name=self.collection,
+                                                     field_name=missing,
+                                                     field_schema="keyword")
+                    log.warning("Auto-created missing Qdrant index for key=%s", missing)
+                    return self.client.search(**kwargs)
+                except Exception as ce:
+                    log.error("Failed to auto-create payload index for %s: %s", missing, ce)
+            raise
 
     def upsert(self, rows: Iterable[VectorRecord]) -> None:
         points = []
@@ -395,8 +448,11 @@ class QdrantStore(VectorStore):
                filters: Optional[Dict[str, Any]] = None) -> List[Tuple[VectorRecord, float]]:
         conds = [qm.FieldCondition(key="__ns", match=qm.MatchValue(value=VECTOR_NAMESPACE))]
         for k, v in (filters or {}).items():
+            # Skip None values; keep as strings/bools as provided
+            if v is None:
+                continue
             conds.append(qm.FieldCondition(key=str(k), match=qm.MatchValue(value=v)))
-        res = self.client.search(
+        res = self._safe_search(
             collection_name=self.collection,
             query_vector=query_embedding,
             limit=top_k,
@@ -445,6 +501,9 @@ def _ensure_initialized() -> None:
     global PRIMARY, SHADOWS
     if PRIMARY is not None:
         return
+
+    log.warning(f"VECTOR DIM USING: {EMBED_DIM} model={EMBED_MODEL}")
+
     primary_name = VECTOR_PRIMARY
     PRIMARY = _make_store(primary_name)
     SHADOWS.clear()
@@ -549,7 +608,7 @@ def query_user_docs(
     # Chroma fast-path: text similarity with metadata filter
     if isinstance(PRIMARY, ChromaStore):
         try:
-            from langchain.vectorstores import Chroma  # noqa
+            # from langchain.vectorstores import Chroma  # noqa
             where = _build_where_from_kv(filters)
             db = PRIMARY.db  # type: ignore[attr-defined]
             return db.similarity_search(question, k=top_k, filter=where)  # List[Document]
@@ -603,6 +662,109 @@ def get_vector_stats() -> Dict[str, str]:
                 if last_mtime else "n/a"
             ),
         }
+
+# ----------------------- Public API (search shim for retrieval) -----------------------
+# ----------------------- Public API (search shim for retrieval) -----------------------
+async def search_vectors(
+    question: Optional[str] = None,
+    query: Optional[str] = None,
+    top_k: Optional[int] = None,
+    k: Optional[int] = None,
+    filters: Optional[Dict[str, Any]] = None,
+    scope: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Back-compat shim expected by app.services.query_engine.retrieval.
+
+    Accepts both legacy and new arg names:
+      - text:  question | query
+      - k:     top_k    | k
+      - where: filters  | scope
+
+    Returns a list of dicts with keys: doc_id, chunk_id, text, meta, score.
+    """
+    _ensure_initialized()
+
+    # Normalize args from either naming style
+    q = (question or query or "").strip()
+    if not q:
+        return []
+
+    topk = int(top_k if top_k is not None else (k if k is not None else 10))
+
+    # Merge filters/scope (retrieval.py passes a prebuilt scope dict)
+    f: Dict[str, Any] = {}
+    if filters:
+        f.update(filters)
+    if scope:
+        f.update(scope)
+
+    # Ensure some ids are strings for backends that index as keywords
+    for key in ("session_id", "user_id"):
+        if key in f and f[key] is not None:
+            f[key] = str(f[key])
+
+    # Embed query and run ANN on primary store
+    qvec = _embed_query(q)
+    try:
+        hits = PRIMARY.search(qvec, top_k=topk, filters=f)
+    except Exception:
+        log.exception("search_vectors: primary search failed")
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for rec, score in hits:
+        out.append({
+            "doc_id":   rec.doc_id,
+            "chunk_id": rec.chunk_id,
+            "text":     rec.text,
+            "meta":     dict(rec.metadata or {}),
+            "score":    float(score) if score is not None else 0.0,
+        })
+    return out
+
+
+# def search_vectors(
+#     question: str,
+#     top_k: int = 10,
+#     filters: Optional[Dict[str, Any]] = None,
+# ) -> List[Dict[str, Any]]:
+#     """
+#     Back-compat shim expected by app.services.query_engine.retrieval.
+#     - Embeds the query
+#     - Runs ANN search on the configured PRIMARY store
+#     - Returns a list of dicts with keys: doc_id, chunk_id, text, meta, score
+
+#     NOTE: This does NOT do BM25; lexical is handled elsewhere (retrieval module).
+#     """
+#     _ensure_initialized()
+
+#     # Normalize filters; leave values as-is except ensure some keys are strings
+#     f: Dict[str, Any] = {}
+#     if filters:
+#         for k, v in filters.items():
+#             if k in ("session_id", "user_id") and v is not None:
+#                 f[k] = str(v)
+#             else:
+#                 f[k] = v
+
+#     qvec = _embed_query(question)
+#     try:
+#         hits = PRIMARY.search(qvec, top_k=top_k, filters=f)
+#     except Exception:
+#         log.exception("search_vectors: primary search failed")
+#         return []
+
+#     out: List[Dict[str, Any]] = []
+#     for rec, score in hits:
+#         out.append({
+#             "doc_id":   rec.doc_id,
+#             "chunk_id": rec.chunk_id,
+#             "text":     rec.text,
+#             "meta":     dict(rec.metadata or {}),
+#             "score":    float(score) if score is not None else 0.0,
+#         })
+#     return out
 
 # ----------------------- Optional: Healthcheck -----------------------
 def vector_healthcheck() -> Dict[str, Any]:

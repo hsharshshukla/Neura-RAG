@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from datetime import datetime
+# app/schemas.py
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 class SignupRequest(BaseModel):
     name: str
@@ -17,20 +17,15 @@ class UserOut(BaseModel):
     name: str | None = None
     tier: str
 
-
 class ChatSessionOut(BaseModel):
     id: int
     title: str
     created_at: datetime
-
     class Config:
         orm_mode = True
 
 class ChatMessageOut(BaseModel):
-    # id: int
     role: str
     content: str
-    # timestamp: datetime
-
     class Config:
         orm_mode = True

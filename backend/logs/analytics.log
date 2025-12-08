@@ -49011,3 +49011,1298 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-08-31 17:44:29,422 - [MAIL] sent to tanik@g.com (subject='[DEV] Your Pro subscription is active')
 2025-08-31 17:44:34,730 - [MAIL][events] queued 'Cancellation scheduled' to tanik@g.com
 2025-08-31 17:44:38,427 - [MAIL] sent to tanik@g.com (subject='[DEV] Cancellation scheduled')
+2025-09-07 22:41:24,021 - pikepdf C++ to Python logger bridge initialized
+2025-09-07 22:41:24,642 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-07 22:41:24,642 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-07 22:41:29,667 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-07 22:41:29,667 - Vector store initialized in lifespan.
+2025-09-07 23:02:46,291 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 30, 'question': 'archivelink', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-07 23:12:09,539 - pikepdf C++ to Python logger bridge initialized
+2025-09-07 23:12:10,025 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-07 23:12:10,026 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-07 23:12:15,253 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-07 23:12:15,253 - Vector store initialized in lifespan.
+2025-09-07 23:23:47,090 - pikepdf C++ to Python logger bridge initialized
+2025-09-07 23:23:47,649 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-07 23:23:47,649 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-07 23:23:53,025 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-07 23:23:53,026 - Vector store initialized in lifespan.
+2025-09-07 23:24:08,020 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-08 19:05:21,393 - pikepdf C++ to Python logger bridge initialized
+2025-09-08 19:05:22,080 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-08 19:05:22,081 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-08 19:05:27,643 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-08 19:05:27,643 - Vector store initialized in lifespan.
+2025-09-08 19:05:31,707 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-08 19:21:22,898 - pikepdf C++ to Python logger bridge initialized
+2025-09-08 19:21:23,519 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-08 19:21:23,519 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-08 19:21:29,233 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-08 19:21:29,233 - Vector store initialized in lifespan.
+2025-09-09 17:01:32,023 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 17:01:32,716 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 17:01:32,717 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 17:01:38,706 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 17:01:38,706 - Vector store initialized in lifespan.
+2025-09-09 17:29:49,601 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 17:29:50,141 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 17:29:50,142 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 17:29:56,728 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 17:29:56,728 - Vector store initialized in lifespan.
+2025-09-09 20:39:41,674 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 20:39:42,367 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 20:39:42,368 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 20:39:47,689 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 20:39:47,690 - Vector store initialized in lifespan.
+2025-09-09 21:43:39,157 - ADMIN_SET_TIER | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com', 'tier': 'mini'}
+2025-09-09 21:43:43,845 - ADMIN_PROMOTE | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com'}
+2025-09-09 21:43:48,512 - ADMIN_DEMOTE | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com'}
+2025-09-09 21:43:53,558 - ADMIN_SET_TIER | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com', 'tier': 'free'}
+2025-09-09 21:44:02,028 - ADMIN_PROMOTE | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com'}
+2025-09-09 21:44:31,249 - ADMIN_SET_TIER | {'actor': 'viruj8151@gmail.com', 'target': 'jemi@g.com', 'tier': 'mini'}
+2025-09-09 22:11:46,037 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 22:11:46,702 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 22:11:46,702 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 22:11:52,506 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 22:11:52,506 - Vector store initialized in lifespan.
+2025-09-09 22:53:59,310 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 22:53:59,903 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 22:53:59,904 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 22:54:05,637 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 22:54:05,637 - Vector store initialized in lifespan.
+2025-09-09 23:13:08,126 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 23:13:08,719 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 23:13:08,720 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 23:13:13,852 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 23:13:13,852 - Vector store initialized in lifespan.
+2025-09-09 23:25:13,988 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 23:25:14,632 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 23:25:14,632 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 23:25:19,976 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 23:25:19,976 - Vector store initialized in lifespan.
+2025-09-09 23:54:37,968 - pikepdf C++ to Python logger bridge initialized
+2025-09-09 23:54:38,606 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-09 23:54:38,606 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-09 23:54:43,838 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-09 23:54:43,839 - Vector store initialized in lifespan.
+2025-09-10 00:12:07,602 - pikepdf C++ to Python logger bridge initialized
+2025-09-10 00:12:08,192 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-10 00:12:08,193 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-10 00:12:13,556 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-10 00:12:13,556 - Vector store initialized in lifespan.
+2025-09-10 00:12:15,966 - ADMIN_COUPON_CREATE | {'actor': 'viruj8151@gmail.com', 'code': 'LAJDFL', 'type': 'percent', 'value': 10, 'currency': None}
+2025-09-10 23:58:53,255 - pikepdf C++ to Python logger bridge initialized
+2025-09-10 23:58:54,084 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-10 23:58:54,085 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-10 23:59:00,885 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-10 23:59:00,885 - Vector store initialized in lifespan.
+2025-09-11 21:30:03,298 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-11 21:31:37,252 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 21:31:37,986 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 21:31:37,988 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 21:31:43,608 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 21:31:43,608 - Vector store initialized in lifespan.
+2025-09-11 21:47:05,506 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 21:47:06,125 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 21:47:06,125 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 21:47:11,759 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 21:47:11,759 - Vector store initialized in lifespan.
+2025-09-11 21:47:32,988 - chat_event insert failed (non-fatal): Unconsumed column names: rag_doc_ids_hash, in_cost, response_code, rag_source_kinds, latency_ms, total_cost, refused, out_cost, retrieved, retrieval_latency_ms, input_tokens, output_tokens
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\analytics\logger.py", line 133, in log_chat_event
+    db.execute(chat_event_table.insert().values(**data))
+  File "D:\Neura\venv\Lib\site-packages\sqlmodel\orm\session.py", line 127, in execute
+    return super().execute(
+           ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2260, in _execute_internal
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1413, in execute
+    return meth(
+           ^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1627, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 715, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 323, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1446, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 886, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 932, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 138, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 5896, in visit_insert
+    crud_params_struct = crud._get_crud_params(
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\crud.py", line 381, in _get_crud_params
+    raise exc.CompileError(
+sqlalchemy.exc.CompileError: Unconsumed column names: rag_doc_ids_hash, in_cost, response_code, rag_source_kinds, latency_ms, total_cost, refused, out_cost, retrieved, retrieval_latency_ms, input_tokens, output_tokens
+2025-09-11 21:47:33,367 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 28, 'question': 'hello', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-11 22:00:57,087 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 22:00:57,722 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 22:00:57,722 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 22:01:02,842 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 22:01:02,842 - Vector store initialized in lifespan.
+2025-09-11 22:32:37,110 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 22:32:37,897 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 22:32:37,897 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 22:32:43,219 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 22:32:43,219 - Vector store initialized in lifespan.
+2025-09-11 22:36:34,326 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-11 23:05:31,754 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 23:05:32,437 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 23:05:32,437 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 23:05:37,532 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 23:05:37,534 - Vector store initialized in lifespan.
+2025-09-11 23:06:22,139 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 23:06:22,703 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 23:06:22,707 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 23:06:27,756 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 23:06:27,756 - Vector store initialized in lifespan.
+2025-09-11 23:14:05,410 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 23:14:06,018 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 23:14:06,018 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 23:14:11,228 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 23:14:11,228 - Vector store initialized in lifespan.
+2025-09-11 23:24:06,106 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 23:24:06,730 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 23:24:06,730 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 23:24:11,855 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 23:24:11,855 - Vector store initialized in lifespan.
+2025-09-11 23:29:47,174 - pikepdf C++ to Python logger bridge initialized
+2025-09-11 23:29:47,793 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-11 23:29:47,794 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-11 23:29:53,046 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-11 23:29:53,046 - Vector store initialized in lifespan.
+2025-09-11 23:31:32,214 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-11 23:32:17,169 - chat_event insert failed (non-fatal): Unconsumed column names: rag_source_kinds, rag_doc_ids_hash, out_cost, response_code, refused, retrieved, in_cost, latency_ms, retrieval_latency_ms, input_tokens, output_tokens, total_cost
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\analytics\logger.py", line 133, in log_chat_event
+    db.execute(chat_event_table.insert().values(**data))
+  File "D:\Neura\venv\Lib\site-packages\sqlmodel\orm\session.py", line 127, in execute
+    return super().execute(
+           ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2260, in _execute_internal
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1413, in execute
+    return meth(
+           ^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1627, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 715, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 323, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1446, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 886, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 932, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 138, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 5896, in visit_insert
+    crud_params_struct = crud._get_crud_params(
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\sqlalchemy\sql\crud.py", line 381, in _get_crud_params
+    raise exc.CompileError(
+sqlalchemy.exc.CompileError: Unconsumed column names: rag_source_kinds, rag_doc_ids_hash, out_cost, response_code, refused, retrieved, in_cost, latency_ms, retrieval_latency_ms, input_tokens, output_tokens, total_cost
+2025-09-11 23:32:17,483 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 22, 'question': 'hi', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-11 23:59:11,611 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 22, 'sha256': 'a3a636ea8b459a718bbeb4f141109d427fd9b7f5656598451a00ee72e23f2c23', 'storage_uri': 's3://neurokron-docs/uploads/9/22/7698ad1f-f23c-4864-b80e-3c4e47b6e114.jpg', 'size_bytes': 5788286, 'stored_size_bytes': 5788286, 'mime': 'image/jpeg', 'stored_mime': 'image/jpeg', 'ext': '.jpg', 'compressed': False, 'duplicate': False, 'chars_indexed': 27, 'plan': 'pro'}
+2025-09-12 00:04:57,041 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 00:04:57,680 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 00:04:57,680 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 00:04:58,809 - Vector store init failed: [Errno 11001] getaddrinfo failed
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "D:\Neura\venv\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_sync\connection.py", line 101, in handle_request
+    raise exc
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_sync\connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_sync\connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_backends\sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\ProgramFiles\miniconda3\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "D:\Neura\venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 134, in send_inner
+    response = self._client.send(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\ProgramFiles\miniconda3\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "D:\Neura\venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 11001] getaddrinfo failed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\lifespan.py", line 85, in lifespan
+    _ensure_initialized()
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 502, in _ensure_initialized
+    PRIMARY = _make_store(primary_name)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 491, in _make_store
+    return QdrantStore()
+           ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 372, in __init__
+    self.client.create_collection(
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 2382, in create_collection
+    return self._client.create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2815, in create_collection
+    result: Optional[bool] = self.http.collections_api.create_collection(
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 294, in create_collection
+    return self._build_for_create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 96, in _build_for_create_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 112, in send
+    response = self.middleware(request, self.send_inner)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 250, in __call__
+    return call_next(request)
+           ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 136, in send_inner
+    raise ResponseHandlingException(e)
+qdrant_client.http.exceptions.ResponseHandlingException: [Errno 11001] getaddrinfo failed
+2025-09-12 00:05:13,641 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-12 00:12:14,508 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 00:12:15,087 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 00:12:15,087 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 00:12:20,259 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 00:12:20,259 - Vector store initialized in lifespan.
+2025-09-12 00:13:00,881 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-12 00:13:21,271 - chat_event insert failed (non-fatal): Unconsumed column names: thumb, rag_doc_ids_hash, latency_ms, feedback_comment, response_code, rag_source_kinds, in_cost, csat, input_tokens, retrieved, total_cost, refused, output_tokens, retrieval_latency_ms, rag_hit, out_cost, model
+2025-09-12 00:13:21,496 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'archivelink', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 15:03:06,817 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 15:03:07,515 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 15:03:07,515 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 15:03:17,945 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 15:03:17,945 - Vector store initialized in lifespan.
+2025-09-12 15:05:13,539 - chat_event insert failed (non-fatal): Unconsumed column names: model, output_tokens, input_tokens, thumb, rag_hit, rag_source_kinds, out_cost, response_code, retrieval_latency_ms, feedback_comment, csat, rag_doc_ids_hash, in_cost, total_cost, refused, retrieved, latency_ms
+2025-09-12 15:05:13,896 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'xecm', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 15:05:44,451 - chat_event insert failed (non-fatal): Unconsumed column names: model, output_tokens, input_tokens, thumb, rag_hit, rag_source_kinds, out_cost, response_code, retrieval_latency_ms, feedback_comment, csat, rag_doc_ids_hash, in_cost, total_cost, refused, retrieved, latency_ms
+2025-09-12 15:05:44,778 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'hello', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 15:14:46,045 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 15:14:46,712 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 15:14:46,720 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 15:14:52,377 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 15:14:52,377 - Vector store initialized in lifespan.
+2025-09-12 15:15:05,586 - chat_event insert failed: Unconsumed column names: latency_ms, feedback_comment, in_cost, output_tokens, retrieval_latency_ms, response_code, model, retrieved, rag_hit, thumb, csat, input_tokens, total_cost, out_cost, refused | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('4ebdfada-abda-4194-9386-5d9565e0ce81'), plan='pro', request_id=None, ts=datetime.datetime(2025, 9, 12, 9, 44, 53, 776421, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 15:15:05,983 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'hello', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 15:15:32,375 - chat_event insert failed: Unconsumed column names: latency_ms, feedback_comment, in_cost, output_tokens, retrieval_latency_ms, response_code, model, retrieved, rag_hit, thumb, csat, input_tokens, total_cost, out_cost, refused | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('ce6788b8-f423-4f51-9a2e-ff22b5b9b847'), plan='pro', request_id=None, ts=datetime.datetime(2025, 9, 12, 9, 45, 24, 434457, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 15:15:32,742 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'google.com', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 15:18:19,391 - chat_event insert failed: Unconsumed column names: latency_ms, feedback_comment, in_cost, output_tokens, retrieval_latency_ms, response_code, model, retrieved, rag_hit, thumb, csat, input_tokens, total_cost, out_cost, refused | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('c70380fe-f3f0-4bff-b356-80a5073ccc20'), plan='pro', request_id=None, ts=datetime.datetime(2025, 9, 12, 9, 48, 9, 601912, tzinfo=date, user_id='viruj8151@gmail.com'
+2025-09-12 15:18:19,773 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'gemini', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:14:07,918 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 16:14:08,594 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 16:14:08,594 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 16:14:14,523 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 16:14:14,523 - Vector store initialized in lifespan.
+2025-09-12 16:15:50,270 - chat_event insert failed: Unconsumed column names: input_tokens, response_code, in_cost, feedback_comment, out_cost, retrieved, retrieval_latency_ms, rag_hit, output_tokens, refused, csat, latency_ms, thumb, model, total_cost | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('91426860-3ee6-495d-aa70-dd33dd1d55cb'), plan='pro', request_id='f1d3d0f2-8c93-4e57-b690-3563a33edf20', ts=datetime.datetime(2025, 9, 12, 10, 45, 50, 270190, tzinfo=da, user_id='9'
+2025-09-12 16:15:50,494 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'sap btp', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:29:31,777 - chat_event insert failed: Unconsumed column names: input_tokens, response_code, in_cost, feedback_comment, out_cost, retrieved, retrieval_latency_ms, rag_hit, output_tokens, refused, csat, latency_ms, thumb, model, total_cost | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('9e3415d9-c549-417b-be2c-d223e0a1cc5d'), plan='pro', request_id='64a7187f-296e-4511-83ca-30cdbcbc9d4f', ts=datetime.datetime(2025, 9, 12, 10, 59, 31, 777671, tzinfo=da, user_id='9'
+2025-09-12 16:29:32,367 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'jlafjkkl', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:37:50,377 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 16:37:50,965 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 16:37:50,966 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 16:37:56,745 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 16:37:56,745 - Vector store initialized in lifespan.
+2025-09-12 16:38:27,538 - chat_event insert failed: Unconsumed column names: input_tokens, response_code, feedback_comment, output_tokens, latency_ms, in_cost, retrieval_latency_ms, thumb, refused, csat, total_cost, model, retrieved, rag_hit, out_cost | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('3e529f97-6b37-4dfa-bafb-42eb3d10d962'), plan='pro', request_id='03ad1ca6-36a4-4085-88c6-7c90af2187fb', ts=datetime.datetime(2025, 9, 12, 11, 8, 27, 533304, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 16:38:27,818 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'gemini opentext', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:42:51,657 - chat_event insert failed: Unconsumed column names: input_tokens, response_code, feedback_comment, output_tokens, latency_ms, in_cost, retrieval_latency_ms, thumb, refused, csat, total_cost, model, retrieved, rag_hit, out_cost | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('61c2b639-f682-4441-974d-f0b44edf6d2c'), plan='pro', request_id='139c4757-8c5d-4605-bfb8-99f80ec14894', ts=datetime.datetime(2025, 9, 12, 11, 12, 51, 657353, tzinfo=da, user_id='viruj8151@gmail.com'
+2025-09-12 16:42:53,728 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'jiki', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:47:33,529 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 16:47:33,979 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 16:47:33,979 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 16:47:39,759 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 16:47:39,759 - Vector store initialized in lifespan.
+2025-09-12 16:48:30,357 - chat_event insert failed: Unconsumed column names: retrieval_latency_ms, output_tokens, retrieved, rag_hit, csat, latency_ms, in_cost, out_cost, input_tokens, model, total_cost, thumb, refused, feedback_comment, response_code | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('dfbdcd1a-377e-4f31-a931-55535af501b0'), plan='pro', request_id='73fded48-fd12-4231-909e-0b6c19843ca4', ts=datetime.datetime(2025, 9, 12, 11, 18, 30, 355364, tzinfo=da, user_id='viruj8151@gmail.com'
+2025-09-12 16:48:30,596 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'archvie doc type', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 16:57:19,056 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 16:57:19,669 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 16:57:19,669 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 16:57:25,536 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 16:57:25,536 - Vector store initialized in lifespan.
+2025-09-12 16:58:38,095 - chat_event insert failed: Unconsumed column names: retrieval_latency_ms, model, rag_hit, thumb, refused, out_cost, output_tokens, in_cost, total_cost, feedback_comment, latency_ms, retrieved, csat, input_tokens, response_code | data=chat_session_id=UUID('292ac661-5b74-5f8a-b71d-710422d190e4'), event_id=UUID('9beb84c3-b581-44c9-b7fd-7b7af0f466e1'), plan='pro', request_id='6e2634e0-0f1f-4c6b-9176-5cdb9caf408e', ts=datetime.datetime(2025, 9, 12, 11, 28, 38, 90438, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 16:58:38,513 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 33, 'question': 'sap abap xecm', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 17:06:01,671 - chat_event insert failed: Unconsumed column names: retrieval_latency_ms, model, rag_hit, thumb, refused, out_cost, output_tokens, in_cost, total_cost, feedback_comment, latency_ms, retrieved, csat, input_tokens, response_code | data=chat_session_id=UUID('615d3916-51cb-541d-83f1-8e4b2aafb143'), event_id=UUID('aa69ac2e-ea0f-40a4-ad76-827810d74892'), plan='pro', request_id='c67f9731-b3db-41dc-aff3-fb857bdfa322', ts=datetime.datetime(2025, 9, 12, 11, 36, 1, 671716, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 17:06:01,963 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 34, 'question': 'sap opentext', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 17:14:26,731 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 17:14:27,346 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 17:14:27,347 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 17:14:33,233 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 17:14:33,234 - Vector store initialized in lifespan.
+2025-09-12 17:14:53,935 - chat_event insert failed: Unconsumed column names: total_cost, latency_ms, out_cost, output_tokens, feedback_comment, refused, in_cost, retrieved, csat, rag_hit, model, response_code, thumb, retrieval_latency_ms, input_tokens | data=chat_session_id=UUID('615d3916-51cb-541d-83f1-8e4b2aafb143'), event_id=UUID('493b4a3f-583f-4646-826b-0f618ac3fe24'), plan='pro', request_id='68094321-49ce-4401-9934-d75ef7ce94f6', ts=datetime.datetime(2025, 9, 12, 11, 44, 53, 933719, tzinfo=da, user_id='viruj8151@gmail.com'
+2025-09-12 17:14:54,159 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 34, 'question': 'sap opentext infoarchive', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 17:22:25,552 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 17:22:26,125 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 17:22:26,126 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 17:22:32,343 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 17:22:32,343 - Vector store initialized in lifespan.
+2025-09-12 17:23:01,194 - chat_event insert failed: Unconsumed column names: feedback_comment, rag_hit, output_tokens, model, latency_ms, retrieved, thumb, total_cost, refused, response_code, csat, in_cost, input_tokens, out_cost, retrieval_latency_ms | data=chat_session_id=UUID('615d3916-51cb-541d-83f1-8e4b2aafb143'), event_id=UUID('fde5587c-3982-48b8-8d05-29ed9190e7b9'), plan='pro', request_id='2887ee43-17b9-4f2b-a142-fd77f13fdb99', ts=datetime.datetime(2025, 9, 12, 11, 53, 1, 193019, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 17:23:01,432 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 34, 'question': 'archvie center', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 17:32:49,580 - chat_event insert failed: Unconsumed column names: feedback_comment, rag_hit, output_tokens, model, latency_ms, retrieved, thumb, total_cost, refused, response_code, csat, in_cost, input_tokens, out_cost, retrieval_latency_ms | data=chat_session_id=UUID('615d3916-51cb-541d-83f1-8e4b2aafb143'), event_id=UUID('4d50a8cb-4c8d-435f-a9ed-226cc8d509a7'), plan='pro', request_id='3b8586ec-6d3b-4218-ae73-c51c06c3ebb2', ts=datetime.datetime(2025, 9, 12, 12, 2, 49, 579096, tzinfo=dat, user_id='viruj8151@gmail.com'
+2025-09-12 17:32:50,370 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 34, 'question': 'akjdlj', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 18:09:01,948 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 18:09:02,564 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 18:09:02,565 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 18:09:08,584 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 18:09:08,584 - Vector store initialized in lifespan.
+2025-09-12 18:15:22,605 - chat_event wrote (rowcount=-1): chat_session_id=UUID('615d3916-51cb-541d-83f1-8e4b2aafb143'), csat=None, error_kind=None, event_id=UUID('1472a250-f753-4b5b-88c6-a21014a9a000'), feedback_comment=None, in_cost=0.0, input_tokens=815, intent='qa', latency_ms=19737, message_index=8, model='gpt-4o', out_cost=0.0, output_tokens=265, pipeline_version='v1' ...
+2025-09-12 18:15:22,828 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 34, 'question': 'archivelink', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 18:17:14,039 - chat_event wrote (rowcount=-1): chat_session_id=UUID('b67b0bb7-1faf-5500-9332-12e3397b5c68'), csat=None, error_kind=None, event_id=UUID('377d39aa-e3f4-42c6-96e6-9373702ea1de'), feedback_comment=None, in_cost=0.0, input_tokens=734, intent='qa', latency_ms=19920, message_index=0, model='gpt-4o', out_cost=0.0, output_tokens=417, pipeline_version='v1' ...
+2025-09-12 18:17:14,246 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 35, 'question': 'archivleink saap', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-12 18:59:40,314 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 18:59:41,260 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 18:59:41,261 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 18:59:47,068 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 18:59:47,068 - Vector store initialized in lifespan.
+2025-09-12 20:01:43,036 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 20:01:43,791 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 20:01:43,791 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 20:01:50,289 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 20:01:50,289 - Vector store initialized in lifespan.
+2025-09-12 20:14:23,499 - ADMIN_PROMOTE | {'actor': 'viruj8151@gmail.com', 'target': 'jedi@g.com'}
+2025-09-12 20:14:30,163 - ADMIN_SET_TIER | {'actor': 'viruj8151@gmail.com', 'target': 'jedi@g.com', 'tier': 'free'}
+2025-09-12 20:48:09,648 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 20:48:10,279 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 20:48:10,280 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 20:48:22,224 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 20:48:22,224 - Vector store initialized in lifespan.
+2025-09-12 20:48:36,385 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-12 21:11:22,293 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 21:11:22,969 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 21:11:22,969 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 21:11:28,953 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 21:11:28,953 - Vector store initialized in lifespan.
+2025-09-12 21:26:24,616 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 21:26:25,243 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 21:26:25,244 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 21:26:58,725 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 21:26:58,725 - Vector store initialized in lifespan.
+2025-09-12 21:54:25,840 - pikepdf C++ to Python logger bridge initialized
+2025-09-12 21:54:26,376 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-12 21:54:26,378 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-12 21:54:34,042 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-12 21:54:34,042 - Vector store initialized in lifespan.
+2025-09-12 21:54:42,254 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-13 15:21:21,583 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('c52d1d40-6a24-48e4-b737-46d04981d51d'), feedback_comment=None, in_cost=0.0, input_tokens=629, intent='qa', latency_ms=12298, message_index=0, model='gpt-4o', out_cost=0.0, output_tokens=39, pipeline_version='v1' ...
+2025-09-13 15:21:21,839 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'galgjlaj', 'chunks_used': 6, 'grounded': True, 'model': 'gpt-4o', 'policy': 'opentext_or_context', 'ctx_present': True}
+2025-09-14 23:05:02,582 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:05:03,272 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:05:03,273 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:05:09,034 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:05:09,034 - Vector store initialized in lifespan.
+2025-09-14 23:06:35,355 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind='AttributeError', event_id=UUID('2d7cf6ba-9c2c-4164-b3fd-36631f378b44'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=0, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:09:33,312 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:09:33,741 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:09:33,742 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:09:39,260 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:09:39,260 - Vector store initialized in lifespan.
+2025-09-14 23:09:44,329 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind='TypeError', event_id=UUID('92efa397-d5f8-491d-9430-28ae3cef4692'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=0, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:13:46,052 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:13:46,538 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:13:46,538 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:13:52,001 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:13:52,001 - Vector store initialized in lifespan.
+2025-09-14 23:13:59,882 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('221e1bf6-f664-4eb5-802a-a8a8ef71a328'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=4012, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:14:00,115 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'hi', 'pipeline_type': 'no_answer', 'model': 'gpt-5'}
+2025-09-14 23:14:16,676 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('adf8eda0-0856-4b76-b7d6-d009e73c0e74'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=2502, message_index=4, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:14:16,871 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'what is archivelink', 'pipeline_type': 'no_answer', 'model': 'gpt-5'}
+2025-09-14 23:19:30,998 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:19:31,481 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:19:31,482 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:19:37,105 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:19:37,105 - Vector store initialized in lifespan.
+2025-09-14 23:19:58,709 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('c7696ab7-e205-4068-a123-3f53e20eaa6b'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=3915, message_index=6, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:19:58,919 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'what is archivelink', 'pipeline_type': 'no_answer', 'model': 'gpt-5'}
+2025-09-14 23:30:43,581 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:30:44,024 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:30:44,024 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:30:49,369 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:30:49,369 - Vector store initialized in lifespan.
+2025-09-14 23:31:04,567 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('c58dfc60-3216-4078-bb5f-fbed0fe266fc'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=4024, message_index=8, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:31:04,790 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'archivelink', 'pipeline_type': 'no_answer', 'model': 'gpt-5'}
+2025-09-14 23:34:17,906 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:34:18,396 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:34:18,396 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:34:23,969 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:34:23,969 - Vector store initialized in lifespan.
+2025-09-14 23:34:43,877 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind='BadRequestError', event_id=UUID('f18e1288-7e43-4e33-8b5b-92b2616b4242'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=5197, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:39:23,417 - pikepdf C++ to Python logger bridge initialized
+2025-09-14 23:39:23,862 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-14 23:39:23,862 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-14 23:39:29,252 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-14 23:39:29,252 - Vector store initialized in lifespan.
+2025-09-14 23:39:59,145 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('00c8a99b-954c-4d25-9fc0-2ada184d7cde'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=27155, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:39:59,393 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-14 23:40:51,871 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('ff50c362-6aa0-46dc-ad11-b6b7bf457fab'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=34359, message_index=12, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:40:52,101 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'sap archvielink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-14 23:47:57,597 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('528af6bd-72f8-41dc-8f98-c0e29b692166'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=90361, message_index=14, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:47:57,797 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'step by step settup with sap - opentext content server', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-14 23:49:56,766 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('7975243a-546d-4194-9d7a-5515deb87915'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=113673, message_index=16, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-14 23:49:56,949 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'step by stgep setup with opentext archive center', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 19:52:01,266 - pikepdf C++ to Python logger bridge initialized
+2025-09-15 19:52:02,229 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-15 19:52:02,229 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-15 19:52:08,917 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-15 19:52:08,917 - Vector store initialized in lifespan.
+2025-09-15 19:52:32,907 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-15 19:53:16,282 - pikepdf C++ to Python logger bridge initialized
+2025-09-15 19:53:16,921 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-15 19:53:16,922 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-15 19:53:23,060 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-15 19:53:23,060 - Vector store initialized in lifespan.
+2025-09-15 19:55:16,688 - chat_event wrote (rowcount=-1): chat_session_id=UUID('939e0fe4-a923-5bb5-8913-c8881da4ac01'), csat=None, error_kind=None, event_id=UUID('5ed817aa-ffea-428e-a5dd-ff2bf25d8e66'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=71751, message_index=18, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 19:55:17,191 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 36, 'question': 'sap archvielink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 21:56:34,048 - pikepdf C++ to Python logger bridge initialized
+2025-09-15 21:56:34,846 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-09-15 21:56:34,847 - Rate limit attached: POST /api/v1/chat/stream -> 30/minute; 600/hour
+2025-09-15 21:56:34,847 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-09-15 21:56:40,326 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-09-15 21:56:40,326 - Vector store initialized in lifespan.
+2025-09-15 21:57:39,969 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-15 21:58:16,037 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('0ba0befa-bdf1-4bb8-b6b0-b452c5ed82f0'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=27188, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 21:58:16,236 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 21:59:36,410 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('fb820701-3fa3-40ef-beda-4b2efc21195b'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=71200, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 21:59:36,596 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'sap archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 22:00:52,399 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('e8318f7f-43b1-40a0-9f10-2c424ea36272'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=56013, message_index=4, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 22:00:52,592 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'sap archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 22:03:27,366 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('824ab764-95c5-465a-bb56-ed764a249333'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=85996, message_index=6, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 22:03:27,766 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'can u be more specific for steps to setup archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 23:44:21,729 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('2fd7b849-9c80-4d3c-992e-965b2b5c9409'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=60436, message_index=8, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 23:44:21,952 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'sap btp and xecm comparision', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-15 23:45:52,903 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('52dbd7b9-8353-452a-8754-4bd5bdf34875'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=56988, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-15 23:45:53,121 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'sap btp and xecm comparision', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-16 00:20:58,415 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 37, 'sha256': 'e32feef770f265279f13f215660e4bcd11d4e2dbeef322c75cb5653d0017c1c5', 'storage_uri': 's3://neurokron-docs/uploads/9/37/e217ceae-f1ce-426e-81a3-a806f110ecb3.xlsx', 'size_bytes': 39627, 'stored_size_bytes': 39627, 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'stored_mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'ext': '.xlsx', 'compressed': False, 'duplicate': False, 'chars_indexed': 3902, 'plan': 'pro'}
+2025-09-16 15:47:24,101 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('f0fca926-07fd-4199-87e4-7a37a6f7d35e'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=10146, message_index=12, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-16 15:47:24,531 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'summarise the uploaded content', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-09-16 16:55:11,226 - chat_event wrote (rowcount=-1): chat_session_id=UUID('a5ac65e2-e923-5076-96c5-10aede0233ab'), csat=None, error_kind=None, event_id=UUID('20adc338-e06b-41dc-acf6-50ed904f42bc'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=221595, message_index=14, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-09-16 16:55:11,651 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 37, 'question': 'what is archivelink', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-10-25 19:11:25,577 - pikepdf C++ to Python logger bridge initialized
+2025-10-25 19:11:26,150 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-10-25 19:11:26,150 - Rate limit attached: POST /api/v1/chat/stream -> 30/minute; 600/hour
+2025-10-25 19:11:26,150 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-10-25 19:11:29,241 - Vector store init failed: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 371, in __init__
+    self.client.get_collection(self.collection)
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 2223, in get_collection
+    return self._client.get_collection(collection_name=collection_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2584, in get_collection
+    result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 320, in get_collection
+    return self._build_for_get_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 144, in _build_for_get_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\lifespan.py", line 85, in lifespan
+    _ensure_initialized()
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 503, in _ensure_initialized
+    PRIMARY = _make_store(primary_name)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 492, in _make_store
+    return QdrantStore()
+           ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 373, in __init__
+    self.client.create_collection(
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 2382, in create_collection
+    return self._client.create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2815, in create_collection
+    result: Optional[bool] = self.http.collections_api.create_collection(
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 294, in create_collection
+    return self._build_for_create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 96, in _build_for_create_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+2025-10-30 23:18:11,608 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-10-30 23:18:22,899 - chat_event wrote (rowcount=-1): chat_session_id=UUID('6c278905-2a95-585a-9fff-c9723d8ec3c8'), csat=None, error_kind='UnexpectedResponse', event_id=UUID('e3088a13-64d9-430d-b4be-30d8415d84e6'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=3350, message_index=0, model='gpt-4o-mini', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-10-30 23:22:05,212 - pikepdf C++ to Python logger bridge initialized
+2025-10-30 23:22:05,625 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-10-30 23:22:05,625 - Rate limit attached: POST /api/v1/chat/stream -> 30/minute; 600/hour
+2025-10-30 23:22:05,625 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-10-30 23:22:11,072 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-10-30 23:22:11,072 - Vector store initialized in lifespan.
+2025-10-30 23:23:28,340 - chat_event wrote (rowcount=-1): chat_session_id=UUID('5e0eb93a-fb23-5b4d-9884-fa3f3f637772'), csat=None, error_kind=None, event_id=UUID('01975720-8339-4e1e-a724-aec702d58d27'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=34848, message_index=0, model='gpt-4o-mini', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-10-30 23:23:28,583 - CHAT | {'user': 'yt@g.com', 'tier': 'base', 'session_id': 39, 'question': 'hello', 'pipeline_type': 'no_answer', 'model': 'gpt-4o-mini'}
+2025-10-30 23:23:32,285 - chat_event wrote (rowcount=-1): chat_session_id=UUID('b937b3ba-e474-5edf-be8c-519332bfe23d'), csat=None, error_kind=None, event_id=UUID('f6cebd7d-455e-4478-971c-0d16300a5dce'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=3040, message_index=0, model='gpt-4o-mini', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-10-30 23:23:32,484 - CHAT | {'user': 'yt@g.com', 'tier': 'base', 'session_id': 40, 'question': 'helo', 'pipeline_type': 'no_answer', 'model': 'gpt-4o-mini'}
+2025-10-30 23:41:42,724 - chat_event wrote (rowcount=-1): chat_session_id=UUID('b937b3ba-e474-5edf-be8c-519332bfe23d'), csat=None, error_kind=None, event_id=UUID('922388ca-55c1-419d-8128-a60c8ecdcf14'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=3092, message_index=2, model='gpt-4o-mini', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-10-30 23:41:43,067 - CHAT | {'user': 'yt@g.com', 'tier': 'base', 'session_id': 40, 'question': 'what is opentext', 'pipeline_type': 'no_answer', 'model': 'gpt-4o-mini'}
+2025-11-04 01:28:56,435 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-04 01:29:19,347 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('724cafdb-3702-4aee-a982-1d52f4dbbf7e'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=10423, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-11-04 01:29:19,554 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'question': 'New chat', 'pipeline_type': 'answer', 'model': 'gpt-5'}
+2025-11-04 01:37:08,151 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 01:37:08,455 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 01:37:08,455 - Rate limit attached: POST /api/v1/chat/stream -> 30/minute; 600/hour
+2025-11-04 01:37:08,455 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 01:37:12,702 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 01:37:12,702 - Vector store initialized in lifespan.
+2025-11-04 01:37:28,731 - UPLOAD_NONTEXT | {'user': 'viruj8151@gmail.com', 'session_id': 41, 'sha256': '8360d3b2a58db499cf2bc085cc293083b957bd0ffdb0410905d870f3535e9da6', 'size_bytes': 1259080, 'mime': 'application/pdf', 'ext': '.pdf'}
+2025-11-04 01:37:28,966 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 41, 'sha256': '8360d3b2a58db499cf2bc085cc293083b957bd0ffdb0410905d870f3535e9da6', 'storage_uri': 's3://neurokron-docs/uploads/9/41/d6677e05-116b-49e1-b4f4-91a30dd171b2.pdf', 'size_bytes': 1259080, 'stored_size_bytes': 1259080, 'mime': 'application/pdf', 'stored_mime': 'application/pdf', 'ext': '.pdf', 'compressed': False, 'duplicate': False, 'chars_indexed': 0, 'plan': 'pro'}
+2025-11-04 01:37:43,292 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 41, 'sha256': 'b2b4bd37e832bb6ae45f2e88f778b7e612643de7182956180fc7060b58e46982', 'storage_uri': 's3://neurokron-docs/uploads/9/41/ed811b03-9bc7-43c0-8c86-a02cad5dd66b.xlsx', 'size_bytes': 6081, 'stored_size_bytes': 6081, 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'stored_mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'ext': '.xlsx', 'compressed': False, 'duplicate': False, 'chars_indexed': 919, 'plan': 'pro'}
+2025-11-04 01:37:55,061 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 41, 'sha256': '4d959c15f3115cea62ac64a462243ecaa3b292b3a7d73b196a300d45349cb706', 'storage_uri': 's3://neurokron-docs/uploads/9/41/ab325d43-4474-46d3-b9ba-e7e7e1de7bbd.jpg', 'size_bytes': 586273, 'stored_size_bytes': 586273, 'mime': 'image/jpeg', 'stored_mime': 'image/jpeg', 'ext': '.jpg', 'compressed': False, 'duplicate': False, 'chars_indexed': 27, 'plan': 'pro'}
+2025-11-04 01:43:53,715 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 01:43:53,957 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 01:43:53,958 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 01:43:58,182 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 01:43:58,182 - Vector store initialized in lifespan.
+2025-11-04 01:44:08,952 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('73b576aa-d952-401d-a89c-ffbdd6b6de9c'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=5284, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-11-04 01:44:09,170 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'question': 'hello', 'pipeline_type': 'answer', 'source': 'docs', 'model': 'gpt-5'}
+2025-11-04 01:44:37,099 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('6b3ec497-2cd0-4d03-8cca-74fe81f390e0'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=20796, message_index=4, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-11-04 01:44:37,823 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'question': 'what is xecm', 'pipeline_type': 'answer', 'source': 'docs', 'model': 'gpt-5'}
+2025-11-04 01:46:33,467 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 41, 'sha256': '61c04fc41967171b3ddde560c7e2c7f0419fabc972a756c7190a055023dec371', 'storage_uri': 's3://neurokron-docs/uploads/9/41/5a5bbc82-0273-4083-bc65-ed96254f925f.docx', 'size_bytes': 13480, 'stored_size_bytes': 13480, 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'stored_mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ext': '.docx', 'compressed': False, 'duplicate': False, 'chars_indexed': 24, 'plan': 'pro'}
+2025-11-04 01:46:53,327 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('81e11662-9be7-4b6d-ac2b-1c9d0ec05ca0'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=13444, message_index=6, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-11-04 01:46:53,537 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'question': 'summarise this file', 'pipeline_type': 'answer', 'source': 'docs', 'model': 'gpt-5'}
+2025-11-04 01:48:05,923 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('7a272052-391f-411b-882b-dbb95989725b'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=17623, message_index=8, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v1' ...
+2025-11-04 01:48:06,138 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'question': 'what is bunty?', 'pipeline_type': 'answer', 'source': 'docs', 'model': 'gpt-5'}
+2025-11-04 01:58:13,265 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 01:58:13,477 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 01:58:13,477 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 01:58:17,935 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 01:58:17,936 - Vector store initialized in lifespan.
+2025-11-04 01:58:59,731 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('87324cce-bd2f-4e68-a455-7c90efea7694'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=10215, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v2' ...
+2025-11-04 01:59:19,572 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('24147190-f99d-4390-8707-3ee91e4f4d34'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=14951, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v2' ...
+2025-11-04 22:18:17,081 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('1022f222-92e7-443f-ba75-256d6986621a'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=5827, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v2' ...
+2025-11-04 22:35:01,181 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 22:35:01,714 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 22:35:01,714 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 22:35:06,209 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 22:35:06,209 - Vector store initialized in lifespan.
+2025-11-04 22:35:25,994 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('829b7727-4014-412e-b223-35a661050128'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=811, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-04 23:00:14,263 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 23:00:14,479 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 23:00:14,479 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 23:00:19,004 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 23:00:19,004 - Vector store initialized in lifespan.
+2025-11-04 23:00:26,759 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('a2ccf0a5-5a65-4832-b0d0-7249e75b4ef7'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=379, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-04 23:00:32,051 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind='HTTPException', event_id=UUID('794fc10b-59dd-4bba-919c-64f3b8285754'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=1021, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-04 23:08:55,079 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 23:08:55,366 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 23:08:55,366 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 23:09:01,029 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 23:09:01,030 - Vector store initialized in lifespan.
+2025-11-04 23:16:02,588 - pikepdf C++ to Python logger bridge initialized
+2025-11-04 23:16:02,808 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-04 23:16:02,808 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-04 23:16:07,111 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-04 23:16:07,111 - Vector store initialized in lifespan.
+2025-11-04 23:17:28,815 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('7f7c79b8-f208-4314-97e9-e08e029ffeaa'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=3648, message_index=10, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-04 23:17:29,039 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'source': 'gpt', 'context_mode': 'none', 'model': 'gpt-5', 'query': 'hello'}
+2025-11-04 23:17:51,692 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('04846379-b44f-45b6-8472-bf5362763ee9'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=9227, message_index=12, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-04 23:17:51,890 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'source': 'gpt', 'context_mode': 'none', 'model': 'gpt-5', 'query': 'summarise this'}
+2025-11-05 18:26:51,780 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 18:26:52,215 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 18:26:52,215 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 18:26:57,337 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-05 18:26:57,337 - Vector store initialized in lifespan.
+2025-11-05 18:28:01,592 - chat_event wrote (rowcount=-1): chat_session_id=UUID('4295d810-387c-5dd0-82f2-61a87f9d6d8b'), csat=None, error_kind=None, event_id=UUID('f047329e-4d1b-4762-a0f5-e57f5b32d8b9'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=49644, message_index=14, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-05 18:28:01,861 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 41, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'what is archivelink ?'}
+2025-11-05 23:10:28,556 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:10:28,975 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:10:28,975 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:13:34,442 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:13:34,656 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:13:34,656 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:14:08,204 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:14:08,419 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:14:08,420 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:20:04,196 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:20:04,435 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:20:04,435 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:27:41,648 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:27:41,863 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:27:41,863 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:40:53,385 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:40:54,149 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:40:54,149 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:42:27,905 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:42:28,145 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:42:28,145 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:42:56,724 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:42:56,991 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:42:56,991 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:44:15,273 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:44:15,541 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:44:15,541 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:49:46,053 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:49:46,276 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:49:46,277 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-05 23:56:59,069 - pikepdf C++ to Python logger bridge initialized
+2025-11-05 23:56:59,286 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-05 23:56:59,286 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 00:00:10,763 - pikepdf C++ to Python logger bridge initialized
+2025-11-06 00:00:11,063 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 00:00:11,063 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 00:02:54,180 - pikepdf C++ to Python logger bridge initialized
+2025-11-06 00:16:24,539 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 00:16:24,539 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 00:16:29,093 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 00:16:29,093 - Vector store initialized in lifespan.
+2025-11-06 00:43:26,906 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 00:43:26,907 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 00:43:31,234 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 00:43:31,234 - Vector store initialized in lifespan.
+2025-11-06 01:10:56,169 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:10:56,170 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:11:00,674 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:11:00,674 - Vector store initialized in lifespan.
+2025-11-06 01:14:13,866 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:14:13,866 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:14:19,007 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:14:19,007 - Vector store initialized in lifespan.
+2025-11-06 01:21:31,842 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:21:31,842 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:21:57,096 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:21:57,096 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:23:47,142 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:23:47,142 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:25:50,737 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:25:50,737 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:27:03,201 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:27:03,201 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:27:38,434 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:27:38,434 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:29:43,675 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:29:43,675 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:29:48,217 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:29:48,217 - Vector store initialized in lifespan.
+2025-11-06 01:36:35,022 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:36:35,022 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:36:39,374 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:36:39,374 - Vector store initialized in lifespan.
+2025-11-06 01:39:19,688 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:39:19,689 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:39:24,013 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:39:24,013 - Vector store initialized in lifespan.
+2025-11-06 01:40:54,289 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:40:54,289 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:46:04,563 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:46:04,563 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:46:08,781 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-06 01:46:08,781 - Vector store initialized in lifespan.
+2025-11-06 01:48:01,021 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:48:01,021 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-06 01:48:35,049 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-06 01:48:35,049 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-09 16:03:53,245 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-09 16:03:53,246 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:07:54,270 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:07:54,272 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:10:13,765 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:10:13,765 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:10:18,116 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-12 16:10:18,118 - Vector store initialized in lifespan.
+2025-11-12 16:10:26,890 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-12 16:10:36,231 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 616, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 453, in search
+    res = self._safe_search(
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 408, in _safe_search
+    return self.client.search(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Wrong input: Vector dimension error: expected dim: 1536, got 3072"},"time":0.000991007}'
+2025-11-12 16:11:03,714 - chat_event wrote (rowcount=-1): chat_session_id=UUID('9e43d835-b26f-5e9d-ae76-2386e18f13ce'), csat=None, error_kind=None, event_id=UUID('d1a2d8c5-f1ca-4174-98a4-adbf55a4eb62'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=27305, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-12 16:11:03,947 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 42, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'New chat'}
+2025-11-12 16:11:07,683 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 616, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 453, in search
+    res = self._safe_search(
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 408, in _safe_search
+    return self.client.search(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Wrong input: Vector dimension error: expected dim: 1536, got 3072"},"time":0.000347397}'
+2025-11-12 16:11:20,049 - chat_event wrote (rowcount=-1): chat_session_id=UUID('cf1068cb-240c-5237-9f41-9f2a790028d8'), csat=None, error_kind=None, event_id=UUID('2d614ebc-9d28-443e-b861-b9b28d4ed6a6'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=12296, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-12 16:11:20,273 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 43, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'New chat'}
+2025-11-12 16:11:33,905 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 616, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 453, in search
+    res = self._safe_search(
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 408, in _safe_search
+    return self.client.search(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Wrong input: Vector dimension error: expected dim: 1536, got 3072"},"time":0.000335163}'
+2025-11-12 16:11:43,564 - chat_event wrote (rowcount=-1): chat_session_id=UUID('c5230aff-5d45-5a1a-9b61-b0d65883ea6b'), csat=None, error_kind=None, event_id=UUID('7e56bbe5-2d16-4aa0-9e0f-d1ce7c897d3a'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=9591, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-12 16:11:43,770 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 44, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'New chat'}
+2025-11-12 16:23:40,506 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:23:40,506 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:23:45,261 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-12 16:23:45,261 - Vector store initialized in lifespan.
+2025-11-12 16:25:30,898 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:25:30,898 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:25:35,287 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-12 16:25:35,287 - Vector store initialized in lifespan.
+2025-11-12 16:29:46,756 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:29:46,756 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:31:00,891 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:31:00,891 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:33:46,007 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:33:46,007 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:42:50,218 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:42:50,218 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:43:49,055 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:43:49,055 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-12 16:44:38,374 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:44:38,374 - Skipping RL for POST /api/v1/upload (no 'request' or 'websocket' argument).
+2025-11-12 16:44:42,609 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-12 16:44:42,609 - Vector store initialized in lifespan.
+2025-11-12 16:46:50,792 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-12 16:46:50,792 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:28:25,276 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:28:25,277 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:30:04,191 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:30:04,191 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:31:25,264 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:31:25,264 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:33:41,323 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:33:41,323 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:37:50,021 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:37:50,022 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 19:58:44,759 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 19:58:44,759 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-13 20:00:57,845 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-13 20:00:57,845 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-14 17:01:40,878 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-14 17:01:40,880 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-14 17:01:44,997 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 17:01:44,997 - Vector store initialized in lifespan.
+2025-11-14 17:56:17,341 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 618, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 455, in search
+    res = self._safe_search(
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 410, in _safe_search
+    return self.client.search(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Wrong input: Vector dimension error: expected dim: 1536, got 3072"},"time":0.000293366}'
+2025-11-14 17:56:26,714 - chat_event wrote (rowcount=-1): chat_session_id=UUID('c5230aff-5d45-5a1a-9b61-b0d65883ea6b'), csat=None, error_kind=None, event_id=UUID('2f6596c6-e5d7-4ba6-b636-e61b0332808d'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=9310, message_index=2, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-14 17:56:26,959 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 44, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'hello'}
+2025-11-14 17:57:24,729 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-14 17:57:29,006 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 17:57:29,006 - Vector store initialized in lifespan.
+2025-11-14 18:01:38,877 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-14 18:01:38,878 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-14 18:01:43,298 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 18:01:43,298 - Vector store initialized in lifespan.
+2025-11-14 18:02:18,123 - Rate limit attached: POST /api/v1/chat -> 30/minute; 600/hour
+2025-11-14 18:02:18,123 - Rate limit attached: POST /api/v1/upload -> 10/minute; 100/hour
+2025-11-14 18:02:22,472 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 18:02:22,472 - Vector store initialized in lifespan.
+2025-11-14 22:01:42,104 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 22:01:42,104 - Vector store initialized in lifespan.
+2025-11-14 22:37:02,423 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 22:37:02,424 - Vector store initialized in lifespan.
+2025-11-14 22:42:30,509 - Primary search failed
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 618, in query_user_docs
+    hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 455, in search
+    res = self._safe_search(
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 410, in _safe_search
+    return self.client.search(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 376, in search
+    return self._client.search(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 523, in search
+    search_result = self.http.search_api.search_points(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\search_api.py", line 936, in search_points
+    return self._build_for_search_points(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\search_api.py", line 487, in _build_for_search_points
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+Raw response content:
+b'{"status":{"error":"Wrong input: Vector dimension error: expected dim: 1536, got 3072"},"time":0.000274166}'
+2025-11-14 22:42:43,041 - chat_event wrote (rowcount=-1): chat_session_id=UUID('aa477932-5563-53f3-9b52-6dc56a684348'), csat=None, error_kind=None, event_id=UUID('5e6bbc9b-fc72-4846-89b1-e40ddf8555db'), feedback_comment=None, in_cost=0.0, input_tokens=0, intent='qa', latency_ms=12220, message_index=0, model='gpt-5', out_cost=0.0, output_tokens=0, pipeline_version='v3' ...
+2025-11-14 22:42:47,392 - CHAT | {'user': 'viruj8151@gmail.com', 'tier': 'pro', 'session_id': 45, 'source': 'gpt', 'context_mode': 'external', 'model': 'gpt-5', 'query': 'New chat'}
+2025-11-14 22:42:47,402 - Exception in callback BaseProactorEventLoop._start_serving.<locals>.loop(<_OverlappedF...0.1', 52016))>) at D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py:840
+handle: <Handle BaseProactorEventLoop._start_serving.<locals>.loop(<_OverlappedF...0.1', 52016))>) at D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py:840>
+Traceback (most recent call last):
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 855, in loop
+    self._make_socket_transport(
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 646, in _make_socket_transport
+    return _ProactorSocketTransport(self, sock, protocol, waiter,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 612, in __init__
+    super().__init__(loop, sock, protocol, waiter, extra, server)
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 189, in __init__
+    super().__init__(loop, sock, protocol, waiter, extra, server)
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 334, in __init__
+    super().__init__(*args, **kw)
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 66, in __init__
+    self._server._attach()
+  File "D:\Users\hshar\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 294, in _attach
+    assert self._sockets is not None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+2025-11-14 22:43:04,393 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 22:43:04,393 - Vector store initialized in lifespan.
+2025-11-14 22:44:30,138 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 22:44:30,138 - Vector store initialized in lifespan.
+2025-11-14 22:51:02,060 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-14 22:51:02,060 - Vector store initialized in lifespan.
+2025-11-14 23:13:37,209 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-14 23:13:39,699 - Vector store init failed: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 373, in __init__
+    self.client.get_collection(self.collection)
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 2223, in get_collection
+    return self._client.get_collection(collection_name=collection_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2584, in get_collection
+    result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 320, in get_collection
+    return self._build_for_get_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 144, in _build_for_get_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\lifespan.py", line 85, in lifespan
+    _ensure_initialized()
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 508, in _ensure_initialized
+    PRIMARY = _make_store(primary_name)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 494, in _make_store
+    return QdrantStore()
+           ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 375, in __init__
+    self.client.create_collection(
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 2382, in create_collection
+    return self._client.create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2815, in create_collection
+    result: Optional[bool] = self.http.collections_api.create_collection(
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 294, in create_collection
+    return self._build_for_create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 96, in _build_for_create_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+2025-11-15 00:25:05,033 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 00:27:17,578 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 00:27:22,601 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 00:27:22,602 - Vector store initialized in lifespan.
+2025-11-15 00:28:50,789 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 44, 'sha256': 'ca18f40aa182d57971d3840a5428c0df9662c00271e90de357b493cbd595048d', 'storage_uri': 's3://neurokron-docs/uploads/9/44/41ccea6a-4e51-4fc0-85ea-de443d0c414f.pdf', 'size_bytes': 1250271, 'mime': 'application/pdf', 'ext': '.pdf', 'duplicate': False, 'chars_indexed': 557, 'plan': 'pro'}
+2025-11-15 01:15:49,281 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 44, 'sha256': '0928678c302a3c27ad15e91150b30c77d4f5cba1e98fc30b7686f9c34bce7ab8', 'storage_uri': 's3://neurokron-docs/uploads/9/44/5a30c32f-3535-4a45-8394-57567f3943ce.docx', 'size_bytes': 37480, 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ext': '.docx', 'duplicate': False, 'chars_indexed': 1585, 'plan': 'pro'}
+2025-11-15 01:16:16,165 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 44, 'sha256': 'ffa3c2c72ec65a14ca25ee73a6996894e45d6fdba3c9be1ddce9073c4d354322', 'storage_uri': 's3://neurokron-docs/uploads/9/44/7615afe0-19e2-419c-a697-29c6d03ddfd2.docx', 'size_bytes': 37345, 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ext': '.docx', 'duplicate': False, 'chars_indexed': 1296, 'plan': 'pro'}
+2025-11-15 13:16:52,168 - UPLOAD_OK | {'user': 'viruj8151@gmail.com', 'session_id': 44, 'sha256': '4ae792fe32b3aa3de2828be11d11572c8f481a2b6043b0a617e0063fa43d83d8', 'storage_uri': 's3://neurokron-docs/uploads/9/44/affa469d-f67a-4c99-9b62-45ef8688b173.jpg', 'size_bytes': 78842, 'mime': 'image/jpeg', 'ext': '.jpg', 'duplicate': False, 'chars_indexed': 27, 'plan': 'pro'}
+2025-11-15 15:01:16,730 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 15:01:20,887 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 15:01:20,887 - Vector store initialized in lifespan.
+2025-11-15 15:01:25,848 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 15:03:19,657 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 15:22:38,249 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 15:22:42,307 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 15:22:42,307 - Vector store initialized in lifespan.
+2025-11-15 15:22:51,483 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 15:26:34,217 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 15:26:38,486 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 15:26:38,486 - Vector store initialized in lifespan.
+2025-11-15 15:27:00,732 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 15:27:01,700 - [MAIL] sending verification to gensenju@gmail.com from dev-no-reply@neurokron.com
+2025-11-15 15:27:05,478 - [MAIL] sent to gensenju@gmail.com (subject='[DEV]Verify your email')
+2025-11-15 16:45:15,449 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 16:45:19,695 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 16:45:19,695 - Vector store initialized in lifespan.
+2025-11-15 16:45:21,966 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 18:46:52,823 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-15 18:46:56,874 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-15 18:46:56,874 - Vector store initialized in lifespan.
+2025-11-15 19:15:25,527 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-11-15 19:15:26,526 - [MAIL] sending verification to gensenju@gmail.com from dev-no-reply@neurokron.com
+2025-11-15 19:15:30,659 - [MAIL] sent to gensenju@gmail.com (subject='[DEV]Verify your email')
+2025-11-19 16:31:28,952 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-11-19 16:31:33,208 - Vector service initialized. primary=QdrantStore shadows=- shadow_read=False
+2025-11-19 16:31:33,208 - Vector store initialized in lifespan.
+2025-12-08 11:41:06,018 - VECTOR DIM USING: 3072 model=text-embedding-3-large
+2025-12-08 11:41:08,831 - Vector store init failed: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 373, in __init__
+    self.client.get_collection(self.collection)
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 2223, in get_collection
+    return self._client.get_collection(collection_name=collection_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2584, in get_collection
+    result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 320, in get_collection
+    return self._build_for_get_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 144, in _build_for_get_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Neura\ChatBot\backend\app\lifespan.py", line 85, in lifespan
+    _ensure_initialized()
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 508, in _ensure_initialized
+    PRIMARY = _make_store(primary_name)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 494, in _make_store
+    return QdrantStore()
+           ^^^^^^^^^^^^^
+  File "D:\Neura\ChatBot\backend\app\vector_store.py", line 375, in __init__
+    self.client.create_collection(
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_client.py", line 2382, in create_collection
+    return self._client.create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\qdrant_remote.py", line 2815, in create_collection
+    result: Optional[bool] = self.http.collections_api.create_collection(
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 294, in create_collection
+    return self._build_for_create_collection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api\collections_api.py", line 96, in _build_for_create_collection
+    return self.api_client.request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 95, in request
+    return self.send(request, type_)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Neura\venv11\Lib\site-packages\qdrant_client\http\api_client.py", line 130, in send
+    raise UnexpectedResponse.for_response(response)
+qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 404 (Not Found)
+Raw response content:
+b'404 page not found\n'
+2025-12-08 16:37:12,489 - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\Neura\venv11\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-12-08 16:37:40,037 - VECTOR DIM USING: 3072 model=text-embedding-3-large

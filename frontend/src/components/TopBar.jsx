@@ -22,11 +22,12 @@ const TopBar = () => {
   const [authed, setAuthed] = useState(isLoggedIn()); // seed from local
   const [tier, setTier] = useState((localStorage.getItem("tier") || "free").toLowerCase());
   const [loadingTier, setLoadingTier] = useState(true);
+  const [consoleEnabled, setConsoleEnabled] = useState(false); // ← NEW
 
   const menuRef = useRef(null);
   const btnRef = useRef(null);
 
-  // Soft probe once to sync cookie-backed session with local flags
+  // Soft probe once to sync cookie-backed session with local flags (+ console flag)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -36,19 +37,27 @@ const TopBar = () => {
         if (!data?.authenticated) {
           authLogout();
           setAuthed(false);
+          setConsoleEnabled(false);
         } else {
           setAuthed(true);
+          setConsoleEnabled(Boolean(data?.featureFlags?.console_enabled)); // ← NEW
         }
       } catch {
-        // ignore transient errors; keep current flag
+        // ignore transient errors; keep current flags
       }
     })();
 
-    const onAuthChanged = () => setAuthed(isLoggedIn());
+    const onAuthChanged = () => {
+      setAuthed(isLoggedIn());
+      // When auth changes elsewhere, re-probe /auth/me to refresh flag
+      secureAxios.get("/auth/me").then(({ data }) => {
+        setConsoleEnabled(Boolean(data?.featureFlags?.console_enabled));
+      }).catch(() => {});
+    };
     window.addEventListener("auth-changed", onAuthChanged);
     return () => {
-      mounted = false;
       window.removeEventListener("auth-changed", onAuthChanged);
+      mounted = false;
     };
   }, []);
 
@@ -96,6 +105,7 @@ const TopBar = () => {
   const onChat = path.startsWith("/chat");
   const onLogin = path === "/login";
   const onSignup = path === "/signup";
+  const onConsole = path.startsWith("/console"); // ← NEW
 
   // Hotkey: Ctrl/Cmd+K opens command palette on chat page
   useEffect(() => {
@@ -139,6 +149,7 @@ const TopBar = () => {
     setMenuOpen(false);
     setAuthed(false);
     setTier("free");
+    setConsoleEnabled(false);
     navigate("/"); // home after logout
   };
 
@@ -172,11 +183,9 @@ const TopBar = () => {
     if (location.pathname !== "/pricing") navigate("/pricing");
   };
   const onManageClick = () => {
-    // Later: open billing portal/manage URL when available
-    navigate("/pricing");
+    navigate("/pricing"); // later: billing portal
   };
 
-  // Helper: treat mini/mini+ as Mini+
   const isMiniTier = tier === "mini" || tier === "mini+";
 
   return (
@@ -190,9 +199,7 @@ const TopBar = () => {
             className="justify-self-start flex items-center gap-2"
             aria-label="Go to Home or Chat"
           >
-            {/* Brand mark */}
             <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-blue-500 shadow-sm" />
-            {/* Wordmark */}
             <span className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-300">
               Neura
             </span>
@@ -221,12 +228,24 @@ const TopBar = () => {
           <div className="justify-self-end flex items-center gap-3">
             {authed ? (
               <>
+                {/* Old Admin (legacy) */}
                 {isAdmin() && (
                   <Link
                     to="/admin"
-                    className="px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    className={`px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 ${path.startsWith("/admin") ? "bg-zinc-100 dark:bg-zinc-800/60" : ""}`}
                   >
                     Admin
+                  </Link>
+                )}
+
+                {/* NEW: Console (feature-flagged) */}
+                {consoleEnabled && (
+                  <Link
+                    to="/console/overview"
+                    className={`px-3 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 ${onConsole ? "bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900" : ""}`}
+                    title="Admin Console"
+                  >
+                    Console
                   </Link>
                 )}
 
@@ -236,7 +255,6 @@ const TopBar = () => {
                 {/* Upgrade / Manage */}
                 {(isMiniTier || tier === "pro") ? (
                   <>
-                    {/* Desktop Manage */}
                     <button
                       onClick={onManageClick}
                       className="hidden sm:inline-flex items-center rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-black"
@@ -244,7 +262,6 @@ const TopBar = () => {
                     >
                       Manage plan
                     </button>
-                    {/* Mobile Manage */}
                     <button
                       onClick={onManageClick}
                       className="sm:hidden inline-flex items-center rounded-lg border px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -255,7 +272,6 @@ const TopBar = () => {
                   </>
                 ) : (
                   <>
-                    {/* Desktop Upgrade */}
                     <button
                       onClick={onUpgradeClick}
                       className="hidden sm:inline-flex items-center rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -263,7 +279,6 @@ const TopBar = () => {
                     >
                       Upgrade
                     </button>
-                    {/* Mobile Upgrade */}
                     <button
                       onClick={onUpgradeClick}
                       className="sm:hidden inline-flex items-center rounded-lg border px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -338,7 +353,6 @@ const TopBar = () => {
                     Login
                   </button>
                 ) : (
-                  // Home (and other public pages): show both
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => navigate("/login")}
@@ -385,3 +399,4 @@ const TopBar = () => {
 };
 
 export default TopBar;
+

@@ -46,7 +46,7 @@ function readCookie(name) {
 const secureAxios = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
-  timeout: 20000,
+  timeout: 60000,
 });
 
 // Debounce 401 notifications so multiple failing requests don’t trigger storms
@@ -96,7 +96,9 @@ secureAxios.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err?.response?.status;
-
+    if (err?.code === "ECONNABORTED" || String(err?.message || "").toLowerCase().includes("timeout")) {
+      err.message = "Request timed out. Try again.";
+    }
     if (status === 401) {
       // Clear any legacy token and broadcast auth change once
       try {
