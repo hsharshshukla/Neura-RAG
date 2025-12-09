@@ -186,86 +186,162 @@ export default function Home(){
         </div>
       </section>
 
-      {/* Ship faster + Built for real-world – same theme */}
+      {/* Ship faster – centered card */}
       <section className="py-16 bg-gradient-to-b from-violet-50 via-sky-50 to-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
-          {/* Ship faster */}
-          <div className="rounded-2xl border border-violet-100 bg-white p-6 sm:p-7 shadow-sm">
-            <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight mb-2">
-              Ship faster with retrieval-augmented answers
-            </h3>
-            <p className="mt-1 text-sm sm:text-base text-slate-700 max-w-3xl">
-              Most ECM work doesn&apos;t fail on logic — it stalls on finding the right sentence in the
-              right PDF. Neura turns scattered docs into a single, searchable, GPT-powered
-              workspace.
-            </p>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 sm:p-7 shadow-sm">
+              <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight mb-2">
+                Ship faster with retrieval-augmented answers
+              </h3>
+              <p className="mt-1 text-sm sm:text-base text-slate-700">
+                Most ECM work doesn&apos;t fail on logic — it stalls on finding the right sentence in
+                the right PDF. Neura turns scattered docs into a single, searchable, GPT-powered
+                workspace.
+              </p>
 
-            <div className="mt-4 flex flex-wrap gap-2 text-[11px] sm:text-xs text-slate-700">
-              <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
-                <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
-                60–80% less time searching docs
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
-                <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
-                One workspace for SOWs, configs &amp; tickets
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
-                <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
-                Answers always linked to sources
-              </span>
+              <div className="mt-4 flex flex-wrap gap-2 text-[11px] sm:text-xs text-slate-700">
+                <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
+                  <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
+                  60–80% less time searching docs
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
+                  <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
+                  One workspace for SOWs, configs &amp; tickets
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 border border-violet-100">
+                  <CheckIcon className="h-3.5 w-3.5 text-indigo-500" />
+                  Answers always linked to sources
+                </span>
+              </div>
+
+              <ul className="mt-4 space-y-2 text-sm text-slate-700">
+                <li className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500" />
+                  Stop reopening the same five PDFs all week
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500" />
+                  Reuse past answers instead of retyping them for every email
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500" />
+                  Keep a shared view of what&apos;s true for each project
+                </li>
+              </ul>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <ul className="mt-4 space-y-2 text-sm text-slate-700">
-              <li className="flex items-center gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500" />
-                Stop reopening the same five PDFs all week
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500" />
-                Reuse past answers instead of retyping them for every email
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500" />
-                Keep a shared view of what&apos;s true for each project
-              </li>
-            </ul>
+      {/* Built for real-world – centered card */}
+      <section className="py-16 bg-gradient-to-b from-violet-50 via-sky-50 to-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 sm:p-7 shadow-sm">
+              <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight mb-2">
+                Built for real-world delivery work
+              </h3>
+              <p className="mt-1 text-sm sm:text-base text-slate-700">
+                Neura is shaped around how ECM consultants actually work — juggling upgrades, issues,
+                and stakeholders across multiple projects.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-700">
+                <li className="flex items-start gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
+                  <span>
+                    Drafting upgrade notes? Ask Neura to pull all risks and prerequisites from your
+                    own documentation.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
+                  <span>
+                    Joining a project late? Skim the chat and sources instead of reading every SOW
+                    version end to end.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
+                  <span>
+                    Handing over to another consultant? Export key chats and links as a quick
+                    project brief.
+                  </span>
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-slate-600">
+                Designed around today&apos;s OpenText work, with room to grow into more ECM stacks.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Neura product suite – moved after Built for real-world */}
+      <section className="py-16 bg-gradient-to-b from-violet-50 via-sky-50 to-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+                Neura AI product suite <span className="text-xs sm:text-sm text-indigo-600">(Coming Soon)</span>
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-slate-700 max-w-3xl">
+                Alongside the Neura copilot, we&apos;re building specialised AI tools that sit on top of
+                your content, configs, and ERP landscape.
+              </p>
+            </div>
           </div>
 
-          {/* Built for real-world delivery */}
-          <div className="rounded-2xl border border-violet-100 bg-white p-6 sm:p-7 shadow-sm">
-            <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight mb-2">
-              Built for real-world delivery work
-            </h3>
-            <p className="mt-1 text-sm sm:text-base text-slate-700 max-w-3xl">
-              Neura is shaped around how ECM consultants actually work — juggling upgrades, issues,
-              and stakeholders across multiple projects.
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-slate-700">
-              <li className="flex items-start gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
-                <span>
-                  Drafting upgrade notes? Ask Neura to pull all risks and prerequisites from your
-                  own documentation.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
-                <span>
-                  Joining a project late? Skim the chat and sources instead of reading every SOW
-                  version end to end.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckIcon className="h-4 w-4 text-indigo-500 mt-0.5" />
-                <span>
-                  Handing over to another consultant? Export key chats and links as a quick project
-                  brief.
-                </span>
-              </li>
-            </ul>
-            <p className="mt-3 text-xs text-slate-600">
-              Designed around today&apos;s OpenText work, with room to grow into more ECM stacks.
-            </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                name: 'BeastSearch',
+                label: 'Vector search for enterprise content',
+                desc: 'A vector database–powered search engine that lets you query PDFs, emails, tickets, and configs in natural language and get semantically relevant results across OpenText and SAP content.',
+              },
+              {
+                name: 'AI Gateway',
+                label: 'On-demand GenAI usage layer',
+                desc: 'A managed gateway around advanced language models that gives teams pay-as-you-go access with simple refills, centralised billing, and built-in guardrails for enterprise use.',
+              },
+              {
+                name: 'Contract Creator Bot',
+                label: 'ERP-ready contract generator',
+                desc: 'Users fill a few mandatory fields; the bot pulls historical contracts from a vector store, drafts a contract, returns a structured JSON for approval, and on approval creates it in the ERP.',
+              },
+              {
+                name: 'Invoice Posting Bot',
+                label: 'AI-assisted invoice processor',
+                desc: 'Combines user inputs with historical posting data and configs, generates an ERP-ready invoice posting payload in JSON, and posts after human approval.',
+              },
+              {
+                name: 'RealEstate Investment Bot',
+                label: 'Deal screening & analysis',
+                desc: 'An AI copilot for property investors that ingests deal docs and financial assumptions, summarises opportunities, and highlights risk/return trade-offs.',
+              },
+              {
+                name: 'NeuArchive',
+                label: 'Cloud archive for SAP data',
+                desc: 'A backend cloud archiving solution for SAP structured and unstructured data, offloading cold data from primary systems while keeping it searchable via AI and vector search.',
+              },
+            ].map((p, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-violet-100 bg-white p-5 sm:p-6 shadow-sm hover:border-violet-300 transition-colors flex flex-col"
+              >
+                <div className="mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900">
+                    {p.name}
+                  </h3>
+                  <p className="text-xs sm:text-[13px] text-indigo-700 mt-0.5">
+                    {p.label}
+                  </p>
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed flex-1">
+                  {p.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
