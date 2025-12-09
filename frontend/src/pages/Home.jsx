@@ -315,9 +315,9 @@ export default function Home(){
                 desc: 'Combines user inputs with historical posting data and configs, generates an ERP-ready invoice posting payload in JSON, and posts after human approval.',
               },
               {
-                name: 'RealEstate Investment Bot',
-                label: 'Deal screening & analysis',
-                desc: 'An AI copilot for property investors that ingests deal docs and financial assumptions, summarises opportunities, and highlights risk/return trade-offs.',
+                name: 'Upgrade & Impact Advisor',
+                label: 'Upgrade readiness & risk analysis ',
+                desc: 'An AI assistant that ingests your current ECM landscape, release notes, and project documentation to assess upgrade readiness, highlight breaking changes, and summarise risks and prerequisites for each target version.',
               },
               {
                 name: 'NeuArchive',
