@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Footer from "../components/Footer";
 
 function CheckIcon(props){
   return (
@@ -130,6 +131,7 @@ export default function Home(){
           </div>
         </div>
       </section>
+      <Footer />
     </>
   )
 }
