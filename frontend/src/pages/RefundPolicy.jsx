@@ -73,7 +73,7 @@ export default function RefundPolicy() {
       <h2>5. How to Request a Refund</h2>
       <p>
         To request a refund, please contact us at{" "}
-        <a href="mailto:alpha@neurokron.com">support@neura.com</a> and include:
+        <a href="mailto:alpha@neurokron.com">support@neurokron.com</a> and include:
       </p>
       <ul>
         <li>The email address associated with your Neura account.</li>
@@ -116,7 +116,7 @@ export default function RefundPolicy() {
       <h2>Contact</h2>
       <p>
         For questions about this Refund Policy, contact us at{" "}
-        <a href="mailto:alpha@neurokron.com">support@neura.com</a>.
+        <a href="mailto:alpha@neurokron.com">support@neurokron.com</a>.
       </p>
 
       <footer className="text-sm text-gray-500 mt-8">
