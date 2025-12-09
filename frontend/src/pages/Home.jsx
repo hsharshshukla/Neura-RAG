@@ -19,8 +19,8 @@ export default function Home(){
             <h1 className="text-4xl sm:text-5xl font-semibold leading-tight text-gray-900">Neura — AI copilot for <span className="text-indigo-600">ECM consultants</span></h1>
             <p className="mt-4 text-lg text-gray-700">Upload documents, ask questions, and get instant answers with OCR + vector search. Built for OpenText, content-heavy projects, and rapid delivery.</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/signup" className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-white font-medium hover:bg-indigo-700">Start free</Link>
-              <Link to="/pricing" className="inline-flex items-center rounded-xl border border-gray-300 px-4 py-2.5 text-gray-800 hover:border-gray-400">See plans</Link>
+              {/* <Link to="/signup" className="inline-flex items-center rounded-xl border border-gray-300 px-4 py-2.5 text-gray-800 hover:border-gray-400">Start free</Link> */}
+              <Link to="/pricing" className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-white font-medium hover:bg-indigo-700">See plans</Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-600">
               <span className="inline-flex items-center gap-2"><CheckIcon/>OCR-enabled</span>
