@@ -3,7 +3,7 @@
 
 import os, hashlib, secrets, base64
 from typing import Optional
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Form, Depends, HTTPException, Request, Response, Cookie
 
@@ -14,12 +14,13 @@ from sqlalchemy import text
 
 from app.db import get_session
 from app.models import User
-from app.deps.auth import get_current_user
+from app.deps.auth import get_current_user, _decode_token
 from app.utils.security import get_password_hash, verify_password
 from app.utils.logger import log_event
 from app.utils.mailer import send_email_verification
 
-from app.rate_limit import  key_user_or_ip
+from app.rate_limit import key_user_or_ip, limiter
+from app.config.security import get_security_settings
 
 # ---- config ----
 LEGACY_VERIFY_CUTOFF = os.getenv("LEGACY_VERIFY_CUTOFF_ISO", "2025-08-24T00:00:00Z")
@@ -28,17 +29,17 @@ REQUIRE_EMAIL_VERIFICATION = os.getenv("REQUIRE_EMAIL_VERIFICATION", "true").low
 CURRENT_TOS_VERSION = os.getenv("TOS_VERSION", "2025-08-01")
 CURRENT_PRIVACY_VERSION = os.getenv("PRIVACY_VERSION", "2025-08-01")
 
-SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
-ALGORITHM = os.getenv("JWT_ALG", "HS256")
-ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "86400"))
+SECURITY = get_security_settings()
+ACCESS_TOKEN_EXPIRE_SECONDS = SECURITY.jwt_expires_seconds
 
 VERIFY_TOKEN_TTL_HOURS = int(os.getenv("VERIFY_TOKEN_TTL_HOURS", "24"))
 FRONTEND_URL = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
 
-ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
-COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
+ACCESS_COOKIE_NAME = SECURITY.access_cookie_name
+CSRF_COOKIE_NAME = SECURITY.csrf_cookie_name
+COOKIE_DOMAIN = SECURITY.cookie_domain
+COOKIE_SECURE = SECURITY.cookie_secure
+COOKIE_SAMESITE = SECURITY.cookie_samesite
 COOKIE_PATH = "/"
 
 CONSOLE_ENABLED_DEFAULT = os.getenv("CONSOLE_ENABLED_DEFAULT", "true").lower() in ("1","true","yes","on")
@@ -48,10 +49,23 @@ alias = APIRouter(prefix="/api/v1", tags=["auth"])
 
 # ---- helpers ----
 def create_access_token(user: User, expires_in: int = ACCESS_TOKEN_EXPIRE_SECONDS) -> str:
-    exp = datetime.utcnow() + timedelta(seconds=expires_in)
+    now = datetime.now(UTC)
+    exp = now + timedelta(seconds=expires_in)
     ver = (getattr(user, "token_version", 0) or 0)
-    payload = {"sub": user.email, "ver": ver, "exp": exp}
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    payload = {
+        "sub": user.email.lower(),
+        "ver": ver,
+        "iat": now,
+        "exp": exp,
+        "iss": SECURITY.jwt_issuer,
+        "aud": SECURITY.jwt_audience,
+        "jti": secrets.token_urlsafe(16),
+    }
+    return jwt.encode(
+        payload,
+        SECURITY.jwt_secret.get_secret_value(),
+        algorithm=SECURITY.jwt_alg,
+    )
 
 def set_auth_cookie(response: Response, token: str):
     response.set_cookie(
@@ -64,9 +78,20 @@ def set_auth_cookie(response: Response, token: str):
         path=COOKIE_PATH,
         domain=COOKIE_DOMAIN,
     )
+    response.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(32),
+        httponly=False,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
+        path=COOKIE_PATH,
+        domain=COOKIE_DOMAIN,
+    )
 
 def clear_auth_cookie(response: Response):
     response.delete_cookie(key=ACCESS_COOKIE_NAME, path=COOKIE_PATH, domain=COOKIE_DOMAIN)
+    response.delete_cookie(key=CSRF_COOKIE_NAME, path=COOKIE_PATH, domain=COOKIE_DOMAIN)
 
 def client_ip(request: Request) -> str:
     xff = request.headers.get("x-forwarded-for")
@@ -88,19 +113,8 @@ def _generate_verify_token() -> str:
 
 
 def _ensure_email_verify_table(db: Session) -> None:
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.email_verify_token (
-            id BIGSERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            token_hash TEXT NOT NULL UNIQUE,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            expires_at TIMESTAMPTZ NOT NULL,
-            used_at TIMESTAMPTZ
-        );
-    """))
-    db.exec(text("CREATE INDEX IF NOT EXISTS idx_evt_user ON public.email_verify_token(user_id);"))
-    db.exec(text("CREATE INDEX IF NOT EXISTS idx_evt_expires ON public.email_verify_token(expires_at);"))
-    db.commit()
+    """Compatibility hook; release migrations own this schema."""
+    return None
 
 def _set_user_verified(user: User) -> None:
     now = datetime.now(timezone.utc)
@@ -304,6 +318,7 @@ class VerifyConfirmIn(BaseModel):
 #     return {"email": user.email, "tier": user.tier, "name": user.name}
 
 @router.post("/signup")
+@limiter.limit("6/minute;60/hour")
 def signup(
     request: Request,
     response: Response,
@@ -378,7 +393,7 @@ def signup(
 
 
 @router.post("/login")
-# @limiter.limit("12/minute; 120/hour")
+@limiter.limit("12/minute;120/hour")
 def login(
     request: Request,
     response: Response,
@@ -389,7 +404,7 @@ def login(
     email_norm = email.strip().lower()
     user = db.exec(select(User).where(User.email == email_norm)).first()
 
-    if not user or not verify_password(password, user.password):
+    if not user or not user.password or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # if REQUIRE_EMAIL_VERIFICATION and not _is_verified(user):
@@ -429,7 +444,6 @@ def login(
         "tier": user.tier,
         "name": user.name,
         "role": getattr(user, "role", "user"),
-        "access_token": token,
     }
 
 @router.post("/logout")
@@ -497,7 +511,7 @@ def accept_terms(
     return {"ok": True}
 
 @router.post("/verify/start", status_code=204)
-# @limiter.limit("3/minute; 30/hour")
+@limiter.limit("3/minute;30/hour")
 def verify_start(
     request: Request,
     response: Response,
@@ -547,7 +561,7 @@ def verify_start(
 
 
 @router.post("/verify/confirm")
-# @limiter.limit("12/minute; 120/hour")
+@limiter.limit("12/minute;120/hour")
 def verify_confirm(
     request: Request,
     response: Response,
@@ -613,8 +627,8 @@ def soft_me(
         return {"authenticated": False}
 
     try:
-        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    except:
+        payload = _decode_token(access_token)
+    except JWTError:
         return {"authenticated": False}
 
     email = payload.get("sub", "").lower()

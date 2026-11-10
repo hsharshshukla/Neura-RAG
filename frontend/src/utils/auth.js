@@ -30,9 +30,6 @@ export function markAuthed(profile = {}) {
     localStorage.setItem('tier',  tier);
     localStorage.setItem('plan',  plan);
 
-    if (profile.token) {
-      localStorage.setItem('token', String(profile.token));
-    }
   } catch {}
   try { window.dispatchEvent(new Event('auth-changed')); } catch {}
 }
@@ -81,11 +78,5 @@ export function getEmail() {
 }
 export function getName() {
   try { return localStorage.getItem('name') || ''; }
-  catch { return ''; }
-}
-
-// Legacy shim
-export function getToken() {
-  try { return localStorage.getItem('token') || ''; }
   catch { return ''; }
 }

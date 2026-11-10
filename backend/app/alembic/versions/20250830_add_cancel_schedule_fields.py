@@ -1,14 +1,25 @@
 # alembic/versions/20250830_add_cancel_schedule_fields.py
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
-# <= 32 chars or Postgres alembic_version will fail
 revision = "20250830_cancel_flags"
 down_revision = "20250827_billing_and_usage"
 branch_labels = None
 depends_on = None
 
-def upgrade():
+
+def _ensure_alembic_version_capacity() -> None:
+    """Widen Alembic's revision column without changing existing values."""
+    op.execute("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(128)")
+
+
+def upgrade() -> None:
+    # Later legacy revision identifiers exceed Alembic's historical VARCHAR(32)
+    # default. Expand the bookkeeping column before Alembic writes the next id.
+    # Repeating this widening is safe; the immediate successor branches repeat it
+    # for databases that were already stamped at this revision before this guard
+    # was added.
+    _ensure_alembic_version_capacity()
     # Add columns with a safe default for existing rows
     op.add_column(
         "user",
@@ -34,7 +45,10 @@ def upgrade():
         existing_nullable=False,
     )
 
-def downgrade():
+
+def downgrade() -> None:
     op.drop_column("user", "next_renewal_at")
     op.drop_column("user", "scheduled_plan")
     op.drop_column("user", "cancel_at_period_end")
+    # Do not shrink alembic_version. Other installed branch revisions may be
+    # longer than 32 characters, and narrowing would be lossy or fail outright.

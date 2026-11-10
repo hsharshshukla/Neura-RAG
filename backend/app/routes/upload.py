@@ -30,7 +30,7 @@ from app.utils.logger import log_event
 from app.vector_store import embed_and_store
 from app.parsers.parser import parse_and_clean_bytes
 from app.storage.storage import get_storage
-from app.rate_limit import  key_user_or_ip  # SlowAPI limiter
+from app.rate_limit import key_user_or_ip, limiter
 
 router = APIRouter(prefix="/api/v1", tags=["upload"])
 logger = logging.getLogger("uvicorn.error")
@@ -140,38 +140,8 @@ def _enforce_plan_daily_count(db: Session, user_id: int, tier: str) -> None:
 
 
 def _ensure_tables(db: Session) -> None:
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.blob (
-            id BIGSERIAL PRIMARY KEY,
-            sha256 TEXT NOT NULL UNIQUE,
-            bytes BIGINT NOT NULL,
-            ext TEXT,
-            mime TEXT,
-            storage_uri TEXT,
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-        );
-    """))
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.upload_link (
-            id BIGSERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            session_id INTEGER NOT NULL,
-            sha256 TEXT NOT NULL,
-            doc_id TEXT NOT NULL,
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-            UNIQUE (user_id, session_id, sha256)
-        );
-    """))
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.embedding_index (
-            id BIGSERIAL PRIMARY KEY,
-            sha256 TEXT NOT NULL UNIQUE,
-            store_key TEXT,
-            chunks INTEGER,
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-        );
-    """))
-    db.commit()
+    """Compatibility hook; Alembic release migrations own all upload tables."""
+    return None
 
 
 # ---------- routes ----------
@@ -187,6 +157,8 @@ def check_duplicate(
     user_email: str = Depends(get_current_user),
 ):
     """Check if upload already exists and validate file size per plan."""
+    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
+        raise HTTPException(status_code=409, detail="Legacy organizational uploads are disabled")
     _ensure_tables(db)
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
@@ -218,6 +190,7 @@ def check_duplicate(
     }
 
 @router.post("/upload", response_model=None)
+@limiter.limit("6/minute;60/hour")
 async def upload_file(
     request: Request,
     response: Response,
@@ -229,6 +202,8 @@ async def upload_file(
 
 
     """Upload handler: deduplicate, parse, embed, and record."""
+    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
+        raise HTTPException(status_code=409, detail="Legacy organizational uploads are disabled")
     _ensure_tables(db)
 
     user = db.exec(select(User).where(User.email == user_email)).first()
@@ -362,7 +337,7 @@ async def upload_file(
 
     log_event("upload_ok", {
         "user": user_email, "session_id": session_id,
-        "sha256": sha_hex, "storage_uri": storage_uri,
+        "sha256": sha_hex,
         "size_bytes": size, "mime": mime, "ext": ext,
         "duplicate": blob_exists, "chars_indexed": chars_indexed, "plan": tier,
     })

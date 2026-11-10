@@ -1,15 +1,27 @@
 # backend/app/models.py
 from __future__ import annotations
 from datetime import datetime, timedelta, date
-from sqlalchemy import Column, DateTime, text, JSON, UniqueConstraint, TIMESTAMP,func, CheckConstraint
+from sqlalchemy import (
+    Column,
+    DateTime,
+    text,
+    JSON,
+    UniqueConstraint,
+    TIMESTAMP,
+    func,
+    CheckConstraint,
+)
 from sqlmodel import SQLModel, Field
 from typing import Optional, List
 from uuid import uuid4
+
 try:
     from pydantic import field_validator  # Pydantic v2
+
     HAS_PYDANTIC_V2 = True
 except ImportError:
     HAS_PYDANTIC_V2 = False
+
 
 class Chat(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
@@ -17,6 +29,7 @@ class Chat(SQLModel, table=True):
     title: str = Field(default="New chat", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Upload(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -29,10 +42,11 @@ class Upload(SQLModel, table=True):
     text_hash: Optional[str] = Field(default=None, index=True)
     size_bytes: Optional[int] = Field(default=None)
 
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str
-    password: str
+    password: str | None = None
     tier: str = Field(default="free")  # 'free' | 'mini' | 'pro'
     role: str = Field(default="user", index=True)  # 'user' | 'admin'
     name: Optional[str] = None
@@ -50,11 +64,32 @@ class User(SQLModel, table=True):
     email_verification_expires_at: Optional[datetime] = None
     cancel_at_period_end: bool = Field(default=False, nullable=False)
     scheduled_plan: Optional[str] = Field(default=None)
-    next_renewal_at: Optional[datetime] = Field(default=None) 
+    next_renewal_at: Optional[datetime] = Field(default=None)
+    provider: str | None = Field(default=None, index=True, max_length=32)
+    provider_id: str | None = Field(default=None, index=True, max_length=255)
 
     @property
     def is_email_verified(self) -> bool:
         return self.email_verified_at is not None
+
+
+class Workspace(SQLModel, table=True):
+    id: str = Field(primary_key=True, max_length=36)
+    name: str = Field(max_length=128)
+    active: bool = Field(default=True, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class WorkspaceMembership(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id", name="uq_workspace_membership"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    workspace_id: str = Field(foreign_key="workspace.id", index=True, max_length=36)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    role: str = Field(default="reader", max_length=32)
+    active: bool = Field(default=True, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
 
 class UploadedFile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -63,16 +98,19 @@ class UploadedFile(SQLModel, table=True):
     original_name: str
     timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
 
+
 class ChatSession(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int
+    user_id: int = Field(foreign_key="user.id", index=True)
+    workspace_id: str | None = Field(default=None, foreign_key="workspace.id", index=True)
     title: str
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
+
 class ChatMessage(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    session_id: int
-    user_id: int = Field(index=True)
+    session_id: int = Field(foreign_key="chatsession.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     role: str
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
@@ -86,12 +124,14 @@ class ChatMessage(SQLModel, table=True):
         )
     )
 
+
 class UsageLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
     event: str
     details: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
+
 
 class PasswordResetToken(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
@@ -100,15 +140,18 @@ class PasswordResetToken(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime = Field(index=True)
     used: bool = Field(default=False)
+
     @staticmethod
     def default_expiry(minutes: int = 30) -> datetime:
         return datetime.utcnow() + timedelta(minutes=minutes)
+
 
 class DailyUsage(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
     day: date = Field(index=True)
     chats_count: int = Field(default=0)
+
 
 class Coupon(SQLModel, table=True):
     __tablename__ = "coupon"
@@ -141,16 +184,15 @@ class Coupon(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(
         sa_column=Column(
-            DateTime(timezone=False),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False
+            DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False
         )
     )
     if HAS_PYDANTIC_V2:
+
         @field_validator("code", mode="before")
-        def _upper_code(cls, v):
+        def _upper_code(cls, v: object) -> object:
             return v.upper() if isinstance(v, str) else v
+
 
 class CouponRedemption(SQLModel, table=True):
     __tablename__ = "coupon_redemption"
@@ -221,7 +263,7 @@ class CouponRedemption(SQLModel, table=True):
 #     email_verification_expires_at: Optional[datetime] = None
 #     cancel_at_period_end: bool = Field(default=False, nullable=False)
 #     scheduled_plan: Optional[str] = Field(default=None)                # typically "free"
-#     next_renewal_at: Optional[datetime] = Field(default=None) 
+#     next_renewal_at: Optional[datetime] = Field(default=None)
 
 #     @property
 #     def is_email_verified(self) -> bool:
@@ -292,7 +334,6 @@ class CouponRedemption(SQLModel, table=True):
 #     user_id: int = Field(index=True, foreign_key="user.id")
 #     day: date = Field(index=True)  # YYYY-MM-DD in server tz/UTC
 #     chats_count: int = Field(default=0)
-
 
 
 # class Coupon(SQLModel, table=True):

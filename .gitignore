@@ -1,4 +1,13 @@
 frontend/node_modules/
+frontend/build/
 backend/uploads/
 backend/.env*
-backend/tests/
+!backend/.env.example
+backend/.venv/
+**/__pycache__/
+*.py[cod]
+backend/logs/*.log
+.pytest_cache/
+.pytest-tmp*/
+pytest-tmp*/
+.pytest-neura.db

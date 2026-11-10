@@ -16,10 +16,11 @@ from fastapi.exceptions import RequestValidationError
 # Lifespan (your existing)
 from app.lifespan import lifespan
 
-# Rate limiting (your existing)
-# from slowapi.errors import RateLimitExceeded
-# from slowapi.middleware import SlowAPIMiddleware
-# from app.rate_limit import limiter  # uses user-or-IP keying and Redis/memory storage
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.rate_limit import limiter
+from app.middleware.security import CSRFMiddleware
 
 # ---- OpenTelemetry ----------------------------------------------------------
 from app.telemetry.trace import init_tracer  # you added this module earlier
@@ -56,6 +57,7 @@ from app.routes import (
     feedback, admin_refresh, admin_summary,
     admin_actives, admin_usage, admin_bulk_upload,
     admin_users_bulk,
+    tkp_retrieval,
 )
 from app.routes.chat_status import router as chat_status_router
 
@@ -72,7 +74,10 @@ log = logging.getLogger("neura.main")
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        cid = request.headers.get("x-correlation-id") or str(uuid.uuid4())
+        try:
+            cid = str(uuid.UUID(request.headers.get("x-correlation-id", "")))
+        except ValueError:
+            cid = str(uuid.uuid4())
         request.state.correlation_id = cid
         response: Response = await call_next(request)
         response.headers["x-correlation-id"] = cid
@@ -167,27 +172,34 @@ if APP_ENV == "prod":
 
 app = FastAPI(title="Neura API", lifespan=lifespan)
 
+default_origins = "http://localhost:3000,http://127.0.0.1:3000"
 ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    os.getenv("FRONTEND_URL", "").strip() or "https://www.neurokron.com",
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", default_origins).split(",")
+    if origin.strip()
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o for o in ALLOWED_ORIGINS if o],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|([\w-]+\.)*neurokron\.com)(:\d+)?$",
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Authorization",
+        "Content-Type",
+        "X-CSRF-Token",
+        "X-Correlation-ID",
+        "X-Requested-With",
+    ],
 )
+
+app.add_middleware(CSRFMiddleware)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 if os.getenv("ENABLE_CORRELATION", "true").lower() in ("1", "true", "yes"):
     app.add_middleware(CorrelationIdMiddleware)
-
-# app.state.limiter = limiter
-# app.add_middleware(SlowAPIMiddleware)
 
 _instrument_otel(app)
 
@@ -207,16 +219,16 @@ _instrument_otel(app)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    try:
-        body = await request.body()
-    except Exception:
-        body = b""
+    safe_errors = [
+        {"type": error.get("type"), "loc": error.get("loc")}
+        for error in exc.errors()
+    ]
     logger.error(
-        "422 Validation error on %s %s\nErrors: %s\nContent-Type: %s\nBody: %r",
-        request.method, request.url.path, exc.errors(),
-        request.headers.get("content-type"), body[:1000],
+        "422 Validation error on %s %s; errors=%s; content_type=%s",
+        request.method, request.url.path, safe_errors,
+        request.headers.get("content-type"),
     )
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    return JSONResponse(status_code=422, content={"detail": safe_errors})
 
 # Apply per-router limits BEFORE include_router
 # _limit_router(chat.router,   RL_CHAT,   methods={"POST"})
@@ -247,6 +259,7 @@ app.include_router(admin_actives.router)
 app.include_router(admin_usage.router)
 app.include_router(admin_bulk_upload.router)
 app.include_router(admin_users_bulk.router)
+app.include_router(tkp_retrieval.router)
 
 @app.get("/health")
 def health_root():

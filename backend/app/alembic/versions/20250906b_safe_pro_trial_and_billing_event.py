@@ -5,10 +5,11 @@ Revises: 20250830_cancel_flags
 Replaces: 20250906_pro_trial_and_billing_event
 Create Date: 2025-09-06 12:34:56
 """
+
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
 # --- Alembic IDs ---
@@ -20,6 +21,11 @@ USER_TABLE = "user"
 BILLING_EVENT_TABLE = "billing_event"
 
 
+def _ensure_alembic_version_capacity() -> None:
+    """Support databases stamped at 20250830 before its widening guard existed."""
+    op.execute("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(128)")
+
+
 def _has_column(conn, table: str, col: str) -> bool:
     insp = Inspector.from_engine(conn)
     cols = [c["name"] for c in insp.get_columns(table)]
@@ -27,6 +33,7 @@ def _has_column(conn, table: str, col: str) -> bool:
 
 
 def upgrade():
+    _ensure_alembic_version_capacity()
     conn = op.get_bind()
 
     # --- user table: add columns iff missing ---
@@ -70,10 +77,11 @@ def upgrade():
         """
     )
     op.execute(
-        'CREATE INDEX IF NOT EXISTS ix_billing_event_user_id ON public.billing_event (user_id)'
+        "CREATE INDEX IF NOT EXISTS ix_billing_event_user_id ON public.billing_event (user_id)"
     )
     op.execute(
-        'CREATE INDEX IF NOT EXISTS ix_billing_event_created_at ON public.billing_event (created_at)'
+        "CREATE INDEX IF NOT EXISTS ix_billing_event_created_at "
+        "ON public.billing_event (created_at)"
     )
 
 
@@ -81,7 +89,7 @@ def downgrade():
     # Keep downgrade conservative: only drop objects if they exist.
     conn = op.get_bind()
     # billing_event
-    op.execute('DROP TABLE IF EXISTS public.billing_event')
+    op.execute("DROP TABLE IF EXISTS public.billing_event")
 
     # user columns (drop only if present)
     maybe_drop = [
