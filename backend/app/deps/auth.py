@@ -1,25 +1,32 @@
 # app/deps/auth.py
-import os
-from typing import Optional
-from fastapi import Depends, HTTPException, Header, Cookie, status
+
+from typing import Any
+
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from jose import JWTError, jwt
 from sqlmodel import Session, select
 
+from app.config.security import get_security_settings
 from app.db import get_session
 from app.models import User
 
-SECRET_KEY = os.getenv("JWT_SECRET", "supersecretkey")
-ALGORITHM = os.getenv("JWT_ALG", "HS256")
-ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 
-
-def _decode_token(token: str) -> dict:
-    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+def _decode_token(token: str) -> dict[str, Any]:
+    settings = get_security_settings()
+    payload = jwt.decode(
+        token,
+        settings.jwt_secret.get_secret_value(),
+        algorithms=[settings.jwt_alg],
+        issuer=settings.jwt_issuer,
+        audience=settings.jwt_audience,
+        options={"require_exp": True, "require_iat": True, "require_sub": True},
+    )
+    return dict(payload)
 
 
 def get_current_user(
-    authorization: str = Header(None, alias="Authorization"),
-    access_cookie: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
+    authorization: str | None = Header(None, alias="Authorization"),
+    access_cookie: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_session),
 ) -> str:
     """
@@ -37,29 +44,43 @@ def get_current_user(
 
     try:
         payload = _decode_token(token)
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    except (JWTError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired credentials",
+        ) from None
 
     email = (payload.get("sub") or "").lower()
     token_ver = int(payload.get("ver", 0))
     if not email:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: sub missing")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired credentials",
+        )
 
     user = db.exec(select(User).where(User.email == email)).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired credentials",
+        )
 
     if int(user.token_version or 0) != token_ver:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked; please log in again")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired credentials",
+        )
 
     return email
 
 
 def get_current_user_obj(
-    authorization: str = Header(None, alias="Authorization"),
-    access_cookie: Optional[str] = Cookie(None, alias=ACCESS_COOKIE_NAME),
+    authorization: str | None = Header(None, alias="Authorization"),
+    access_cookie: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_session),
 ) -> User:
     email = get_current_user(authorization, access_cookie, db)
     user = db.exec(select(User).where(User.email == email)).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     return user

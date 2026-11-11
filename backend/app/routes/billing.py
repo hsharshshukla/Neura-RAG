@@ -258,19 +258,8 @@ def _set_cancel_flags_safe(user: User, enabled: bool, next_renewal: Optional[dat
             pass
 
 def _ensure_billing_tables(db: Session) -> None:
-    # Persist webhook events idempotently
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.billing_event (
-            id BIGSERIAL PRIMARY KEY,
-            event_id TEXT NOT NULL UNIQUE,
-            event_type TEXT,
-            provider TEXT,
-            user_id INTEGER,
-            payload JSONB,
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-        );
-    """))
-    db.commit()
+    """Compatibility hook; release migrations own billing tables."""
+    return None
 
 def _is_trusted_webhook(req: Request) -> bool:
     if GATEWAY == "razorpay":

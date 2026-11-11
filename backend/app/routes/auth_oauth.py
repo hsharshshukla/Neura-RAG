@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
-from jose import jwt
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
 import os, json, time
@@ -11,6 +10,7 @@ import os, json, time
 from app.db import get_session
 from app.models import User
 from app.utils.logger import log_event
+from app.routes.auth import create_access_token, set_auth_cookie
 
 # 🔒 SlowAPI per-endpoint limiter
 # from app.rate_limit import limiter  # (key_func default = client IP is fine for OAuth)
@@ -18,10 +18,6 @@ from app.utils.logger import log_event
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:3000")
-JWT_SECRET = os.getenv("JWT_SECRET", "dev")
-JWT_ALG = os.getenv("JWT_ALG", "HS256")
-JWT_EXPIRES_SECONDS = int(os.getenv("JWT_EXPIRES_SECONDS", "2592000"))  # 30d
-
 # Read env once
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
@@ -56,18 +52,6 @@ oauth.register(
     client_kwargs={"scope": "name email", "token_endpoint_auth_method": "client_secret_post"},
     client_id=APPLE_CLIENT_ID,
 )
-
-def _issue_app_jwt(user: User) -> str:
-    now = int(time.time())
-    payload = {
-        "sub": str(user.id),
-        "email": user.email,
-        "tier": user.tier,
-        "iat": now,
-        "exp": now + JWT_EXPIRES_SECONDS,
-        "iss": "neura-backend",
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
 def _apple_client_secret() -> str:
     from jose import jwt as jose_jwt
@@ -147,9 +131,11 @@ async def google_callback(request: Request, db: Session = Depends(get_session)):
     sub = claims.get("sub")
     name = claims.get("name") or f"GoogleUser-{sub[:6]}"
     user = _upsert_user(db, email=email, name=name, provider="google", provider_id=sub)
-    app_jwt = _issue_app_jwt(user)
+    app_jwt = create_access_token(user)
     log_event("oauth_login", {"provider": "google", "user": email or sub})
-    return RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback#token={app_jwt}")
+    response = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback")
+    set_auth_cookie(response, app_jwt)
+    return response
 
 # ---------- Apple ----------
 @router.get("/apple/start")
@@ -183,6 +169,8 @@ async def apple_callback(request: Request, db: Session = Depends(get_session)):
     sub = claims.get("sub")
     name = ""
     user = _upsert_user(db, email=email, name=name, provider="apple", provider_id=sub)
-    app_jwt = _issue_app_jwt(user)
+    app_jwt = create_access_token(user)
     log_event("oauth_login", {"provider": "apple", "user": email or sub})
-    return RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback#token={app_jwt}")
+    response = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback")
+    set_auth_cookie(response, app_jwt)
+    return response

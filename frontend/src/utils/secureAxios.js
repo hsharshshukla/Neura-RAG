@@ -71,14 +71,6 @@ secureAxios.interceptors.request.use((config) => {
     config.headers["X-CSRF-Token"] = csrf;
   }
 
-  // Legacy bearer support (optional)
-  try {
-    const legacy = localStorage.getItem("token");
-    if (legacy && legacy !== "null" && legacy !== "undefined") {
-      config.headers.Authorization = "Bearer " + legacy;
-    }
-  } catch {}
-
   return config;
 });
 

@@ -1,5 +1,6 @@
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.2
+alembic==1.14.1
 aiosignal==1.4.0
 aiosmtplib==5.0.0
 annotated-doc==0.0.4
@@ -111,7 +112,7 @@ python-dotenv==1.2.1
 python-jose==3.5.0
 python-multipart==0.0.20
 python-pptx==1.0.2
-pywin32==311
+pywin32==311; sys_platform == "win32"
 PyYAML==6.0.3
 qdrant-client==1.15.1
 redis==7.0.1

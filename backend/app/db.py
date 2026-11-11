@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os
 import socket
+from collections.abc import Generator
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from sqlalchemy import create_engine
@@ -11,15 +12,16 @@ from sqlmodel import Session
 # --- Load .env in dev ---
 try:
     from dotenv import load_dotenv, find_dotenv
+
     load_dotenv(find_dotenv(usecwd=True), override=False)
 except Exception:
     pass
 
 
-def _normalize_url(url: str) -> str:
+def _normalize_url(url: str | None) -> str:
     """Ensure SQLAlchemy DSN is in correct format (postgresql+psycopg://)."""
     if not url:
-        return url
+        return ""
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+psycopg://", 1)
     elif url.startswith("postgresql://") and "+psycopg" not in url:
@@ -130,23 +132,27 @@ except Exception:
 
 # --- Engine ---
 # We pass a short connect_timeout so failures show quickly in logs.
-connect_args = {"connect_timeout": CONNECT_TIMEOUT}
+connect_args: dict[str, object] = (
+    {"check_same_thread": False}
+    if _is_sqlite(DATABASE_URL)
+    else {"connect_timeout": CONNECT_TIMEOUT}
+)
 # sslmode is already in the URL, but adding here doesn’t hurt in psycopg3.
-if "sslmode=" not in (urlparse(DATABASE_URL).query or ""):
+if not _is_sqlite(DATABASE_URL) and "sslmode=" not in (urlparse(DATABASE_URL).query or ""):
     connect_args["sslmode"] = "require"
 
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=300,
-    pool_size=POOL_SIZE,
-    max_overflow=MAX_OVERFLOW,
+    **({} if _is_sqlite(DATABASE_URL) else {"pool_size": POOL_SIZE, "max_overflow": MAX_OVERFLOW}),
     echo=ECHO_SQL,
     future=True,
     connect_args=connect_args,
 )
 
-def get_session():
+
+def get_session() -> Generator[Session, None, None]:
     """FastAPI dependency that yields a Session bound to engine."""
     with Session(engine) as session:
         yield session

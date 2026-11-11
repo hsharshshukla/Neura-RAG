@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os, re, time, uuid
+import os, re, time, uuid, logging
 from typing import Optional, List, Any, Dict
 from datetime import datetime, date, timedelta
 
@@ -13,8 +13,10 @@ from app.db import get_session
 from app.models import ChatSession, ChatMessage, User
 from app.schemas import ChatSessionOut, ChatMessageOut
 from app.deps.auth import get_current_user
+from app.deps.chat_session import require_owned_chat_session
 from app.utils.logger import log_event
 from app.vector_store import query_user_docs
+from app.rate_limit import limiter
 
 from app.config.plan_policy import (
     plan_limit,
@@ -24,6 +26,7 @@ from app.config.plan_policy import (
 )
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+logger = logging.getLogger("neura.chat")
 
 
 # =========================
@@ -114,11 +117,19 @@ def get_sessions(
 @router.get("/{session_id}", response_model=List[ChatMessageOut])
 def get_messages(
     session_id: int,
+    user_email: str = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
+    user = db.exec(select(User).where(User.email == user_email)).first()
+    if user is None:
+        raise HTTPException(401, "User not found")
+    require_owned_chat_session(db, session_id=session_id, user_id=user.id)
     return db.exec(
         select(ChatMessage)
-        .where(ChatMessage.session_id == session_id)
+        .where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.user_id == user.id,
+        )
         .order_by(ChatMessage.id)
     ).all()
 
@@ -154,11 +165,17 @@ def rename_session(
 # ASK ENDPOINT (Final)
 # =========================
 @router.post("")
+@limiter.limit("20/minute;300/hour")
 async def ask(
     request: Request,
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
+    if env("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
+        raise HTTPException(
+            409,
+            "Legacy chat grounding is disabled; use the authenticated TKP retrieval API",
+        )
     try:
         body = await request.json()
     except Exception:
@@ -202,6 +219,8 @@ async def ask(
         db.refresh(chat)
         session_id = chat.id
         created_new = True
+    else:
+        require_owned_chat_session(db, session_id=session_id, user_id=user.id)
 
     session_uuid = _session_uuid(session_id)
     msg_index = _messages_in_session(db, session_id)
@@ -296,8 +315,9 @@ async def ask(
             temperature=0.2,
         )
         ai_text = resp.choices[0].message.content.strip()
-    except Exception as e:
-        raise HTTPException(500, f"Chat generation failed: {e}")
+    except Exception:
+        logger.exception("chat_generation_failed")
+        raise HTTPException(503, "Chat generation is temporarily unavailable") from None
 
     # ---------- STORE ----------
     now = datetime.utcnow()

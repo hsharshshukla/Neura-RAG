@@ -78,16 +78,7 @@ def _ensure_tables(db: Session) -> None:
     Creates a lightweight search_log table if it doesn't exist.
     (Independent from SQLModel metadata to keep this endpoint decoupled.)
     """
-    db.exec(text("""
-        CREATE TABLE IF NOT EXISTS public.search_log (
-            id BIGSERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            q TEXT NOT NULL,
-            session_id TEXT,
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-        );
-    """))
-    db.commit()
+    return None
 
 def _log_search(db: Session, user_id: int, q: str, session_id: Optional[str]) -> None:
     db.exec(text("""
@@ -190,6 +181,8 @@ def global_search(
     current_user: Any = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> Dict[str, List[Dict[str, Any]]]:
+    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
+        raise HTTPException(status_code=409, detail="Legacy organizational search is disabled")
     # Resolve user & enforce tier gating first
     user = _resolve_user(db, current_user)
     plan_tier = _norm_tier(getattr(user, "tier", None))

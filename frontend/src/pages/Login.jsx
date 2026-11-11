@@ -47,7 +47,6 @@ export default function Login() {
         name:  data.name  || '',
         role:  data.role  || 'user',
         tier:  data.tier  || 'free',
-        token: data.access_token, // optional legacy
       });
 
       // On success: go where they were heading, or /chat.
