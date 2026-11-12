@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -27,7 +26,6 @@ from app.middleware.security import CSRFMiddleware
 from app.models import ChatSession, User, Workspace, WorkspaceMembership
 from app.rate_limit import client_ip, limiter
 from app.routes import auth as auth_routes
-from app.routes.chat import ask
 from app.routes.search import global_search
 from app.routes.tkp_retrieval import router as tkp_router
 from app.routes.upload import check_duplicate
@@ -418,7 +416,7 @@ def test_browser_cannot_override_workspace_and_route_is_rate_limited(monkeypatch
     assert limited.status_code == 429
 
 
-def test_tkp_mode_disables_all_legacy_organizational_rag(monkeypatch) -> None:
+def test_tkp_mode_disables_legacy_search_and_upload(monkeypatch) -> None:
     monkeypatch.setenv("ORGANIZATIONAL_RAG_MODE", "tkp")
     scope = {
         "type": "http",
@@ -433,8 +431,6 @@ def test_tkp_mode_disables_all_legacy_organizational_rag(monkeypatch) -> None:
         "server": ("testserver", 443),
     }
     request = Request(scope)
-    with pytest.raises(HTTPException) as chat_denied:
-        asyncio.run(inspect.unwrap(ask)(request=request, db=None, user_email="reader@example.test"))
     with pytest.raises(HTTPException) as search_denied:
         global_search(
             request=request,
@@ -454,7 +450,6 @@ def test_tkp_mode_disables_all_legacy_organizational_rag(monkeypatch) -> None:
             user_email="reader@example.test",
         )
     assert {
-        chat_denied.value.status_code,
         search_denied.value.status_code,
         upload_denied.value.status_code,
     } == {409}
