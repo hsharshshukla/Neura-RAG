@@ -125,6 +125,41 @@ class ChatMessage(SQLModel, table=True):
     )
 
 
+class AnswerEvidenceAudit(SQLModel, table=True):
+    """Append-only lineage for one TKP-backed runtime answer turn."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: int = Field(foreign_key="chatsession.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    workspace_id: str = Field(foreign_key="workspace.id", index=True, max_length=36)
+    user_message_id: int = Field(foreign_key="chatmessage.id", unique=True)
+    assistant_message_id: int = Field(foreign_key="chatmessage.id", unique=True)
+    original_query: str
+    standalone_query: str
+    history_message_ids: list[int] = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
+    tkp_correlation_id: str | None = Field(default=None, index=True, max_length=36)
+    tkp_request: dict[str, object] = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
+    evidence_lineage: list[dict[str, object]] = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
+    backend_status: list[dict[str, object]] = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
+    citation_map: list[dict[str, object]] = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
+    answer_model: str = Field(max_length=128)
+    prompt_policy_version: str = Field(max_length=64)
+    validation_status: str = Field(max_length=32)
+    insufficient_evidence: bool = Field(default=False, nullable=False)
+    insufficient_reason: str | None = Field(default=None, max_length=128)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
 class UsageLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
