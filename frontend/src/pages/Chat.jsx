@@ -3,6 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import secureAxios from '../utils/secureAxios';
+import { streamGroundedChat } from '../utils/streamingChat';
+import { CitationInspector, CitationList } from '../components/Citations';
 
 // import ScopeBadge from '../components/ScopeBadge'; // optional
 
@@ -33,6 +35,21 @@ const fmtBytes = (n) => {
 
 // --- Chat list helpers ---
 const nowISO = () => new Date().toISOString();
+const requestUUID = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
 const normTime = (c) => new Date(c.updated_at || c.updatedAt || c.created_at || c.createdAt || 0).getTime();
 
 const reorderWithActiveTop = (list, activeId) => {
@@ -67,16 +84,6 @@ const upsertAndBump = (list, id, patch = {}) => {
   return bumped;
 };
 
-function pickAnswer(data) {
-  if (!data) return "";
-  const keys = ['response', 'answer', 'message', 'output', 'content'];
-  for (const k of keys) {
-    if (typeof data[k] === 'string' && data[k].trim()) return data[k];
-  }
-  if (typeof data.payload?.response === 'string') return data.payload.response;
-  return "";
-}
-
 const Chat = () => {
   const { id: routeId } = useParams();
 
@@ -90,6 +97,8 @@ const Chat = () => {
   const chatEndRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
+  const streamAbortRef = useRef(null);
+  const [selectedCitation, setSelectedCitation] = useState(null);
 
   // retry: keep last failed text + session
   const [retryInfo, setRetryInfo] = useState(null); // { text: string, sessionId: number | null }
@@ -207,6 +216,8 @@ const Chat = () => {
     return () => window.removeEventListener('rate-limit-hit', onRL);
   }, []);
 
+  useEffect(() => () => streamAbortRef.current?.abort(), []);
+
   // ---- Fetch chats ----
   const fetchChats = async () => {
     try {
@@ -234,6 +245,7 @@ const Chat = () => {
 
   // ---- Start a new chat ----
   const newChat = () => {
+    streamAbortRef.current?.abort();
     setActiveChatId(null);
     setChat([]);
     setMessage('');
@@ -266,18 +278,18 @@ const Chat = () => {
   };
 
   // ---- Retry handler ----
-  const retryLast = useCallback(() => {
+  const retryLast = () => {
     if (!retryInfo?.text) return;
-    // optional "retrying…" system bubble
-    setChat(prev => [...prev, { role: 'assistant', content: '↻ Retrying…' }]);
-    send(retryInfo.text);
+    send(retryInfo.text, retryInfo);
     setRetryInfo(null);
-  }, [retryInfo]); 
+  };
 
   // ---- Send a message (supports resend/override) ----
-  const send = async (overrideText) => {
+  const send = async (overrideText, retry = null) => {
     const text = (overrideText ?? message).trim();
     if (!text || isTyping) return;
+    const targetSessionId = retry?.sessionId ?? activeChatId ?? null;
+    const requestId = retry?.requestId || requestUUID();
 
     // Optimistic user bubble only when sending from composer (not from retry banner)
     const isManual = overrideText == null;
@@ -288,53 +300,80 @@ const Chat = () => {
 
     setIsTyping(true);
     setRetryInfo(null); // clear previous retry
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+    setChat(prev => {
+      const placeholder = {
+        role: 'assistant',
+        content: '',
+        citations: [],
+        _requestId: requestId,
+        _streaming: true,
+      };
+      const existing = prev.findIndex(item => item._requestId === requestId);
+      if (existing < 0) return [...prev, placeholder];
+      return prev.map((item, index) => index === existing ? placeholder : item);
+    });
 
     try {
-      if (!activeChatId) {
-        const res = await secureAxios.post('/chat', { payload: text, message: text });
-        const { session_id, title } = res.data || {};
-        const answer = pickAnswer(res.data);
-
-        if (session_id) {
-          setActiveChatId(session_id);
-          localStorage.setItem('active_chat_id', String(session_id));
-          setChatsList(prev => reorderWithActiveTop(
-            upsertAndBump(prev, session_id, { title: title || 'New Chat' }),
-            session_id
-          ));
-        }
-
-        setChat(prev => [...prev, { role: 'assistant', content: answer }]);
-      } else {
-        const res = await secureAxios.post('/chat', {
-          payload: text,
-          message: text,
-          session_id: activeChatId
-        });
-        const ai = pickAnswer(res.data);
-
-        setChat(prev => [...prev, { role: 'assistant', content: ai }]);
-        setChatsList(prev => reorderWithActiveTop(upsertAndBump(prev, activeChatId), activeChatId));
-      }
+      await streamGroundedChat({
+        message: text,
+        sessionId: targetSessionId,
+        requestId,
+        signal: controller.signal,
+        onEvent: (event, data) => {
+          if (event === 'answer') {
+            setChat(prev => prev.map(item => item._requestId === requestId
+              ? { ...item, content: `${item.content}${data.chunk}` }
+              : item));
+          }
+          if (event === 'citations') {
+            setChat(prev => prev.map(item => item._requestId === requestId
+              ? { ...item, citations: data.citations }
+              : item));
+          }
+          if (event === 'complete') {
+            setChat(prev => prev.map(item => item._requestId === requestId
+              ? { ...item, _streaming: false }
+              : item));
+            const completedSessionId = data.session_id;
+            setActiveChatId(completedSessionId);
+            localStorage.setItem('active_chat_id', String(completedSessionId));
+            setChatsList(prev => reorderWithActiveTop(
+              upsertAndBump(prev, completedSessionId, { title: data.title || undefined }),
+              completedSessionId
+            ));
+          }
+        },
+      });
     } catch (err) {
-      console.error('Send failed:', err);
-
-      // remember what to retry in the same session
-      setRetryInfo({ text, sessionId: activeChatId ?? null });
-
-      // show friendly error bubble with inline retry button
-      setChat(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '⚠️ Something went wrong. Please try again.',
-          _error: true
-        }
-      ]);
+      const cancelled = err?.name === 'AbortError';
+      if (!cancelled) console.error('Send failed:', err);
+      setRetryInfo({ text, sessionId: targetSessionId, requestId });
+      if (err?.status === 429) {
+        window.dispatchEvent(new CustomEvent('rate-limit-hit', { detail: err.message }));
+      }
+      if (err?.status === 401) {
+        window.dispatchEvent(new Event('auth-changed'));
+      }
+      setChat(prev => prev.map(item => item._requestId === requestId
+        ? {
+            ...item,
+            content: cancelled
+              ? 'Response cancelled. You can safely retry.'
+              : (err?.message || 'Something went wrong. Please try again.'),
+            citations: [],
+            _streaming: false,
+            _error: true,
+          }
+        : item));
     } finally {
+      if (streamAbortRef.current === controller) streamAbortRef.current = null;
       setIsTyping(false);
     }
   };
+
+  const cancelStream = () => streamAbortRef.current?.abort();
 
   // ---- Uploads ----
   const onClickAttach = () => fileInputRef.current?.click();
@@ -618,7 +657,17 @@ const Chat = () => {
                       </div>
                       {m.role === 'assistant' ? (
                         <div className={`prose prose-sm ${isUser ? 'prose-invert' : ''}`}>
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                          {m._streaming && !m.content ? (
+                            <div className="text-sm italic text-gray-500" aria-live="polite">
+                              Validating approved evidence…
+                            </div>
+                          ) : (
+                            <ReactMarkdown>{m.content}</ReactMarkdown>
+                          )}
+                          <CitationList
+                            citations={m.citations || []}
+                            onSelect={setSelectedCitation}
+                          />
                           {m._error && (
                             <div className="mt-2">
                               <button
@@ -735,22 +784,28 @@ const Chat = () => {
             />
 
             <button
-              onClick={() => send()}
-              disabled={message.trim().length === 0 || isTyping}
-              aria-disabled={message.trim().length === 0 || isTyping}
+              onClick={isTyping ? cancelStream : () => send()}
+              disabled={!isTyping && message.trim().length === 0}
+              aria-disabled={!isTyping && message.trim().length === 0}
               aria-busy={isTyping}
-              title="Send"
+              title={isTyping ? 'Cancel response' : 'Send'}
               className={`px-4 py-2 rounded-xl text-white shadow transition ${
-                message.trim().length > 0 && !isTyping
-                  ? 'bg-gradient-to-r from-teal-500 to-indigo-500 hover:opacity-95'
+                isTyping
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : message.trim().length > 0
+                    ? 'bg-gradient-to-r from-teal-500 to-indigo-500 hover:opacity-95'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
-              Send
+              {isTyping ? 'Cancel' : 'Send'}
             </button>
           </div>
         </div>
       </section>
+      <CitationInspector
+        citation={selectedCitation}
+        onClose={() => setSelectedCitation(null)}
+      />
     </div>
   );
 };

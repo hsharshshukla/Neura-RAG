@@ -87,12 +87,17 @@ class CitationSource(BaseModel):
     source_id: UUID
     source_version_id: UUID
     source_revision_number: int | None = None
+    locator_kind: str
+    locator: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
 class GroundedCitation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     evidence_id: str
+    title: str
+    relevant_section: str | None = None
+    heading_path: tuple[str, ...] = ()
     projection_id: UUID
     article_id: UUID
     revision_id: UUID
@@ -240,10 +245,22 @@ class EvidenceIndex:
                             source_id=source.source_id,
                             source_version_id=source.source_version_id,
                             source_revision_number=source.source_revision_number,
+                            locator_kind=source.locator_kind,
+                            locator=EvidenceIndex._safe_locator(source.locator),
                         )
+
+        relevant_section = None
+        heading_path: tuple[str, ...] = ()
+        if hierarchy is not None:
+            matched = hierarchy.matched_section or hierarchy.matched_block
+            relevant_section = matched.heading.strip() or None
+            heading_path = tuple(item for item in matched.heading_path if item.strip())
 
         return GroundedCitation(
             evidence_id=evidence_id,
+            title=result.title.strip(),
+            relevant_section=relevant_section,
+            heading_path=heading_path,
             projection_id=result.projection_id,
             article_id=result.article_id,
             revision_id=result.revision_id,
@@ -252,6 +269,27 @@ class EvidenceIndex:
             source_fragment_ids=fragment_ids,
             sources=tuple(detailed_sources.values()),
         )
+
+    @staticmethod
+    def _safe_locator(locator: dict[str, Any]) -> dict[str, str | int | float | bool]:
+        safe_keys = {
+            "page",
+            "page_number",
+            "page_start",
+            "page_end",
+            "section",
+            "heading",
+            "anchor",
+            "slide",
+            "sheet",
+            "cell_range",
+        }
+        safe: dict[str, str | int | float | bool] = {}
+        for key, value in locator.items():
+            if key not in safe_keys or not isinstance(value, str | int | float | bool):
+                continue
+            safe[key] = value[:256] if isinstance(value, str) else value
+        return safe
 
 
 class CitationValidator:

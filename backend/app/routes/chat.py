@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os, re, time, uuid, logging
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Optional, List, Any, Dict
 from datetime import datetime, date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ValidationError
-from sqlmodel import Session, select, func
+from sqlmodel import Session, col, select, func
+from sqlalchemy.exc import IntegrityError
 from openai import OpenAI
 
 from app.db import get_session
-from app.models import ChatSession, ChatMessage, User
+from app.models import AnswerEvidenceAudit, ChatSession, ChatMessage, User
 from app.schemas import ChatSessionOut, ChatMessageOut
 from app.deps.auth import get_current_user
 from app.deps.chat_session import require_owned_chat_session
@@ -65,6 +68,12 @@ class ChatIn(BaseModel):
 
 class RenameIn(BaseModel):
     title: str
+
+
+class StreamChatIn(BaseModel):
+    message: str
+    session_id: int | None = None
+    request_id: uuid.UUID
 
 
 # =========================
@@ -168,6 +177,7 @@ def _persist_tkp_turn(
     grounded: GroundedAnswer,
     model: str,
     validation_status: str,
+    client_request_id: str | None = None,
 ) -> tuple[ChatSession, bool]:
     created_new = chat is None
     try:
@@ -226,6 +236,7 @@ def _persist_tkp_turn(
                 answer_model=model,
                 prompt_policy_version=prompt_version,
                 validation_status=validation_status,
+                client_request_id=client_request_id,
             )
         )
         db.commit()
@@ -236,9 +247,390 @@ def _persist_tkp_turn(
         raise
 
 
+def _stream_chunk_size() -> int:
+    return min(max(env_int("TKP_CHAT_STREAM_CHUNK_CHARACTERS", 240), 64), 1024)
+
+
+def _stream_timeout_seconds() -> float:
+    try:
+        value = float(env("TKP_CHAT_STREAM_TIMEOUT_SECONDS", "90"))
+    except ValueError:
+        value = 90
+    return min(max(value, 5), 120)
+
+
+def _sse_event(event: str, data: dict[str, object], event_id: int) -> str:
+    payload = json.dumps(data, ensure_ascii=True, separators=(",", ":"))
+    return f"id: {event_id}\nevent: {event}\ndata: {payload}\n\n"
+
+
+def _bounded_answer_chunks(answer: str) -> tuple[str, ...]:
+    size = _stream_chunk_size()
+    return tuple(answer[index : index + size] for index in range(0, len(answer), size))
+
+
+def _replay_stream_payload(
+    db: Session,
+    *,
+    user: User,
+    workspace_id: str,
+    client_request_id: str,
+    original_query: str,
+    requested_session_id: int | None,
+) -> dict[str, object] | None:
+    audit = db.exec(
+        select(AnswerEvidenceAudit).where(
+            AnswerEvidenceAudit.user_id == user.id,
+            AnswerEvidenceAudit.workspace_id == workspace_id,
+            AnswerEvidenceAudit.client_request_id == client_request_id,
+        )
+    ).first()
+    if audit is None:
+        return None
+    if audit.original_query != original_query or (
+        requested_session_id is not None and audit.session_id != requested_session_id
+    ):
+        raise HTTPException(409, "Streaming request identifier was already used")
+
+    chat = db.exec(
+        select(ChatSession).where(
+            ChatSession.id == audit.session_id,
+            ChatSession.user_id == user.id,
+            ChatSession.workspace_id == workspace_id,
+        )
+    ).first()
+    assistant = db.exec(
+        select(ChatMessage).where(
+            ChatMessage.id == audit.assistant_message_id,
+            ChatMessage.session_id == audit.session_id,
+            ChatMessage.user_id == user.id,
+            ChatMessage.role == "assistant",
+        )
+    ).first()
+    if chat is None or assistant is None:
+        raise HTTPException(409, "The saved streaming response is unavailable")
+
+    return {
+        "session_id": chat.id,
+        "title": chat.title,
+        "answer": assistant.content,
+        "citations": audit.citation_map,
+        "confidence": audit.answer_confidence or 0,
+        "insufficient_evidence": audit.insufficient_evidence,
+        "correlation_id": audit.tkp_correlation_id,
+        "model": audit.answer_model,
+        "request_id": client_request_id,
+        "replayed": True,
+    }
+
+
+async def _prepare_streamed_tkp_turn(
+    *,
+    request: Request,
+    db: Session,
+    user: User,
+    workspace_id: str,
+    owned_chat: ChatSession | None,
+    message: str,
+    client_request_id: str,
+    model: str,
+) -> dict[str, object]:
+    if user.id is None:
+        raise RuntimeError("User persistence identifier is unavailable")
+    user_id = user.id
+    history = (
+        _load_bounded_history(db, session_id=owned_chat.id, user_id=user_id)
+        if owned_chat is not None and owned_chat.id is not None
+        else BoundedConversationContext()
+    )
+    try:
+        correlation_id = uuid.UUID(str(getattr(request.state, "correlation_id", "")))
+    except ValueError:
+        correlation_id = uuid.uuid4()
+        request.state.correlation_id = str(correlation_id)
+
+    tkp_client = getattr(request.app.state, "tkp_client", None)
+    if not isinstance(tkp_client, TKPClient):
+        raise GroundingError(
+            code="TKP_NOT_CONFIGURED",
+            public_message="Knowledge retrieval is not configured",
+            status_code=503,
+        )
+
+    retrieval_request = None
+    retrieval = None
+    resolved_query = await resolve_conversation_query(
+        query=message,
+        context=history,
+        model=model,
+    )
+    if not resolved_query.context_resolved:
+        standalone_query: str = ""
+        grounded = GroundedAnswer(
+            answer=AMBIGUOUS_CONTEXT_MESSAGE,
+            confidence=0,
+            insufficient_evidence=True,
+            insufficient_reason="AMBIGUOUS_CONTEXT",
+        )
+        validation_status = "AMBIGUOUS_CONTEXT"
+    else:
+        resolved_standalone_query = resolved_query.standalone_query
+        if resolved_standalone_query is None:
+            raise GroundingError(
+                code="CONTEXT_REWRITE_INVALID",
+                public_message="The follow-up question could not be resolved safely",
+            )
+        standalone_query = resolved_standalone_query
+        retrieval_limit = min(max(env_int("TKP_CHAT_RETRIEVAL_LIMIT", 10), 1), 20)
+        retrieval_request = TKPRetrievalRequest.from_browser(
+            BrowserRetrievalRequest(query=standalone_query, limit=retrieval_limit)
+        )
+        retrieval = await tkp_client.search(retrieval_request, correlation_id)
+        grounded = await generate_grounded_answer(
+            query=standalone_query,
+            retrieval=retrieval,
+            model=model,
+        )
+        validation_status = (
+            "INSUFFICIENT_EVIDENCE" if grounded.insufficient_evidence else "VALIDATED"
+        )
+
+    try:
+        chat, created_new = _persist_tkp_turn(
+            db,
+            chat=owned_chat,
+            user=user,
+            workspace_id=workspace_id,
+            original_query=message,
+            standalone_query=standalone_query,
+            history=history,
+            retrieval_request=retrieval_request,
+            retrieval=retrieval,
+            grounded=grounded,
+            model=model,
+            validation_status=validation_status,
+            client_request_id=client_request_id,
+        )
+    except IntegrityError:
+        replay = _replay_stream_payload(
+            db,
+            user=user,
+            workspace_id=workspace_id,
+            client_request_id=client_request_id,
+            original_query=message,
+            requested_session_id=owned_chat.id if owned_chat is not None else None,
+        )
+        if replay is None:
+            raise
+        return replay
+
+    log_event(
+        "chat",
+        {
+            "user": user.email,
+            "tier": _tier_name(user),
+            "session_id": chat.id,
+            "route": "tkp_grounded_stream",
+            "context_mode": "tkp_approved",
+            "model": model,
+            "insufficient_evidence": grounded.insufficient_evidence,
+            "citation_count": len(grounded.citations),
+        },
+    )
+    return {
+        "session_id": chat.id,
+        "title": chat.title if created_new else None,
+        "answer": grounded.answer,
+        "citations": [item.model_dump(mode="json") for item in grounded.citations],
+        "confidence": grounded.confidence,
+        "insufficient_evidence": grounded.insufficient_evidence,
+        "correlation_id": str(correlation_id),
+        "model": model,
+        "request_id": client_request_id,
+        "replayed": False,
+    }
+
+
+async def _stream_tkp_events(
+    *,
+    request: Request,
+    prepare: Callable[[], Awaitable[dict[str, object]]],
+    request_id: str,
+) -> AsyncIterator[str]:
+    try:
+        payload = await asyncio.wait_for(prepare(), timeout=_stream_timeout_seconds())
+        if await request.is_disconnected():
+            return
+        event_id = 1
+        for index, chunk in enumerate(_bounded_answer_chunks(str(payload["answer"]))):
+            yield _sse_event(
+                "answer",
+                {"request_id": request_id, "index": index, "chunk": chunk},
+                event_id,
+            )
+            event_id += 1
+        yield _sse_event(
+            "citations",
+            {
+                "request_id": request_id,
+                "citations": payload["citations"],
+            },
+            event_id,
+        )
+        event_id += 1
+        completion = {key: value for key, value in payload.items() if key != "answer"}
+        yield _sse_event("complete", completion, event_id)
+    except asyncio.CancelledError:
+        raise
+    except TKPClientError as exc:
+        yield _sse_event(
+            "error",
+            {
+                "request_id": request_id,
+                "code": exc.code,
+                "message": exc.public_message,
+                "correlation_id": str(exc.correlation_id),
+                "retryable": exc.retryable,
+            },
+            1,
+        )
+    except GroundingError as exc:
+        yield _sse_event(
+            "error",
+            {
+                "request_id": request_id,
+                "code": exc.code,
+                "message": exc.public_message,
+                "retryable": exc.status_code >= 500,
+            },
+            1,
+        )
+    except TimeoutError:
+        yield _sse_event(
+            "error",
+            {
+                "request_id": request_id,
+                "code": "STREAM_TIMEOUT",
+                "message": "Verified answer generation timed out",
+                "retryable": True,
+            },
+            1,
+        )
+    except HTTPException as exc:
+        yield _sse_event(
+            "error",
+            {
+                "request_id": request_id,
+                "code": "STREAM_REQUEST_REJECTED",
+                "message": str(exc.detail) if exc.status_code < 500 else "Request failed safely",
+                "retryable": False,
+            },
+            1,
+        )
+    except Exception:
+        logger.exception("tkp_chat_stream_failed")
+        yield _sse_event(
+            "error",
+            {
+                "request_id": request_id,
+                "code": "STREAM_UNAVAILABLE",
+                "message": "Verified answer streaming is temporarily unavailable",
+                "retryable": True,
+            },
+            1,
+        )
+
+
 # =========================
 # Read endpoints
 # =========================
+@router.post("/stream")
+@limiter.limit("20/minute;300/hour")
+async def stream_answer(
+    request: Request,
+    db: Session = Depends(get_session),
+    user_email: str = Depends(get_current_user),
+) -> StreamingResponse:
+    if env("ORGANIZATIONAL_RAG_MODE", "legacy").lower() != "tkp":
+        raise HTTPException(409, "Grounded streaming requires the TKP knowledge mode")
+
+    try:
+        payload = StreamChatIn.model_validate(await request.json())
+    except (ValidationError, ValueError) as exc:
+        raise HTTPException(422, "A message and request identifier are required") from exc
+
+    message = sanitize_user_input(payload.message)
+    if not message:
+        raise HTTPException(422, "message is required")
+    user = db.exec(select(User).where(User.email == user_email)).first()
+    if user is None or user.id is None:
+        raise HTTPException(401, "User not found")
+
+    try:
+        tkp_settings = get_tkp_settings()
+    except ValidationError as exc:
+        raise HTTPException(503, "Knowledge retrieval is not configured") from exc
+    access = require_tkp_workspace_access(user=user, db=db, settings=tkp_settings)
+    workspace_id = str(access.workspace_id)
+
+    owned_chat = None
+    if payload.session_id is not None:
+        owned_chat = require_owned_chat_session(
+            db,
+            session_id=payload.session_id,
+            user_id=user.id,
+        )
+        if owned_chat.workspace_id != workspace_id:
+            raise HTTPException(404, "Chat not found")
+
+    request_id = str(payload.request_id)
+    replay = _replay_stream_payload(
+        db,
+        user=user,
+        workspace_id=workspace_id,
+        client_request_id=request_id,
+        original_query=message,
+        requested_session_id=payload.session_id,
+    )
+    if replay is None:
+        tier = _tier_name(user)
+        limit = plan_limit(tier)
+        if limit not in (-1, None) and _today_user_chat_count(db, user.id) >= limit:
+            raise HTTPException(429, f"Daily chat limit reached ({limit}/day)")
+        model = plan_model(tier)
+
+        async def prepare() -> dict[str, object]:
+            return await _prepare_streamed_tkp_turn(
+                request=request,
+                db=db,
+                user=user,
+                workspace_id=workspace_id,
+                owned_chat=owned_chat,
+                message=message,
+                client_request_id=request_id,
+                model=model,
+            )
+
+    else:
+
+        async def prepare() -> dict[str, object]:
+            return replay
+
+    return StreamingResponse(
+        _stream_tkp_events(
+            request=request,
+            prepare=prepare,
+            request_id=request_id,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store",
+            "X-Accel-Buffering": "no",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 @router.get("/sessions", response_model=List[ChatSessionOut])
 def get_sessions(
     user_email: str = Depends(get_current_user),
@@ -261,13 +653,13 @@ def get_messages(
     db: Session = Depends(get_session),
 ):
     user = db.exec(select(User).where(User.email == user_email)).first()
-    if user is None:
+    if user is None or user.id is None:
         raise HTTPException(401, "User not found")
     chat = require_owned_chat_session(db, session_id=session_id, user_id=user.id)
     workspace_id = _authorized_tkp_workspace_id(user=user, db=db)
     if workspace_id is not None and chat.workspace_id != workspace_id:
         raise HTTPException(404, "Chat not found")
-    return db.exec(
+    messages = db.exec(
         select(ChatMessage)
         .where(
             ChatMessage.session_id == session_id,
@@ -275,6 +667,32 @@ def get_messages(
         )
         .order_by(ChatMessage.id)
     ).all()
+    assistant_ids = [
+        message.id
+        for message in messages
+        if message.id is not None and message.role == "assistant"
+    ]
+    citations_by_message: dict[int, list[dict[str, object]]] = {}
+    if assistant_ids and workspace_id is not None:
+        audits = db.exec(
+            select(AnswerEvidenceAudit).where(
+                AnswerEvidenceAudit.session_id == session_id,
+                AnswerEvidenceAudit.user_id == user.id,
+                AnswerEvidenceAudit.workspace_id == workspace_id,
+                col(AnswerEvidenceAudit.assistant_message_id).in_(assistant_ids),
+            )
+        ).all()
+        citations_by_message = {
+            audit.assistant_message_id: audit.citation_map for audit in audits
+        }
+    return [
+        ChatMessageOut(
+            role=message.role,
+            content=message.content,
+            citations=citations_by_message.get(message.id or -1, []),
+        )
+        for message in messages
+    ]
 
 
 @router.patch("/{session_id}/title")
