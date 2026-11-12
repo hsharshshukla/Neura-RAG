@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import os, re, time, uuid, logging
 from typing import Optional, List, Any, Dict
 from datetime import datetime, date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ValidationError
 from sqlmodel import Session, select, func
 from openai import OpenAI
 
@@ -14,6 +16,11 @@ from app.models import ChatSession, ChatMessage, User
 from app.schemas import ChatSessionOut, ChatMessageOut
 from app.deps.auth import get_current_user
 from app.deps.chat_session import require_owned_chat_session
+from app.deps.workspace import require_tkp_workspace_access
+from app.integrations.tkp.client import TKPClient, TKPClientError
+from app.integrations.tkp.config import get_tkp_settings
+from app.integrations.tkp.schemas import BrowserRetrievalRequest, TKPRetrievalRequest
+from app.services.grounded_answer import GroundingError, generate_grounded_answer
 from app.utils.logger import log_event
 from app.vector_store import query_user_docs
 from app.rate_limit import limiter
@@ -168,14 +175,11 @@ def rename_session(
 @limiter.limit("20/minute;300/hour")
 async def ask(
     request: Request,
+    response: Response,
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
-    if env("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
-        raise HTTPException(
-            409,
-            "Legacy chat grounding is disabled; use the authenticated TKP retrieval API",
-        )
+    tkp_mode = env("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp"
     try:
         body = await request.json()
     except Exception:
@@ -210,6 +214,164 @@ async def ask(
         if _today_user_chat_count(db, user.id) >= limit:
             raise HTTPException(429, f"Daily chat limit reached ({limit}/day)")
 
+    if session_id is not None:
+        require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+
+    if tkp_mode:
+        try:
+            tkp_settings = get_tkp_settings()
+        except ValidationError:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "code": "TKP_NOT_CONFIGURED",
+                    "message": "Knowledge retrieval is not configured",
+                    "details": None,
+                },
+            )
+        access = require_tkp_workspace_access(user=user, db=db, settings=tkp_settings)
+
+        try:
+            correlation_id = uuid.UUID(str(getattr(request.state, "correlation_id", "")))
+        except ValueError:
+            correlation_id = uuid.uuid4()
+            request.state.correlation_id = str(correlation_id)
+
+        tkp_client = getattr(request.app.state, "tkp_client", None)
+        if not isinstance(tkp_client, TKPClient):
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "code": "TKP_NOT_CONFIGURED",
+                    "message": "Knowledge retrieval is not configured",
+                    "correlation_id": str(correlation_id),
+                    "details": None,
+                },
+                headers={"X-Correlation-ID": str(correlation_id)},
+            )
+
+        retrieval_limit = min(max(env_int("TKP_CHAT_RETRIEVAL_LIMIT", 10), 1), 20)
+        try:
+            retrieval = await tkp_client.search(
+                TKPRetrievalRequest.from_browser(
+                    BrowserRetrievalRequest(query=message, limit=retrieval_limit)
+                ),
+                correlation_id,
+            )
+            grounded = await generate_grounded_answer(
+                query=message,
+                retrieval=retrieval,
+                model=plan_model(tier),
+            )
+        except asyncio.CancelledError:
+            raise
+        except TKPClientError as exc:
+            logger.warning(
+                "tkp_chat_retrieval_failed",
+                extra={
+                    "code": exc.code,
+                    "correlation_id": str(exc.correlation_id),
+                    "upstream_status": exc.upstream_status,
+                    "user_id": user.id,
+                    "workspace_id": str(access.workspace_id),
+                },
+            )
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "code": exc.code,
+                    "message": exc.public_message,
+                    "correlation_id": str(exc.correlation_id),
+                    "details": None,
+                },
+                headers={"X-Correlation-ID": str(exc.correlation_id)},
+            )
+        except GroundingError as exc:
+            logger.warning(
+                "tkp_chat_grounding_rejected",
+                extra={
+                    "code": exc.code,
+                    "correlation_id": str(correlation_id),
+                    "user_id": user.id,
+                    "workspace_id": str(access.workspace_id),
+                },
+            )
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "code": exc.code,
+                    "message": exc.public_message,
+                    "correlation_id": str(correlation_id),
+                    "details": None,
+                },
+                headers={"X-Correlation-ID": str(correlation_id)},
+            )
+
+        created_new = False
+        if session_id is None:
+            chat = ChatSession(user_id=user.id, title=_title_from_text(message))
+            db.add(chat)
+            db.commit()
+            db.refresh(chat)
+            session_id = chat.id
+            created_new = True
+
+        now = datetime.utcnow()
+        db.add(
+            ChatMessage(
+                session_id=session_id,
+                user_id=user.id,
+                role="user",
+                content=message,
+                created_at=now,
+                timestamp=now,
+            )
+        )
+        db.add(
+            ChatMessage(
+                session_id=session_id,
+                user_id=user.id,
+                role="assistant",
+                content=grounded.answer,
+                created_at=now,
+                timestamp=now,
+            )
+        )
+        db.commit()
+
+        log_event(
+            "chat",
+            {
+                "user": user_email,
+                "tier": tier,
+                "session_id": session_id,
+                "route": "tkp_grounded",
+                "context_mode": "tkp_approved",
+                "model": plan_model(tier),
+                "insufficient_evidence": grounded.insufficient_evidence,
+                "citation_count": len(grounded.citations),
+            },
+        )
+        payload = {
+            "ok": True,
+            "session_id": session_id,
+            "response": grounded.answer,
+            "answer": grounded.answer,
+            "route": "tkp_grounded",
+            "context_mode": "tkp_approved",
+            "source": "tkp",
+            "model": plan_model(tier),
+            "confidence": grounded.confidence,
+            "insufficient_evidence": grounded.insufficient_evidence,
+            "citations": [
+                citation.model_dump(mode="json") for citation in grounded.citations
+            ],
+            "correlation_id": str(correlation_id),
+        }
+        if created_new:
+            payload["title"] = _title_from_text(message)
+        return payload
+
     # ---------- Session ----------
     created_new = False
     if not session_id:
@@ -219,8 +381,6 @@ async def ask(
         db.refresh(chat)
         session_id = chat.id
         created_new = True
-    else:
-        require_owned_chat_session(db, session_id=session_id, user_id=user.id)
 
     session_uuid = _session_uuid(session_id)
     msg_index = _messages_in_session(db, session_id)
