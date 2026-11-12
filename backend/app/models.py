@@ -128,12 +128,22 @@ class ChatMessage(SQLModel, table=True):
 class AnswerEvidenceAudit(SQLModel, table=True):
     """Append-only lineage for one TKP-backed runtime answer turn."""
 
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "workspace_id",
+            "client_request_id",
+            name="uq_answer_audit_stream_request",
+        ),
+    )
+
     id: int | None = Field(default=None, primary_key=True)
     session_id: int = Field(foreign_key="chatsession.id", index=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     workspace_id: str = Field(foreign_key="workspace.id", index=True, max_length=36)
     user_message_id: int = Field(foreign_key="chatmessage.id", unique=True)
     assistant_message_id: int = Field(foreign_key="chatmessage.id", unique=True)
+    client_request_id: str | None = Field(default=None, max_length=36)
     original_query: str
     standalone_query: str
     history_message_ids: list[int] = Field(
@@ -155,6 +165,7 @@ class AnswerEvidenceAudit(SQLModel, table=True):
     answer_model: str = Field(max_length=128)
     prompt_policy_version: str = Field(max_length=64)
     validation_status: str = Field(max_length=32)
+    answer_confidence: float | None = Field(default=None)
     insufficient_evidence: bool = Field(default=False, nullable=False)
     insufficient_reason: str | None = Field(default=None, max_length=128)
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)

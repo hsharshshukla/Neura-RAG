@@ -21,6 +21,7 @@ def build_answer_evidence_audit(
     answer_model: str,
     prompt_policy_version: str,
     validation_status: str,
+    client_request_id: str | None = None,
 ) -> AnswerEvidenceAudit:
     lineage = []
     backend_status = []
@@ -55,6 +56,7 @@ def build_answer_evidence_audit(
         workspace_id=workspace_id,
         user_message_id=user_message_id,
         assistant_message_id=assistant_message_id,
+        client_request_id=client_request_id,
         original_query=original_query,
         standalone_query=standalone_query,
         history_message_ids=list(history_message_ids),
@@ -68,6 +70,7 @@ def build_answer_evidence_audit(
         answer_model=answer_model,
         prompt_policy_version=prompt_policy_version,
         validation_status=validation_status,
+        answer_confidence=answer.confidence,
         insufficient_evidence=answer.insufficient_evidence,
         insufficient_reason=answer.insufficient_reason,
     )

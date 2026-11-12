@@ -13,7 +13,7 @@ function stripTrailingSlash(s) {
   return s && s.endsWith("/") ? s.slice(0, -1) : s;
 }
 
-const API_BASE = (() => {
+export const API_BASE = (() => {
   if (typeof window !== "undefined" && window.__API_BASE__) {
     return stripTrailingSlash(window.__API_BASE__);
   }
@@ -37,7 +37,7 @@ const API_BASE = (() => {
 })();
 
 // ---- Cookie helper (tiny, robust) ----
-function readCookie(name) {
+export function readCookie(name) {
   const pair = document.cookie.split("; ").find((row) => row.startsWith(name + "="));
   if (!pair) return "";
   return decodeURIComponent(pair.split("=").slice(1).join("="));
