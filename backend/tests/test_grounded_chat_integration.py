@@ -99,7 +99,12 @@ def test_tkp_chat_retrieves_generates_validates_and_persists(monkeypatch) -> Non
                 "confidence": 0.9,
             }
         ),
-        json.dumps({"results": [{"claim_id": "C1", "supported": True}]}),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": True}],
+                "contradictory_evidence": False,
+            }
+        ),
     )
 
     async def generate_grounded_answer(*, query, retrieval, model):

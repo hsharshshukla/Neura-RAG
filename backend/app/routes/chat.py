@@ -19,8 +19,27 @@ from app.deps.chat_session import require_owned_chat_session
 from app.deps.workspace import require_tkp_workspace_access
 from app.integrations.tkp.client import TKPClient, TKPClientError
 from app.integrations.tkp.config import get_tkp_settings
-from app.integrations.tkp.schemas import BrowserRetrievalRequest, TKPRetrievalRequest
-from app.services.grounded_answer import GroundingError, generate_grounded_answer
+from app.integrations.tkp.schemas import (
+    BrowserRetrievalRequest,
+    TKPRetrievalRequest,
+    TKPRetrievalResponse,
+)
+from app.services.conversation_context import (
+    AMBIGUOUS_CONTEXT_MESSAGE,
+    CONTEXT_PROMPT_POLICY_VERSION,
+    BoundedConversationContext,
+    ContextMessage,
+    ConversationContextSettings,
+    build_bounded_context,
+    resolve_conversation_query,
+)
+from app.services.evidence_audit import build_answer_evidence_audit
+from app.services.grounded_answer import (
+    GROUNDING_PROMPT_POLICY_VERSION,
+    GroundedAnswer,
+    GroundingError,
+    generate_grounded_answer,
+)
 from app.utils.logger import log_event
 from app.vector_store import query_user_docs
 from app.rate_limit import limiter
@@ -103,6 +122,120 @@ def _messages_in_session(db: Session, session_id: int) -> int:
     ).one()
 
 
+def _authorized_tkp_workspace_id(*, user: User, db: Session) -> str | None:
+    if env("ORGANIZATIONAL_RAG_MODE", "legacy").lower() != "tkp":
+        return None
+    try:
+        settings = get_tkp_settings()
+    except ValidationError as exc:
+        raise HTTPException(503, "Knowledge retrieval is not configured") from exc
+    access = require_tkp_workspace_access(user=user, db=db, settings=settings)
+    return str(access.workspace_id)
+
+
+def _load_bounded_history(
+    db: Session, *, session_id: int, user_id: int
+) -> BoundedConversationContext:
+    settings = ConversationContextSettings.from_environment()
+    rows = db.exec(
+        select(ChatMessage)
+        .where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.user_id == user_id,
+        )
+        .order_by(ChatMessage.id.desc())
+        .limit(settings.max_messages * 4)
+    ).all()
+    messages = [
+        ContextMessage(message_id=row.id, role=row.role, content=row.content)
+        for row in reversed(rows)
+        if row.id is not None and row.role in {"user", "assistant"} and row.content.strip()
+    ]
+    return build_bounded_context(messages, settings)
+
+
+def _persist_tkp_turn(
+    db: Session,
+    *,
+    chat: ChatSession | None,
+    user: User,
+    workspace_id: str,
+    original_query: str,
+    standalone_query: str,
+    history: BoundedConversationContext,
+    retrieval_request: TKPRetrievalRequest | None,
+    retrieval: TKPRetrievalResponse | None,
+    grounded: GroundedAnswer,
+    model: str,
+    validation_status: str,
+) -> tuple[ChatSession, bool]:
+    created_new = chat is None
+    try:
+        if chat is None:
+            chat = ChatSession(
+                user_id=user.id,
+                workspace_id=workspace_id,
+                title=_title_from_text(original_query),
+            )
+            db.add(chat)
+            db.flush()
+        if chat.id is None or user.id is None:
+            raise RuntimeError("Chat persistence identifiers were not assigned")
+
+        now = datetime.utcnow()
+        user_message = ChatMessage(
+            session_id=chat.id,
+            user_id=user.id,
+            role="user",
+            content=original_query,
+            created_at=now,
+            timestamp=now,
+        )
+        assistant_message = ChatMessage(
+            session_id=chat.id,
+            user_id=user.id,
+            role="assistant",
+            content=grounded.answer,
+            created_at=now,
+            timestamp=now,
+        )
+        db.add(user_message)
+        db.add(assistant_message)
+        db.flush()
+        if user_message.id is None or assistant_message.id is None:
+            raise RuntimeError("Message persistence identifiers were not assigned")
+
+        prompt_version = (
+            CONTEXT_PROMPT_POLICY_VERSION
+            if validation_status == "AMBIGUOUS_CONTEXT"
+            else GROUNDING_PROMPT_POLICY_VERSION
+        )
+        db.add(
+            build_answer_evidence_audit(
+                session_id=chat.id,
+                user_id=user.id,
+                workspace_id=workspace_id,
+                user_message_id=user_message.id,
+                assistant_message_id=assistant_message.id,
+                original_query=original_query,
+                standalone_query=standalone_query,
+                history_message_ids=history.message_ids,
+                retrieval_request=retrieval_request,
+                retrieval=retrieval,
+                answer=grounded,
+                answer_model=model,
+                prompt_policy_version=prompt_version,
+                validation_status=validation_status,
+            )
+        )
+        db.commit()
+        db.refresh(chat)
+        return chat, created_new
+    except Exception:
+        db.rollback()
+        raise
+
+
 # =========================
 # Read endpoints
 # =========================
@@ -114,11 +247,11 @@ def get_sessions(
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         return []
-    return db.exec(
-        select(ChatSession)
-        .where(ChatSession.user_id == user.id)
-        .order_by(ChatSession.created_at.desc())
-    ).all()
+    statement = select(ChatSession).where(ChatSession.user_id == user.id)
+    workspace_id = _authorized_tkp_workspace_id(user=user, db=db)
+    if workspace_id is not None:
+        statement = statement.where(ChatSession.workspace_id == workspace_id)
+    return db.exec(statement.order_by(ChatSession.created_at.desc())).all()
 
 
 @router.get("/{session_id}", response_model=List[ChatMessageOut])
@@ -130,7 +263,10 @@ def get_messages(
     user = db.exec(select(User).where(User.email == user_email)).first()
     if user is None:
         raise HTTPException(401, "User not found")
-    require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+    chat = require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+    workspace_id = _authorized_tkp_workspace_id(user=user, db=db)
+    if workspace_id is not None and chat.workspace_id != workspace_id:
+        raise HTTPException(404, "Chat not found")
     return db.exec(
         select(ChatMessage)
         .where(
@@ -152,14 +288,9 @@ def rename_session(
     if not user:
         raise HTTPException(401, "User not found")
 
-    chat = db.exec(
-        select(ChatSession).where(
-            ChatSession.id == session_id,
-            ChatSession.user_id == user.id,
-        )
-    ).first()
-
-    if not chat:
+    chat = require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+    workspace_id = _authorized_tkp_workspace_id(user=user, db=db)
+    if workspace_id is not None and chat.workspace_id != workspace_id:
         raise HTTPException(404, "Chat not found")
 
     chat.title = payload.title.strip()[:80] or "Untitled"
@@ -214,8 +345,9 @@ async def ask(
         if _today_user_chat_count(db, user.id) >= limit:
             raise HTTPException(429, f"Daily chat limit reached ({limit}/day)")
 
+    owned_chat = None
     if session_id is not None:
-        require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+        owned_chat = require_owned_chat_session(db, session_id=session_id, user_id=user.id)
 
     if tkp_mode:
         try:
@@ -230,6 +362,16 @@ async def ask(
                 },
             )
         access = require_tkp_workspace_access(user=user, db=db, settings=tkp_settings)
+        workspace_id = str(access.workspace_id)
+        if owned_chat is not None and owned_chat.workspace_id != workspace_id:
+            # Null and foreign workspace bindings are both unusable in the trusted TKP lane.
+            raise HTTPException(status_code=404, detail="Chat not found")
+
+        history = (
+            _load_bounded_history(db, session_id=owned_chat.id, user_id=user.id)
+            if owned_chat is not None and owned_chat.id is not None
+            else BoundedConversationContext()
+        )
 
         try:
             correlation_id = uuid.UUID(str(getattr(request.state, "correlation_id", "")))
@@ -250,18 +392,72 @@ async def ask(
                 headers={"X-Correlation-ID": str(correlation_id)},
             )
 
+        model = plan_model(tier)
         retrieval_limit = min(max(env_int("TKP_CHAT_RETRIEVAL_LIMIT", 10), 1), 20)
+        retrieval_request = None
+        retrieval = None
         try:
+            resolved_query = await resolve_conversation_query(
+                query=message,
+                context=history,
+                model=model,
+            )
+            if not resolved_query.context_resolved:
+                grounded = GroundedAnswer(
+                    answer=AMBIGUOUS_CONTEXT_MESSAGE,
+                    confidence=0,
+                    insufficient_evidence=True,
+                    insufficient_reason="AMBIGUOUS_CONTEXT",
+                )
+                chat, created_new = _persist_tkp_turn(
+                    db,
+                    chat=owned_chat,
+                    user=user,
+                    workspace_id=workspace_id,
+                    original_query=message,
+                    standalone_query="",
+                    history=history,
+                    retrieval_request=None,
+                    retrieval=None,
+                    grounded=grounded,
+                    model=model,
+                    validation_status="AMBIGUOUS_CONTEXT",
+                )
+                payload = {
+                    "ok": True,
+                    "session_id": chat.id,
+                    "response": grounded.answer,
+                    "answer": grounded.answer,
+                    "route": "tkp_grounded",
+                    "context_mode": "tkp_approved",
+                    "source": "tkp",
+                    "model": model,
+                    "confidence": 0,
+                    "insufficient_evidence": True,
+                    "citations": [],
+                    "correlation_id": str(correlation_id),
+                }
+                if created_new:
+                    payload["title"] = _title_from_text(message)
+                return payload
+
+            standalone_query = resolved_query.standalone_query
+            if standalone_query is None:
+                raise GroundingError(
+                    code="CONTEXT_REWRITE_INVALID",
+                    public_message="The follow-up question could not be resolved safely",
+                )
+            retrieval_request = TKPRetrievalRequest.from_browser(
+                BrowserRetrievalRequest(query=standalone_query, limit=retrieval_limit)
+            )
             retrieval = await tkp_client.search(
-                TKPRetrievalRequest.from_browser(
-                    BrowserRetrievalRequest(query=message, limit=retrieval_limit)
-                ),
+                retrieval_request,
                 correlation_id,
             )
             grounded = await generate_grounded_answer(
-                query=message,
+                query=standalone_query,
                 retrieval=retrieval,
-                model=plan_model(tier),
+                model=model,
             )
         except asyncio.CancelledError:
             raise
@@ -307,37 +503,24 @@ async def ask(
                 headers={"X-Correlation-ID": str(correlation_id)},
             )
 
-        created_new = False
-        if session_id is None:
-            chat = ChatSession(user_id=user.id, title=_title_from_text(message))
-            db.add(chat)
-            db.commit()
-            db.refresh(chat)
-            session_id = chat.id
-            created_new = True
-
-        now = datetime.utcnow()
-        db.add(
-            ChatMessage(
-                session_id=session_id,
-                user_id=user.id,
-                role="user",
-                content=message,
-                created_at=now,
-                timestamp=now,
-            )
+        validation_status = (
+            "INSUFFICIENT_EVIDENCE" if grounded.insufficient_evidence else "VALIDATED"
         )
-        db.add(
-            ChatMessage(
-                session_id=session_id,
-                user_id=user.id,
-                role="assistant",
-                content=grounded.answer,
-                created_at=now,
-                timestamp=now,
-            )
+        chat, created_new = _persist_tkp_turn(
+            db,
+            chat=owned_chat,
+            user=user,
+            workspace_id=workspace_id,
+            original_query=message,
+            standalone_query=standalone_query,
+            history=history,
+            retrieval_request=retrieval_request,
+            retrieval=retrieval,
+            grounded=grounded,
+            model=model,
+            validation_status=validation_status,
         )
-        db.commit()
+        session_id = chat.id
 
         log_event(
             "chat",
@@ -347,7 +530,7 @@ async def ask(
                 "session_id": session_id,
                 "route": "tkp_grounded",
                 "context_mode": "tkp_approved",
-                "model": plan_model(tier),
+                "model": model,
                 "insufficient_evidence": grounded.insufficient_evidence,
                 "citation_count": len(grounded.citations),
             },
@@ -360,7 +543,7 @@ async def ask(
             "route": "tkp_grounded",
             "context_mode": "tkp_approved",
             "source": "tkp",
-            "model": plan_model(tier),
+            "model": model,
             "confidence": grounded.confidence,
             "insufficient_evidence": grounded.insufficient_evidence,
             "citations": [

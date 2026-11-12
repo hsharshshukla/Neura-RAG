@@ -50,7 +50,12 @@ async def test_grounded_answer_uses_only_server_issued_citations_and_lineage() -
                 "confidence": 0.91,
             }
         ),
-        json.dumps({"results": [{"claim_id": "C1", "supported": True}]}),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": True}],
+                "contradictory_evidence": False,
+            }
+        ),
     )
     source = retrieval()
 
@@ -109,13 +114,74 @@ async def test_unsupported_factual_claim_is_rejected() -> None:
                 "confidence": 0.7,
             }
         ),
-        json.dumps({"results": [{"claim_id": "C1", "supported": False}]}),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": False}],
+                "contradictory_evidence": False,
+            }
+        ),
     )
 
     with pytest.raises(GroundingError) as caught:
         await GroundedAnswerService(llm).generate(query="question", retrieval=retrieval())
 
     assert caught.value.code == "UNSUPPORTED_ANSWER_CLAIM"
+
+
+@pytest.mark.asyncio
+async def test_contradictory_current_evidence_returns_insufficient_answer() -> None:
+    llm = FakeLLM(
+        json.dumps(
+            {
+                "insufficient_evidence": False,
+                "claims": [
+                    {
+                        "claim_id": "C1",
+                        "text": "Use the approved procedure.",
+                        "evidence_ids": ["E1"],
+                    }
+                ],
+                "confidence": 0.8,
+            }
+        ),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": True}],
+                "contradictory_evidence": True,
+            }
+        ),
+    )
+
+    answer = await GroundedAnswerService(llm).generate(query="question", retrieval=retrieval())
+
+    assert answer.insufficient_evidence is True
+    assert answer.insufficient_reason == "CONTRADICTORY_EVIDENCE"
+    assert answer.citations == ()
+
+
+@pytest.mark.asyncio
+async def test_missing_contradiction_assessment_fails_closed() -> None:
+    llm = FakeLLM(
+        json.dumps(
+            {
+                "insufficient_evidence": False,
+                "claims": [
+                    {
+                        "claim_id": "C1",
+                        "text": "Use the approved procedure.",
+                        "evidence_ids": ["E1"],
+                    }
+                ],
+                "confidence": 0.8,
+            }
+        ),
+        json.dumps({"results": [{"claim_id": "C1", "supported": True}]}),
+    )
+
+    with pytest.raises(GroundingError) as caught:
+        await GroundedAnswerService(llm).generate(query="question", retrieval=retrieval())
+
+    assert caught.value.code == "CLAIM_VALIDATION_INVALID"
 
 
 @pytest.mark.asyncio
@@ -154,7 +220,12 @@ async def test_prompt_injection_is_kept_in_untrusted_data_and_cannot_add_a_claim
                 "confidence": 0.8,
             }
         ),
-        json.dumps({"results": [{"claim_id": "C1", "supported": True}]}),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": True}],
+                "contradictory_evidence": False,
+            }
+        ),
     )
 
     answer = await GroundedAnswerService(llm).generate(query="question", retrieval=source)
