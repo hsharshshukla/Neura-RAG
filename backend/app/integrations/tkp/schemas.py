@@ -241,3 +241,26 @@ class TKPErrorBody(BaseModel):
     message: str
     correlation_id: UUID
     details: dict[str, Any] | None = None
+
+
+class TKPDocumentWorkflowJob(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: UUID
+    workspace_id: UUID
+    source_id: UUID
+    source_version_id: UUID
+    status: str
+    processing_status: str
+    index_status: str
+    retryable: bool = False
+    error_code: str | None = None
+    error_message: str | None = None
+    revision_id: UUID | None = None
+    projection_count: int = 0
+
+
+class TKPDocumentWorkflowResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    job: TKPDocumentWorkflowJob
+    reused: bool = False
+    correlation_id: UUID

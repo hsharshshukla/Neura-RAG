@@ -15,6 +15,7 @@ class TKPSettings(BaseSettings):
 
     internal_url: AnyHttpUrl
     service_token: SecretStr = Field(min_length=24)
+    ingestion_service_token: SecretStr | None = Field(default=None, min_length=24)
     staging_workspace_id: UUID
     staging_workspace_name: str = "TKP staging"
 
@@ -27,13 +28,19 @@ class TKPSettings(BaseSettings):
     retry_base_seconds: float = Field(default=0.1, ge=0, le=5)
     retry_max_seconds: float = Field(default=1.0, ge=0, le=10)
     environment: Literal["dev", "test", "staging", "prod"] = "dev"
+    bulk_max_files: int = Field(default=5, ge=1, le=20)
+    bulk_max_file_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=50 * 1024 * 1024)
+    bulk_max_total_bytes: int = Field(default=26 * 1024 * 1024, ge=1024, le=100 * 1024 * 1024)
+    bulk_allowed_extensions: tuple[str, ...] = ("pdf", "docx", "txt")
 
-    @field_validator("service_token")
+    @field_validator("service_token", "ingestion_service_token")
     @classmethod
-    def reject_placeholder_tokens(cls, value: SecretStr) -> SecretStr:
+    def reject_placeholder_tokens(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is None:
+            return None
         token = value.get_secret_value().strip().lower()
         if len(token) < 24 or token.startswith(("replace-", "change-me", "changeme")):
-            raise ValueError("TKP_SERVICE_TOKEN must be a provisioned read-only credential")
+            raise ValueError("TKP credentials must be provisioned, non-placeholder values")
         return value
 
     @model_validator(mode="after")
@@ -43,7 +50,18 @@ class TKPSettings(BaseSettings):
             raise ValueError("TKP internal traffic must use HTTPS outside development")
         if self.total_deadline_seconds < self.connect_timeout_seconds:
             raise ValueError("TKP total deadline must cover the connect timeout")
+        if self.ingestion_service_token is not None and secrets_equal(
+            self.service_token, self.ingestion_service_token
+        ):
+            raise ValueError("TKP retrieval and ingestion credentials must be different")
         return self
+
+
+def secrets_equal(left: SecretStr, right: SecretStr) -> bool:
+    """Compare credentials without placing either value in validation output."""
+    import secrets
+
+    return secrets.compare_digest(left.get_secret_value(), right.get_secret_value())
 
 
 @lru_cache(maxsize=1)
