@@ -43,6 +43,7 @@ import ConsoleBilling from "./console/pages/Billing";
 import ConsoleSessionView from "./console/pages/SessionView";
 import ConsoleChatAnalytics from "./console/pages/ChatAnalytics";
 import ConsoleBulkUpload from "./console/pages/BulkUpload";
+import ConsoleMetadataReview from "./console/pages/MetadataReview";
 // Forgot/Reset
 import Forgot from "./pages/Forgot";
 import Reset from "./pages/Reset";
@@ -186,6 +187,7 @@ export default function App() {
             <Route path="sessions/:id" element={<ConsoleSessionView />} />
             <Route path="chat-analytics" element={<ConsoleChatAnalytics />} />
             <Route path="bulk-upload" element={<ConsoleBulkUpload />} />
+            <Route path="bulk-upload/:jobId/documents/:documentId/review" element={<ConsoleMetadataReview />} />
           </Route>
 
           {/* Catch-all */}

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import secureAxios from "../../utils/secureAxios";
 
 export const BULK_UPLOAD_PATH = "/admin/bulk-upload";
@@ -128,6 +129,14 @@ function documentError(document) {
   const value = document?.sanitized_error || document?.error_message || document?.error;
   if (value == null && FAILED_STATES.has(documentState(document))) return document?.message;
   return value;
+}
+
+function hasMetadataReview(document) {
+  return Boolean(
+    document?.metadata_review_available === true
+    || document?.review_available === true
+    || document?.metadata_review?.available === true
+  );
 }
 
 export function processingIsComplete(status) {
@@ -441,11 +450,27 @@ export default function BulkUpload({ pollInterval = 1500 }) {
                   const id = documentId(document);
                   const error = documentError(document);
                   const canRetry = FAILED_STATES.has(state) && document.retryable === true && Boolean(id);
+                  const canReview = hasMetadataReview(document) && Boolean(id);
                   return (
-                    <div className="grid gap-2 border-b px-3 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,1fr)_auto] sm:items-center" key={id || `${documentName(document)}-${index}`}>
+                    <div className="grid gap-2 border-b px-3 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,1fr)_auto_auto] sm:items-center" key={id || `${documentName(document)}-${index}`}>
                       <div className="truncate text-sm font-medium" title={documentName(document)}>{documentName(document)}</div>
-                      <div className="text-xs font-medium uppercase tracking-wide">{statusLabel(state)}</div>
+                      <div className="text-xs font-medium uppercase tracking-wide">
+                        {statusLabel(state)}
+                        {(document.metadata_review_status || document.review_status) && (
+                          <span className="mt-1 block normal-case tracking-normal">
+                            Metadata review: {document.metadata_review_status || document.review_status}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-red-700">{error ? sanitizeDisplayError(error) : ""}</div>
+                      {canReview && (
+                        <Link
+                          className="rounded border px-3 py-1 text-center text-xs hover:bg-gray-50"
+                          to={`/console/bulk-upload/${encodeURIComponent(jobId)}/documents/${encodeURIComponent(id)}/review`}
+                        >
+                          Review metadata
+                        </Link>
+                      )}
                       {canRetry && (
                         <button
                           type="button"

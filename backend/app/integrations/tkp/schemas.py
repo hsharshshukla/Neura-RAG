@@ -264,3 +264,98 @@ class TKPDocumentWorkflowResponse(BaseModel):
     job: TKPDocumentWorkflowJob
     reused: bool = False
     correlation_id: UUID
+
+
+class MetadataReviewMutation(BaseModel):
+    """Browser-safe optimistic metadata update; scope is always server-derived."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    expected_version: int = Field(ge=1)
+    submission_id: UUID
+    values: dict[str, str | int | bool | None] = Field(default_factory=dict, max_length=128)
+
+
+class TKPMetadataFieldRule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    value_type: str = Field(pattern="^(STRING|INTEGER|BOOLEAN)$")
+    allowed_values: tuple[str | int | bool, ...] = ()
+
+
+class TKPMetadataPolicySnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    policy_id: str = Field(min_length=1, max_length=128)
+    version: str = Field(min_length=1, max_length=64)
+    mode: str = Field(pattern="^(ALWAYS|NEVER|LOW_CONFIDENCE)$")
+    confidence_threshold: float | None
+    confidence_values: dict[str, float | None]
+    required_fields: tuple[str, ...] = ()
+    defaults: dict[str, str | int | bool] = Field(default_factory=dict)
+    field_rules: dict[str, TKPMetadataFieldRule]
+
+
+class TKPMetadataVerificationRoot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    workspace_id: UUID
+    source_id: UUID
+    version_id: UUID
+    source_file_id: UUID
+    extraction_id: UUID
+    revision_number: int = Field(ge=1)
+    document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    document_format: str
+    original_filename: str
+    submission_id: UUID
+    request_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    exact_input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    policy: TKPMetadataPolicySnapshot
+    review_required: bool
+    review_fields: tuple[str, ...]
+    selected_fields: tuple[str, ...]
+    initial_draft: dict[str, str | int | bool]
+    contract_version: str
+    created_by: UUID
+    created_at: str
+
+
+class TKPMetadataVerificationEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: UUID
+    workspace_id: UUID
+    verification_id: UUID
+    sequence_number: int = Field(ge=1)
+    action: str = Field(pattern="^(CREATED|DRAFT_SAVED|VERIFIED|SUBMITTED)$")
+    submission_id: UUID
+    request_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    exact_input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    draft: dict[str, str | int | bool]
+    actor_id: UUID
+    created_at: str
+
+
+class TKPMetadataVerificationView(BaseModel):
+    """Exact document-metadata-verification-v1 response payload."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    verification: TKPMetadataVerificationRoot
+    verification_state: str = Field(pattern="^(DRAFT|VERIFIED|SUBMITTED)$")
+    index_state: str
+    version: int = Field(ge=1)
+    draft: dict[str, str | int | bool]
+    history: tuple[TKPMetadataVerificationEvent, ...] = ()
+
+
+class TKPMetadataReviewResponse(BaseModel):
+    """Exact upstream envelope; extra fields fail closed."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metadata_verification: TKPMetadataVerificationView
+    replayed: bool | None = None
+    correlation_id: UUID

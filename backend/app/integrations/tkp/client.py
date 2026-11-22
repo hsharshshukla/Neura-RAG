@@ -13,8 +13,10 @@ from pydantic import ValidationError
 
 from app.integrations.tkp.config import TKPSettings
 from app.integrations.tkp.schemas import (
+    MetadataReviewMutation,
     TKPDocumentWorkflowResponse,
     TKPErrorBody,
+    TKPMetadataReviewResponse,
     TKPRetrievalRequest,
     TKPRetrievalResponse,
 )
@@ -30,9 +32,18 @@ class TKPClientError(Exception):
     status_code: int = 503
     upstream_status: int | None = None
     retryable: bool = False
+    details: dict[str, Any] | None = None
 
     def __str__(self) -> str:
         return self.code
+
+
+@dataclass(frozen=True)
+class TKPOriginalDocument:
+    content: bytes
+    content_type: str
+    content_disposition: str | None
+    source_sha256: str | None
 
 
 class TKPClient:
@@ -323,6 +334,144 @@ class TKPIngestionClient:
             ) from exc
         return response.model_dump(mode="json")
 
+    async def start_metadata_review(
+        self,
+        source_id: UUID,
+        version_id: UUID,
+        submission_id: UUID,
+        correlation_id: UUID,
+    ) -> TKPMetadataReviewResponse:
+        body = await self._request(
+            "POST",
+            f"/api/v1/sources/{source_id}/versions/{version_id}/metadata-verification",
+            correlation_id,
+            json={"submission_id": str(submission_id)},
+        )
+        return self._metadata_review_response(body, correlation_id)
+
+    async def metadata_review(
+        self, source_id: UUID, version_id: UUID, correlation_id: UUID
+    ) -> TKPMetadataReviewResponse:
+        body = await self._request(
+            "GET",
+            f"/api/v1/sources/{source_id}/versions/{version_id}/metadata-verification",
+            correlation_id,
+        )
+        return self._metadata_review_response(body, correlation_id)
+
+    async def metadata_review_transition(
+        self,
+        verification_id: UUID,
+        action: str,
+        payload: MetadataReviewMutation,
+        correlation_id: UUID,
+    ) -> TKPMetadataReviewResponse:
+        if action not in {"save-draft", "verify", "submit"}:
+            raise TKPClientError(
+                code="TKP_REQUEST_REJECTED",
+                public_message="The metadata review transition is invalid",
+                correlation_id=correlation_id,
+                status_code=400,
+            )
+        if action == "save-draft":
+            method, suffix = "PUT", "draft"
+            upstream_payload: dict[str, Any] = {
+                "submission_id": str(payload.submission_id),
+                "expected_version": payload.expected_version,
+                "changes": payload.values,
+            }
+        else:
+            method, suffix = "POST", action
+            upstream_payload = {
+                "submission_id": str(payload.submission_id),
+                "expected_version": payload.expected_version,
+            }
+        body = await self._request(
+            method,
+            f"/api/v1/document-metadata-verifications/{verification_id}/{suffix}",
+            correlation_id,
+            json=upstream_payload,
+        )
+        return self._metadata_review_response(body, correlation_id)
+
+    async def original_document(
+        self, source_id: UUID, version_id: UUID, correlation_id: UUID
+    ) -> TKPOriginalDocument:
+        token = self._settings.ingestion_service_token
+        if token is None:
+            raise TKPClientError(
+                code="TKP_INGESTION_NOT_CONFIGURED",
+                public_message="Knowledge ingestion is not configured",
+                correlation_id=correlation_id,
+            )
+        try:
+            response = await asyncio.wait_for(
+                self._http.get(
+                    f"/api/v1/sources/{source_id}/versions/{version_id}/original",
+                    headers={
+                        "Authorization": "Bearer " + token.get_secret_value(),
+                        "X-Correlation-ID": str(correlation_id),
+                    },
+                ),
+                timeout=self._settings.total_deadline_seconds,
+            )
+        except (TimeoutError, httpx.TimeoutException) as exc:
+            raise TKPClientError(
+                code="TKP_TIMEOUT",
+                public_message="Original document retrieval timed out",
+                correlation_id=correlation_id,
+                status_code=504,
+                retryable=True,
+            ) from exc
+        except httpx.TransportError as exc:
+            raise TKPClientError(
+                code="TKP_UNAVAILABLE",
+                public_message="Original document is temporarily unavailable",
+                correlation_id=correlation_id,
+                status_code=503,
+                retryable=True,
+            ) from exc
+        if not 200 <= response.status_code < 300:
+            raise _ingestion_http_error(response, correlation_id)
+        content_type = response.headers.get(
+            "content-type", "application/octet-stream"
+        ).split(";", 1)[0]
+        if content_type != "application/pdf" and not content_type.startswith("image/"):
+            raise TKPClientError(
+                code="TKP_PREVIEW_UNSUPPORTED",
+                public_message="Original preview is not supported for this document",
+                correlation_id=correlation_id,
+                status_code=415,
+            )
+        return TKPOriginalDocument(
+            content=response.content,
+            content_type=content_type,
+            content_disposition=response.headers.get("content-disposition"),
+            source_sha256=response.headers.get("x-tkp-source-sha256"),
+        )
+
+    @staticmethod
+    def _metadata_review_response(
+        body: dict[str, Any], correlation_id: UUID
+    ) -> TKPMetadataReviewResponse:
+        try:
+            response = TKPMetadataReviewResponse.model_validate(body)
+        except ValidationError as exc:
+            raise TKPClientError(
+                code="TKP_RESPONSE_INVALID",
+                public_message="Metadata verification returned an incompatible response",
+                correlation_id=correlation_id,
+                status_code=502,
+            ) from exc
+        if response.correlation_id != correlation_id:
+            raise TKPClientError(
+                code="TKP_CORRELATION_MISMATCH",
+                public_message="Metadata verification response could not be verified",
+                correlation_id=correlation_id,
+                status_code=502,
+            )
+        return response
+
     @staticmethod
     def _job_segment(job_id: str) -> str:
         value = job_id.strip()
@@ -411,6 +560,23 @@ class TKPIngestionClient:
 
 
 def _ingestion_http_error(response: httpx.Response, correlation_id: UUID) -> TKPClientError:
+    upstream_code = "TKP_REQUEST_REJECTED"
+    safe_details: dict[str, Any] | None = None
+    try:
+        body = TKPErrorBody.model_validate(response.json())
+        if body.correlation_id != correlation_id:
+            return TKPClientError(
+                code="TKP_CORRELATION_MISMATCH",
+                public_message="Knowledge ingestion response could not be verified",
+                correlation_id=correlation_id,
+                status_code=502,
+            )
+        upstream_code = body.code
+        if body.details:
+            allowed = {"field_errors", "expected_version", "actual_version"}
+            safe_details = {key: value for key, value in body.details.items() if key in allowed}
+    except (ValidationError, ValueError):
+        pass
     if response.status_code in {401, 403}:
         return TKPClientError(
             code="TKP_AUTHORIZATION_FAILED",
@@ -421,11 +587,12 @@ def _ingestion_http_error(response: httpx.Response, correlation_id: UUID) -> TKP
         )
     if response.status_code in {400, 404, 409, 413, 415, 422}:
         return TKPClientError(
-            code="TKP_REQUEST_REJECTED",
+            code=upstream_code,
             public_message="Knowledge ingestion rejected the request",
             correlation_id=correlation_id,
             status_code=response.status_code,
             upstream_status=response.status_code,
+            details=safe_details,
         )
     retryable = response.status_code in TKPClient._RETRYABLE_STATUSES
     return TKPClientError(
