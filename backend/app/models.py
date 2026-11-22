@@ -113,6 +113,7 @@ class TKPBulkUploadDocument(SQLModel, table=True):
     retryable: bool = Field(default=False, nullable=False)
     error_code: str | None = Field(default=None, max_length=64)
     error_message: str | None = Field(default=None, max_length=500)
+    source_id: str | None = Field(default=None, max_length=36)
     source_version_id: str | None = Field(default=None, max_length=36)
     revision_id: str | None = Field(default=None, max_length=36)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
