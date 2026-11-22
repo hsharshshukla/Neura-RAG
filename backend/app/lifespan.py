@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
-from app.integrations.tkp.client import TKPClient
+from app.integrations.tkp.client import TKPClient, TKPIngestionClient
 from app.integrations.tkp.config import get_tkp_settings
 
 log = logging.getLogger("neura.lifespan")
@@ -99,8 +99,12 @@ async def lifespan(app: FastAPI):
     validate_rate_limit_storage(environment)
 
     app.state.tkp_client = None
+    app.state.tkp_ingestion_client = None
     try:
-        app.state.tkp_client = TKPClient(get_tkp_settings())
+        tkp_settings = get_tkp_settings()
+        app.state.tkp_client = TKPClient(tkp_settings)
+        if tkp_settings.ingestion_service_token is not None:
+            app.state.tkp_ingestion_client = TKPIngestionClient(tkp_settings)
     except ValidationError:
         if environment in {"staging", "prod"} or organizational_mode == "tkp":
             raise RuntimeError("Complete TKP bridge configuration is required") from None
@@ -136,6 +140,8 @@ async def lifespan(app: FastAPI):
     finally:
         if app.state.tkp_client is not None:
             await app.state.tkp_client.aclose()
+        if app.state.tkp_ingestion_client is not None:
+            await app.state.tkp_ingestion_client.aclose()
 
     # graceful shutdown hooks (optional)
     # e.g., closing clients, flushing telemetry, etc.

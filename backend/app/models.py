@@ -91,6 +91,34 @@ class WorkspaceMembership(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
+class TKPBulkUploadJob(SQLModel, table=True):
+    id: str = Field(primary_key=True, max_length=36)
+    workspace_id: str = Field(foreign_key="workspace.id", index=True, max_length=36)
+    owner_user_id: int = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class TKPBulkUploadDocument(SQLModel, table=True):
+    id: str = Field(primary_key=True, max_length=36)
+    bulk_job_id: str = Field(
+        foreign_key="tkpbulkuploadjob.id", index=True, max_length=36
+    )
+    workspace_id: str = Field(foreign_key="workspace.id", index=True, max_length=36)
+    owner_user_id: int = Field(foreign_key="user.id", index=True)
+    filename: str = Field(max_length=255)
+    tkp_job_id: str | None = Field(default=None, index=True, max_length=200)
+    processing_status: str = Field(default="QUEUED", max_length=32)
+    index_status: str = Field(default="NOT_READY", max_length=32)
+    retryable: bool = Field(default=False, nullable=False)
+    error_code: str | None = Field(default=None, max_length=64)
+    error_message: str | None = Field(default=None, max_length=500)
+    source_version_id: str | None = Field(default=None, max_length=36)
+    revision_id: str | None = Field(default=None, max_length=36)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
 class UploadedFile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
