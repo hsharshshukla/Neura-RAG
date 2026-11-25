@@ -1,5 +1,4 @@
 # app/routes/upload.py
-from __future__ import annotations
 
 from typing import Annotated, Optional
 from fastapi import (
@@ -19,13 +18,16 @@ from pathlib import Path
 from datetime import datetime, date, timedelta
 import logging
 import hashlib
-import uuid
 import io
 import os
 
 from app.db import get_session
 from app.models import User, ChatSession
 from app.deps.auth import get_current_user
+from app.deps.chat_session import require_owned_chat_session
+from app.deps.workspace import require_tkp_workspace_access
+from app.integrations.tkp.config import get_tkp_settings
+from app.services.conversation_attachments import attachment_document_id
 from app.utils.logger import log_event
 from app.vector_store import embed_and_store
 from app.parsers.parser import parse_and_clean_bytes
@@ -144,6 +146,28 @@ def _ensure_tables(db: Session) -> None:
     return None
 
 
+def _require_attachment_session(
+    db: Session, *, user: User, session_id: int | None
+) -> ChatSession:
+    if user.id is None or session_id is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    chat = require_owned_chat_session(db, session_id=session_id, user_id=user.id)
+    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
+        try:
+            access = require_tkp_workspace_access(
+                user=user,
+                db=db,
+                settings=get_tkp_settings(),
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(503, "Knowledge retrieval is not configured") from exc
+        if chat.workspace_id != str(access.workspace_id):
+            raise HTTPException(status_code=404, detail="Chat not found")
+    return chat
+
+
 # ---------- routes ----------
 @router.get("/upload/check", response_model=None)
 # @limiter.limit("60/minute", key_func=key_user_or_ip)
@@ -156,13 +180,12 @@ def check_duplicate(
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
-    """Check if upload already exists and validate file size per plan."""
-    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
-        raise HTTPException(status_code=409, detail="Legacy organizational uploads are disabled")
+    """Check a conversation attachment after authorizing its owning session."""
     _ensure_tables(db)
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    _require_attachment_session(db, user=user, session_id=session_id)
 
     knobs = _plan_upload_knobs(user.tier or "free")
     max_mb = min(knobs["max_mb"], GLOBAL_MAX_UPLOAD_MB)
@@ -171,20 +194,22 @@ def check_duplicate(
     if size > max_bytes:
         raise HTTPException(status_code=413, detail=f"Max {max_mb} MB for your plan")
 
-    blob = db.exec(text("""
-        SELECT 1 FROM public.blob WHERE sha256 = :h AND bytes = :b
-    """).bindparams(h=sha256, b=size)).first()
-    exists = bool(blob)
-
     link = db.exec(text("""
         SELECT 1 FROM public.upload_link
-        WHERE user_id = :u AND session_id = :s AND sha256 = :h
-    """).bindparams(u=user.id, s=session_id, h=sha256)).first()
+        WHERE user_id = :u AND session_id = :s AND sha256 = :h AND doc_id = :d
+    """).bindparams(
+        u=user.id, s=session_id, h=sha256,
+        d=attachment_document_id(user.id, session_id, sha256),
+    )).first()
+    linked = bool(link)
 
     return {
-        "exists": exists,
-        "duplicate": exists,
-        "linked": bool(link),
+        # These fields intentionally describe only this authorized conversation.
+        # Global blob existence is an internal storage concern and must not be
+        # disclosed or cause the frontend to skip logical attachment/indexing.
+        "exists": linked,
+        "duplicate": linked,
+        "linked": linked,
         "max_bytes": max_bytes,
         "max_mb": max_mb,
     }
@@ -199,16 +224,36 @@ async def upload_file(
     db: Session = Depends(get_session),
     user_email: str = Depends(get_current_user),
 ):
+    """Upload, index, and link a local conversation attachment."""
+    try:
+        return await _upload_conversation_attachment(
+            request=request,
+            file=file,
+            session_id=session_id,
+            db=db,
+            user_email=user_email,
+        )
+    finally:
+        await file.close()
 
 
-    """Upload handler: deduplicate, parse, embed, and record."""
-    if os.getenv("ORGANIZATIONAL_RAG_MODE", "legacy").lower() == "tkp":
-        raise HTTPException(status_code=409, detail="Legacy organizational uploads are disabled")
+async def _upload_conversation_attachment(
+    *,
+    request: Request,
+    file: UploadFile,
+    session_id: int | None,
+    db: Session,
+    user_email: str,
+):
     _ensure_tables(db)
 
     user = db.exec(select(User).where(User.email == user_email)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    chat = _require_attachment_session(db, user=user, session_id=session_id)
+    if user.id is None or chat.id is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    session_id = chat.id
 
     tier = user.tier or "free"
     knobs = _plan_upload_knobs(tier)
@@ -218,14 +263,16 @@ async def upload_file(
     _enforce_plan_upload_rates(db, user.id, tier)
     _enforce_plan_daily_count(db, user.id, tier)
 
-    chat = db.exec(select(ChatSession)
-                   .where(ChatSession.id == session_id, ChatSession.user_id == user.id)).first()
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat session not found")
-
     cl = request.headers.get("content-length")
-    if cl and int(cl) > effective_max_bytes:
-        raise HTTPException(status_code=413, detail=f"File too large (> {effective_max_mb} MB)")
+    if cl:
+        try:
+            if int(cl) > effective_max_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large (> {effective_max_mb} MB)",
+                )
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid content length") from None
 
     original_name = Path(file.filename or "").name[:200] or "upload"
     ext = Path(original_name).suffix.lower()
@@ -237,57 +284,43 @@ async def upload_file(
     size = 0
     data_stream = io.BytesIO()
     CHUNK = 1024 * 1024
+    try:
+        while True:
+            chunk = await file.read(CHUNK)
+            if not chunk:
+                break
+            size += len(chunk)
+            if size > effective_max_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large (> {effective_max_mb} MB)",
+                )
+            sha.update(chunk)
+            data_stream.write(chunk)
 
-    while True:
-        chunk = await file.read(CHUNK)
-        if not chunk:
-            break
-        size += len(chunk)
-        if size > effective_max_bytes:
-            raise HTTPException(status_code=413, detail=f"File too large (> {effective_max_mb} MB)")
-        sha.update(chunk)
-        data_stream.write(chunk)
+        if size == 0:
+            raise HTTPException(status_code=400, detail="Empty file")
 
-    await file.close()
-    if size == 0:
-        raise HTTPException(status_code=400, detail="Empty file")
+        sha_hex = sha.hexdigest()
+        doc_id = attachment_document_id(user.id, session_id, sha_hex)
+        # Serialize physical blob reuse and logical indexing across all workers.
+        lock_key = int.from_bytes(bytes.fromhex(sha_hex[:16]), "big", signed=True)
+        db.exec(text("SELECT pg_advisory_xact_lock(:key)").bindparams(key=lock_key))
+        linked = db.exec(text("""
+            SELECT doc_id FROM public.upload_link
+            WHERE user_id = :u AND session_id = :s AND sha256 = :h
+        """).bindparams(u=user.id, s=session_id, h=sha_hex)).first()
+        if linked and linked[0] == doc_id:
+            existing_doc_id = linked[0] if not hasattr(linked, "doc_id") else linked.doc_id
+            db.rollback()
+            return {
+                "ok": True,
+                "duplicate": True,
+                "session_id": session_id,
+                "doc_id": str(existing_doc_id),
+                "chars_indexed": 0,
+            }
 
-    sha_hex = sha.hexdigest()
-    data_stream.seek(0)
-
-    blob_row = db.exec(text("""
-        SELECT sha256, storage_uri FROM public.blob WHERE sha256 = :h
-    """).bindparams(h=sha_hex)).mappings().first()
-
-    blob_exists = bool(blob_row)
-    storage_uri = blob_row["storage_uri"] if blob_row else None
-
-    if not blob_exists:
-        storage = get_storage()
-        try:
-            _, storage_uri = storage.save_stream(
-                user_id=user.id,
-                session_id=session_id,
-                filename=original_name,
-                stream=data_stream,
-                mime=mime,
-            )
-        except Exception:
-            logger.exception("Storage save failed for %s", original_name)
-            raise HTTPException(status_code=500, detail="Storage error")
-
-        db.exec(text("""
-            INSERT INTO public.blob (sha256, bytes, ext, mime, storage_uri)
-            VALUES (:h, :b, :e, :m, :u)
-            ON CONFLICT (sha256) DO NOTHING
-        """).bindparams(h=sha_hex, b=size, e=ext, m=mime, u=storage_uri))
-        db.commit()
-
-    embedded = db.exec(text("SELECT 1 FROM public.embedding_index WHERE sha256 = :h")
-                       .bindparams(h=sha_hex)).first()
-
-    chars_indexed = 0
-    if not embedded:
         try:
             data_stream.seek(0)
             raw = data_stream.read()
@@ -295,58 +328,120 @@ async def upload_file(
                 parsed = parse_and_clean_bytes(original_name, raw, mime)
             except TypeError:
                 parsed = parse_and_clean_bytes(original_name, raw)
-            text_content = (parsed.get("text") if isinstance(parsed, dict) else parsed or "").strip()
-        except Exception:
+            text_content = (
+                parsed.get("text") if isinstance(parsed, dict) else parsed or ""
+            ).strip()
+        except Exception as exc:
             logger.exception("Parsing failed for %s", original_name)
-            text_content = ""
+            raise HTTPException(
+                status_code=422,
+                detail="File content could not be parsed",
+            ) from exc
 
-        if os.getenv("DISABLE_EMBED", "").lower() not in ("1", "true", "yes"):
-            if text_content:
+        if not text_content:
+            log_event("upload_nontext", {
+                "user": user_email, "session_id": session_id,
+                "sha256": sha_hex, "size_bytes": size, "mime": mime, "ext": ext,
+            })
+            raise HTTPException(status_code=422, detail="No indexable content found")
+
+        if os.getenv("DISABLE_EMBED", "").lower() in ("1", "true", "yes"):
+            raise HTTPException(status_code=503, detail="Attachment indexing is disabled")
+
+        try:
+            embed_and_store(
+                user_email=user_email,
+                text=text_content,
+                metadata={
+                    "attachment_kind": "conversation_attachment",
+                    "user_id": str(user.id),
+                    "user_email": user_email,
+                    "session_id": str(session_id),
+                    "filename": original_name,
+                    "sha256": sha_hex,
+                    "doc_id": doc_id,
+                },
+                replace_existing=True,
+            )
+            chars_indexed = len(text_content)
+        except Exception as exc:
+            logger.exception("Embedding failed for %s", original_name)
+            raise HTTPException(status_code=500, detail="Embedding error") from exc
+
+        blob_row = db.exec(text("""
+            SELECT sha256, bytes, storage_uri FROM public.blob WHERE sha256 = :h
+        """).bindparams(h=sha_hex)).mappings().first()
+        blob_exists = bool(blob_row)
+        if blob_row and blob_row["bytes"] != size:
+            raise HTTPException(status_code=500, detail="Storage integrity error")
+
+        storage = None
+        new_storage_uri = None
+        commit_started = False
+        try:
+            if not blob_exists:
+                storage = get_storage()
                 try:
-                    embed_and_store(
-                        user_email=user_email,
-                        text=text_content,
-                        metadata={"sha256": sha_hex,
-                                  "session_id": str(session_id),
-                                  "doc_id": sha_hex},
+                    data_stream.seek(0)
+                    _, new_storage_uri = storage.save_stream(
+                        user_id=user.id,
+                        session_id=session_id,
+                        filename=original_name,
+                        stream=data_stream,
+                        mime=mime,
                     )
-                    chars_indexed = len(text_content)
+                except Exception as exc:
+                    logger.exception("Storage save failed")
+                    raise HTTPException(status_code=500, detail="Storage error") from exc
+                db.exec(text("""
+                    INSERT INTO public.blob (sha256, bytes, ext, mime, storage_uri)
+                    VALUES (:h, :b, :e, :m, :u)
+                """).bindparams(h=sha_hex, b=size, e=ext, m=mime, u=new_storage_uri))
+
+            db.exec(text("""
+                INSERT INTO public.embedding_index (sha256, store_key, chunks)
+                VALUES (:h, :k, :c)
+                ON CONFLICT (sha256) DO NOTHING
+            """).bindparams(h=sha_hex, k=doc_id, c=None))
+            db.exec(text("""
+                INSERT INTO public.upload_link (user_id, session_id, sha256, doc_id)
+                VALUES (:u, :s, :h, :d)
+                ON CONFLICT (user_id, session_id, sha256)
+                DO UPDATE SET doc_id = EXCLUDED.doc_id
+            """).bindparams(u=user.id, s=session_id, h=sha_hex, d=doc_id))
+            commit_started = True
+            db.commit()
+        except Exception:
+            # A failed commit may have succeeded remotely, so never delete its blob.
+            if new_storage_uri and storage is not None and not commit_started:
+                try:
+                    storage.delete(new_storage_uri)
                 except Exception:
-                    logger.exception("Embedding failed for %s", original_name)
-                    raise HTTPException(status_code=500, detail="Embedding error")
-            else:
-                log_event("upload_nontext", {
-                    "user": user_email, "session_id": session_id,
-                    "sha256": sha_hex, "size_bytes": size, "mime": mime, "ext": ext,
-                })
+                    logger.exception("Could not remove uncommitted attachment blob")
+            elif new_storage_uri and commit_started:
+                logger.warning("Attachment blob may require reconciliation after commit failure")
+            db.rollback()
+            raise
 
-        db.exec(text("""
-            INSERT INTO public.embedding_index (sha256, store_key, chunks)
-            VALUES (:h, :k, :c)
-            ON CONFLICT (sha256) DO NOTHING
-        """).bindparams(h=sha_hex, k=sha_hex, c=None))
-        db.commit()
+        log_event("upload_ok", {
+            "user": user_email, "session_id": session_id,
+            "sha256": sha_hex,
+            "size_bytes": size, "mime": mime, "ext": ext,
+            "storage_reused": blob_exists, "chars_indexed": chars_indexed, "plan": tier,
+        })
 
-    doc_id = str(uuid.uuid4())
-    db.exec(text("""
-        INSERT INTO public.upload_link (user_id, session_id, sha256, doc_id)
-        VALUES (:u, :s, :h, :d)
-        ON CONFLICT (user_id, session_id, sha256) DO NOTHING
-    """).bindparams(u=user.id, s=session_id, h=sha_hex, d=doc_id))
-    db.commit()
-
-    log_event("upload_ok", {
-        "user": user_email, "session_id": session_id,
-        "sha256": sha_hex,
-        "size_bytes": size, "mime": mime, "ext": ext,
-        "duplicate": blob_exists, "chars_indexed": chars_indexed, "plan": tier,
-    })
-
-    return {
-        "ok": True,
-        "duplicate": bool(blob_exists),
-        "session_id": session_id,
-        "doc_id": doc_id,
-        "chars_indexed": int(chars_indexed),
-    }
+        return {
+            "ok": True,
+            # A newly completed logical attachment is never a duplicate, even
+            # when its immutable bytes reused an existing physical blob.
+            "duplicate": False,
+            "session_id": session_id,
+            "doc_id": doc_id,
+            "chars_indexed": int(chars_indexed),
+        }
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        data_stream.close()
 

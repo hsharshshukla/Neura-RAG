@@ -107,6 +107,37 @@ class GroundedCitation(BaseModel):
     sources: tuple[CitationSource, ...] = ()
 
 
+class AttachmentCitation(BaseModel):
+    """Frontend-compatible citation for evidence local to one conversation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    evidence_id: str
+    title: str
+    relevant_section: str = "Conversation attachment"
+    heading_path: tuple[str, ...] = ()
+    sources: tuple[()] = ()
+    attachment_kind: str = "conversation_attachment"
+    document_id: str
+    chunk_id: str
+
+
+class AttachmentEvidence(BaseModel):
+    """Already-authorized attachment chunk supplied at the grounding boundary."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    content: str = Field(min_length=1)
+    filename: str = Field(min_length=1, max_length=200)
+    document_id: str = Field(min_length=1, max_length=200)
+    chunk_id: str = Field(min_length=1, max_length=200)
+    user_id: str = Field(min_length=1, max_length=200)
+    session_id: str = Field(min_length=1, max_length=200)
+
+
+EvidenceCitation = GroundedCitation | AttachmentCitation
+
+
 class GroundedAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -114,7 +145,7 @@ class GroundedAnswer(BaseModel):
     confidence: float = Field(ge=0, le=1)
     insufficient_evidence: bool
     insufficient_reason: str | None = None
-    citations: tuple[GroundedCitation, ...] = ()
+    citations: tuple[EvidenceCitation, ...] = ()
 
 
 class GroundedLLM(Protocol):
@@ -167,14 +198,20 @@ class NeuraLLM:
 class _Evidence:
     evidence_id: str
     content: str
-    result: RetrievalResult
-    citation: GroundedCitation
+    title: str
+    product_names: tuple[str, ...]
+    product_versions: tuple[str, ...]
+    citation: EvidenceCitation
 
 
 class EvidenceIndex:
-    """Verified answer evidence derived only from the authenticated TKP response."""
+    """Authorized TKP evidence plus already-scoped local attachment chunks."""
 
-    def __init__(self, retrieval: TKPRetrievalResponse) -> None:
+    def __init__(
+        self,
+        retrieval: TKPRetrievalResponse,
+        attachments: Sequence[AttachmentEvidence] = (),
+    ) -> None:
         records: dict[str, _Evidence] = {}
         seen_projections: set[UUID] = set()
         for result in retrieval.results:
@@ -190,8 +227,33 @@ class EvidenceIndex:
             records[citation.evidence_id] = _Evidence(
                 evidence_id=citation.evidence_id,
                 content=result.content.strip(),
-                result=result,
+                title=result.title,
+                product_names=result.product_names,
+                product_versions=result.product_versions,
                 citation=citation,
+            )
+        seen_attachment_chunks: set[tuple[str, str]] = set()
+        for attachment in sorted(
+            attachments, key=lambda item: (item.document_id, item.chunk_id)
+        ):
+            identity = (attachment.document_id, attachment.chunk_id)
+            if identity in seen_attachment_chunks:
+                continue
+            seen_attachment_chunks.add(identity)
+            evidence_id = f"E{len(records) + 1}"
+            attachment_citation = AttachmentCitation(
+                evidence_id=evidence_id,
+                title=attachment.filename,
+                document_id=attachment.document_id,
+                chunk_id=attachment.chunk_id,
+            )
+            records[evidence_id] = _Evidence(
+                evidence_id=evidence_id,
+                content=attachment.content,
+                title=attachment.filename,
+                product_names=(),
+                product_versions=(),
+                citation=attachment_citation,
             )
         self._records = records
 
@@ -299,7 +361,7 @@ class CitationValidator:
                 evidence.require(evidence_id)
 
     def validate_lineage(
-        self, citations: Sequence[GroundedCitation], evidence: EvidenceIndex
+        self, citations: Sequence[EvidenceCitation], evidence: EvidenceIndex
     ) -> None:
         seen: set[str] = set()
         for citation in citations:
@@ -321,8 +383,14 @@ class GroundedAnswerService:
         self._llm = llm
         self._citation_validator = CitationValidator()
 
-    async def generate(self, *, query: str, retrieval: TKPRetrievalResponse) -> GroundedAnswer:
-        evidence = EvidenceIndex(retrieval)
+    async def generate(
+        self,
+        *,
+        query: str,
+        retrieval: TKPRetrievalResponse,
+        attachments: Sequence[AttachmentEvidence] = (),
+    ) -> GroundedAnswer:
+        evidence = EvidenceIndex(retrieval, attachments)
         if not evidence.records:
             return self._insufficient("NO_APPROVED_EVIDENCE")
 
@@ -360,9 +428,9 @@ class GroundedAnswerService:
                 {
                     "evidence_id": item.evidence_id,
                     "content": item.content,
-                    "title": item.result.title,
-                    "product_names": item.result.product_names,
-                    "product_versions": item.result.product_versions,
+                    "title": item.title,
+                    "product_names": item.product_names,
+                    "product_versions": item.product_versions,
                 }
                 for item in evidence.records
             ],
@@ -453,13 +521,17 @@ class GroundedAnswerService:
 
 
 async def generate_grounded_answer(
-    *, query: str, retrieval: TKPRetrievalResponse, model: str
+    *,
+    query: str,
+    retrieval: TKPRetrievalResponse,
+    model: str,
+    attachments: Sequence[AttachmentEvidence] = (),
 ) -> GroundedAnswer:
     try:
         timeout = float(os.getenv("GROUNDED_ANSWER_LLM_TIMEOUT_SECONDS", "45"))
     except ValueError:
         timeout = 45
     timeout = min(max(timeout, 1), 60)
-    return await GroundedAnswerService(NeuraLLM(model=model, timeout_seconds=timeout)).generate(
-        query=query, retrieval=retrieval
-    )
+    return await GroundedAnswerService(
+        NeuraLLM(model=model, timeout_seconds=timeout)
+    ).generate(query=query, retrieval=retrieval, attachments=attachments)

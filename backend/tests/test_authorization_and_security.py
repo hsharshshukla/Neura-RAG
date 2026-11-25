@@ -26,9 +26,9 @@ from app.middleware.security import CSRFMiddleware
 from app.models import ChatSession, User, Workspace, WorkspaceMembership
 from app.rate_limit import client_ip, limiter
 from app.routes import auth as auth_routes
+from app.routes import upload as upload_routes
 from app.routes.search import global_search
 from app.routes.tkp_retrieval import router as tkp_router
-from app.routes.upload import check_duplicate
 from tests.test_tkp_client import _response
 
 
@@ -199,6 +199,65 @@ def test_foreign_chat_session_is_indistinguishable_from_missing() -> None:
         missing.value.status_code,
         missing.value.detail,
     )
+
+
+def test_tkp_attachment_session_preserves_fixed_workspace_binding(monkeypatch) -> None:
+    monkeypatch.setenv("ORGANIZATIONAL_RAG_MODE", "tkp")
+    _, db = _database()
+    workspace_id = uuid4()
+    other_workspace_id = uuid4()
+    user = User(email="attachment-owner@example.test", password="hash")
+    other = User(email="attachment-other@example.test", password="hash")
+    db.add(user)
+    db.add(other)
+    db.commit()
+    db.refresh(user)
+    db.refresh(other)
+    db.add(Workspace(id=str(workspace_id), name="fixed", active=True))
+    db.add(Workspace(id=str(other_workspace_id), name="other", active=True))
+    db.add(
+        WorkspaceMembership(
+            workspace_id=str(workspace_id), user_id=user.id, role="reader"
+        )
+    )
+    owned = ChatSession(
+        user_id=user.id, workspace_id=str(workspace_id), title="owned"
+    )
+    wrong_workspace = ChatSession(
+        user_id=user.id, workspace_id=str(other_workspace_id), title="wrong"
+    )
+    foreign = ChatSession(
+        user_id=other.id, workspace_id=str(workspace_id), title="foreign"
+    )
+    db.add(owned)
+    db.add(wrong_workspace)
+    db.add(foreign)
+    db.commit()
+    db.refresh(owned)
+    db.refresh(wrong_workspace)
+    db.refresh(foreign)
+    settings = TKPSettings(
+        internal_url="https://tkp.internal",
+        service_token=SecretStr("read-only-test-token-123456789"),
+        staging_workspace_id=workspace_id,
+        environment="test",
+    )
+    monkeypatch.setattr(upload_routes, "get_tkp_settings", lambda: settings)
+
+    assert (
+        upload_routes._require_attachment_session(
+            db, user=user, session_id=owned.id
+        ).id
+        == owned.id
+    )
+    denials = []
+    for session_id in (wrong_workspace.id, foreign.id, 999_999):
+        with pytest.raises(HTTPException) as denied:
+            upload_routes._require_attachment_session(
+                db, user=user, session_id=session_id
+            )
+        denials.append((denied.value.status_code, denied.value.detail))
+    assert denials == [(404, "Chat not found")] * 3
 
 
 def test_csrf_required_for_cookie_authenticated_mutation(monkeypatch) -> None:
@@ -416,7 +475,7 @@ def test_browser_cannot_override_workspace_and_route_is_rate_limited(monkeypatch
     assert limited.status_code == 429
 
 
-def test_tkp_mode_disables_legacy_search_and_upload(monkeypatch) -> None:
+def test_tkp_mode_keeps_legacy_organizational_search_disabled(monkeypatch) -> None:
     monkeypatch.setenv("ORGANIZATIONAL_RAG_MODE", "tkp")
     scope = {
         "type": "http",
@@ -439,17 +498,4 @@ def test_tkp_mode_disables_legacy_search_and_upload(monkeypatch) -> None:
             current_user="reader@example.test",
             db=None,
         )
-    with pytest.raises(HTTPException) as upload_denied:
-        check_duplicate(
-            request=request,
-            response=Response(),
-            sha256="hash",
-            size=1,
-            session_id=1,
-            db=None,
-            user_email="reader@example.test",
-        )
-    assert {
-        search_denied.value.status_code,
-        upload_denied.value.status_code,
-    } == {409}
+    assert search_denied.value.status_code == 409

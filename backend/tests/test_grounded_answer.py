@@ -10,6 +10,8 @@ import pytest
 from app.integrations.tkp.schemas import TKPRetrievalResponse
 from app.services import grounded_answer as grounded_answer_module
 from app.services.grounded_answer import (
+    AttachmentEvidence,
+    GroundedCitation,
     INSUFFICIENT_EVIDENCE_MESSAGE,
     CitationValidator,
     EvidenceIndex,
@@ -71,6 +73,55 @@ async def test_grounded_answer_uses_only_server_issued_citations_and_lineage() -
     assert citation.revision_id == result.revision_id
     assert citation.revision_claim_ids == (result.claim_references[0].revision_claim_id,)
     assert citation.source_fragment_ids == result.claim_references[0].source_fragment_ids
+
+
+@pytest.mark.asyncio
+async def test_grounded_answer_combines_tkp_and_conversation_attachment_evidence() -> None:
+    llm = FakeLLM(
+        json.dumps(
+            {
+                "insufficient_evidence": False,
+                "claims": [
+                    {
+                        "claim_id": "C1",
+                        "text": "Use the approved procedure and attached detail.",
+                        "evidence_ids": ["E1", "E2"],
+                    }
+                ],
+                "confidence": 0.9,
+            }
+        ),
+        json.dumps(
+            {
+                "results": [{"claim_id": "C1", "supported": True}],
+                "contradictory_evidence": False,
+            }
+        ),
+    )
+    source = retrieval()
+    attachment = AttachmentEvidence(
+        content="attached detail",
+        filename="notes.txt",
+        document_id="document-1",
+        chunk_id="chunk-1",
+        user_id="7",
+        session_id="19",
+    )
+
+    answer = await GroundedAnswerService(llm).generate(
+        query="What should I do?",
+        retrieval=source,
+        attachments=(attachment,),
+    )
+
+    assert isinstance(answer.citations[0], GroundedCitation)
+    assert answer.citations[0].projection_id == source.results[0].projection_id
+    attachment_citation = answer.citations[1].model_dump(mode="json")
+    assert attachment_citation["evidence_id"] == "E2"
+    assert attachment_citation["title"] == "notes.txt"
+    assert attachment_citation["attachment_kind"] == "conversation_attachment"
+    assert attachment_citation["document_id"] == "document-1"
+    assert attachment_citation["chunk_id"] == "chunk-1"
 
 
 @pytest.mark.asyncio

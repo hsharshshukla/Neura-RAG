@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import json
 import os, re, time, uuid, logging
@@ -36,8 +34,10 @@ from app.services.conversation_context import (
     build_bounded_context,
     resolve_conversation_query,
 )
+from app.services.conversation_attachments import completed_attachments
 from app.services.evidence_audit import build_answer_evidence_audit
 from app.services.grounded_answer import (
+    AttachmentEvidence,
     GROUNDING_PROMPT_POLICY_VERSION,
     GroundedAnswer,
     GroundingError,
@@ -161,6 +161,73 @@ def _load_bounded_history(
         if row.id is not None and row.role in {"user", "assistant"} and row.content.strip()
     ]
     return build_bounded_context(messages, settings)
+
+
+def _conversation_attachment_evidence(
+    *, db: Session, user: User, chat: ChatSession, query: str
+) -> tuple[AttachmentEvidence, ...]:
+    if user.id is None or chat.id is None or chat.user_id != user.id:
+        raise GroundingError(
+            code="ATTACHMENT_RETRIEVAL_UNAVAILABLE",
+            public_message="Conversation attachment retrieval is temporarily unavailable",
+            status_code=503,
+        )
+    filters = {
+        "attachment_kind": "conversation_attachment",
+        "user_id": str(user.id),
+        "session_id": str(chat.id),
+    }
+    try:
+        completed = completed_attachments(db, user_id=user.id, session_id=chat.id)
+        if not completed:
+            return ()
+        docs = query_user_docs(
+            user.email,
+            query,
+            top_k=min(max(env_int("CHAT_ATTACHMENT_TOP_K", 8), 1), 20),
+            filter_by_user=True,
+            extra_filters=filters,
+            raise_on_error=True,
+        )
+    except Exception as exc:
+        logger.error("conversation_attachment_retrieval_failed")
+        raise GroundingError(
+            code="ATTACHMENT_RETRIEVAL_UNAVAILABLE",
+            public_message="Conversation attachment retrieval is temporarily unavailable",
+            status_code=503,
+        ) from exc
+
+    evidence = []
+    for doc in docs:
+        metadata = dict(getattr(doc, "metadata", {}) or {})
+        if (
+            any(str(metadata.get(key, "")) != value for key, value in filters.items())
+            or metadata.get("user_email") != user.email
+        ):
+            logger.warning("Rejected out-of-scope conversation attachment result")
+            continue
+        content = str(getattr(doc, "page_content", "")).strip()
+        filename = str(metadata.get("filename", "")).strip()
+        document_id = str(metadata.get("doc_id", "")).strip()
+        chunk_id = str(metadata.get("chunk_id", "")).strip()
+        sha256 = str(metadata.get("sha256", ""))
+        if not all((content, filename, document_id, chunk_id)):
+            logger.warning("Rejected incomplete conversation attachment result")
+            continue
+        if completed.get(sha256) != document_id:
+            logger.warning("Rejected uncompleted conversation attachment result")
+            continue
+        evidence.append(
+            AttachmentEvidence(
+                content=content,
+                filename=filename,
+                document_id=document_id,
+                chunk_id=chunk_id,
+                user_id=str(user.id),
+                session_id=str(chat.id),
+            )
+        )
+    return tuple(evidence)
 
 
 def _persist_tkp_turn(
@@ -386,10 +453,19 @@ async def _prepare_streamed_tkp_turn(
             BrowserRetrievalRequest(query=standalone_query, limit=retrieval_limit)
         )
         retrieval = await tkp_client.search(retrieval_request, correlation_id)
+        attachments = (
+            _conversation_attachment_evidence(
+                db=db, user=user, chat=owned_chat, query=standalone_query
+            )
+            if owned_chat is not None
+            else ()
+        )
+        grounding_kwargs = {"attachments": attachments} if attachments else {}
         grounded = await generate_grounded_answer(
             query=standalone_query,
             retrieval=retrieval,
             model=model,
+            **grounding_kwargs,
         )
         validation_status = (
             "INSUFFICIENT_EVIDENCE" if grounded.insufficient_evidence else "VALIDATED"
@@ -872,10 +948,19 @@ async def ask(
                 retrieval_request,
                 correlation_id,
             )
+            attachments = (
+                _conversation_attachment_evidence(
+                    db=db, user=user, chat=owned_chat, query=standalone_query
+                )
+                if owned_chat is not None
+                else ()
+            )
+            grounding_kwargs = {"attachments": attachments} if attachments else {}
             grounded = await generate_grounded_answer(
                 query=standalone_query,
                 retrieval=retrieval,
                 model=model,
+                **grounding_kwargs,
             )
         except asyncio.CancelledError:
             raise
@@ -1015,15 +1100,15 @@ async def ask(
 
     if route in ("rag_only", "hybrid"):
         try:
-            docs = query_user_docs(
-                user_email,
-                message,
-                top_k=env_int("SEARCH_TOPK_PRO", 8),
+            docs = _conversation_attachment_evidence(
+                db=db,
+                user=user,
+                chat=chat if created_new else owned_chat,
+                query=message,
             )
-        except Exception:
-            docs = []
-
-        context_text = "\n\n".join(d.page_content for d in docs)
+        except GroundingError as exc:
+            raise HTTPException(exc.status_code, exc.public_message) from exc
+        context_text = "\n\n".join(item.content for item in docs)
 
         if route == "rag_only" and not context_text:
             route = "llm_only"

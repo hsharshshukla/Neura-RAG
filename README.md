@@ -93,6 +93,15 @@ Conversational Response
 
 ## Technology
 
+Conversation attachments are indexed separately from TKP organizational knowledge. A
+conversation-scoped upload link is committed only after indexing succeeds; legacy links are
+reindexed on upload. Retrieval failures are reported rather than silently omitting attachments.
+Uploads require PostgreSQL advisory locks and a persistent vector backend. The existing pgvector
+adapter needs SQLModel session compatibility fixes before use; it also requires `PGVECTOR_TABLE`
+to name a table distinct from the upload registry `embedding_index`.
+An ambiguous database commit can leave an unreferenced physical blob; reconcile it against the
+blob registry before deletion, and never delete a referenced blob.
+
 ### Backend
 - Python
 - FastAPI
