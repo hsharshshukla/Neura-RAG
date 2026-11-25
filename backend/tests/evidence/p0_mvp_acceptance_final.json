@@ -1,0 +1,119 @@
+{
+  "browser": {
+    "backend": "http://127.0.0.1:63135",
+    "email": "p0-owner@example.test",
+    "url": "http://127.0.0.1:63137"
+  },
+  "combined_citations": {
+    "attachment": 2,
+    "organizational": 2
+  },
+  "cors_digest_header_allowed": true,
+  "finished_at": "2026-11-25T08:43:07.369656+00:00",
+  "provider_mode": "deterministic",
+  "qdrant": {
+    "embedding_dimension": 1536,
+    "namespaces": {
+      "a": "p0_mvp_tenant_a",
+      "b": "p0_mvp_tenant_b"
+    },
+    "payload_indexes": {
+      "a": [
+        "__ns",
+        "attachment_kind",
+        "chunk_id",
+        "doc_id",
+        "is_public",
+        "owner",
+        "session_id",
+        "sha256",
+        "user_email",
+        "user_id"
+      ],
+      "b": [
+        "__ns",
+        "attachment_kind",
+        "chunk_id",
+        "doc_id",
+        "is_public",
+        "owner",
+        "session_id",
+        "sha256",
+        "user_email",
+        "user_id"
+      ]
+    },
+    "version": "1.15.1"
+  },
+  "real_provider": {
+    "attempted_at": "2026-11-25",
+    "status": "PASS_WITH_GREETING_LIMITATION",
+    "credential_check": "Both model metadata requests returned HTTP 200",
+    "credential_file_git_ignored": true,
+    "chat_model": "gpt-5.4-mini",
+    "embedding_model": "text-embedding-3-small",
+    "synthetic_data_only": true,
+    "infrastructure": "Isolated Neura, TKP, PostgreSQL, persistent Qdrant and Redis",
+    "embedding_requests": 7,
+    "embedding_input_tokens": 103,
+    "generation_requests": 8,
+    "generation_input_tokens": 1880,
+    "generation_output_tokens": 362,
+    "model_metadata_requests": 5,
+    "estimated_expenditure_usd": 0.00304106,
+    "reserved_worst_case_usd": 0.113302,
+    "request_limits": {"embedding": 12, "generation": 8},
+    "expenditure_limit_usd": 0.25,
+    "checks": {
+      "real_embedding_and_qdrant_retrieval": "PASS",
+      "query_specific_factual_answer": "PASS",
+      "synthetic_document_summary": "PASS",
+      "unavailable_information": "PASS",
+      "combined_tkp_and_attachment_citations": "PASS",
+      "tkp_projection_count_unchanged": true,
+      "tkp_legacy_search_authenticated_status": 409
+    },
+    "combined_citation_provenance": {
+      "tkp_article_id": "7ebda32b-214e-4326-92c3-7cdc71aa3cc6",
+      "tkp_projection_id": "b612c1fd-75a2-4058-8266-a14fc2f020a6",
+      "tkp_revision_id": "e1a09f60-72e9-4985-b25f-462850a004c8",
+      "tkp_source_fragment_id": "eda317bd-aa4c-4b64-a2dc-08bdff33d710",
+      "attachment_document_id": "9ae4f485-7fe5-5fae-ae46-cf5ed6fdff7c",
+      "attachment_chunk_id": "fc7fe9fc15dc29e8540348ba21bc8e7b"
+    },
+    "greeting": {
+      "input": "hi",
+      "http_status": 200,
+      "insufficient_evidence": true,
+      "answer": "I don't have enough approved, verified TKP evidence to answer that reliably.",
+      "citations": []
+    },
+    "initial_attempt": "Timed out during tokenizer initialization before any provider request"
+  },
+  "result": "PASS",
+  "started_at": "2026-11-25T08:41:23.173146+00:00",
+  "tenants": {
+    "database_names": [
+      "tenant_a",
+      "tenant_b"
+    ],
+    "private_doc_ids": {
+      "a": "1765c284-4fe6-52df-a520-84c476e1e7ef",
+      "b": "be4f20e6-9561-5d6d-9515-6cffcc477259"
+    },
+    "session_ids": [
+      1,
+      1
+    ],
+    "shared_doc_id_equal": true,
+    "user_ids": [
+      1,
+      1
+    ]
+  },
+  "tkp": {
+    "article_id": "f269e24e-0da4-40fd-abfa-ebe318e34dbc",
+    "ingestion_exercised": false
+  },
+  "tkp_projection_count_unchanged": true
+}

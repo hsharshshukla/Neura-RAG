@@ -188,6 +188,7 @@ app.add_middleware(
         "Authorization",
         "Content-Type",
         "X-CSRF-Token",
+        "X-Content-Digest",
         "X-Correlation-ID",
         "X-Requested-With",
     ],

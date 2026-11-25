@@ -11,6 +11,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from sqlalchemy import text
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.pool import StaticPool
@@ -42,7 +43,10 @@ def database() -> tuple[object, Session]:
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    return engine, Session(engine)
+    db = Session(engine)
+    db.exec(text("ATTACH DATABASE ':memory:' AS public"))
+    db.exec(text("CREATE TABLE public.upload_link (user_id INTEGER, session_id INTEGER, sha256 TEXT, doc_id TEXT)"))
+    return engine, db
 
 
 def settings(workspace_id: UUID) -> TKPSettings:
@@ -134,6 +138,7 @@ def test_follow_up_reretrieves_changed_evidence_and_audits_each_turn(monkeypatch
     monkeypatch.setattr(chat_routes, "get_tkp_settings", lambda: tkp_settings)
     monkeypatch.setattr(chat_routes, "resolve_conversation_query", resolve_query)
     monkeypatch.setattr(chat_routes, "generate_grounded_answer", generate_answer)
+    monkeypatch.setattr(chat_routes, "query_user_docs", lambda *args, **kwargs: [])
     client = TestClient(app_for(db, user, bridge))
 
     first = client.post("/api/v1/chat", json={"message": "How do I use Product X?"})

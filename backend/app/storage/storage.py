@@ -47,6 +47,14 @@ class LocalStorage:
             f.write(data)
         return doc_id, f"file://{abs_path.resolve()}"
 
+    def delete(self, uri: str) -> None:
+        if not uri.startswith("file://"):
+            raise ValueError("Invalid local storage URI")
+        path = Path(uri[7:]).resolve()
+        if not path.is_relative_to(self.root.resolve()):
+            raise ValueError("Storage URI is outside the configured root")
+        path.unlink()
+
 class S3Storage:
     def __init__(self):
         import boto3  # pip install boto3
@@ -99,6 +107,12 @@ class S3Storage:
             pass
         self.s3.put_object(**put_kwargs)
         return doc_id, f"s3://{S3_BUCKET}/{key}"
+
+    def delete(self, uri: str) -> None:
+        prefix = f"s3://{S3_BUCKET}/uploads/"
+        if not uri.startswith(prefix):
+            raise ValueError("Invalid S3 storage URI")
+        self.s3.delete_object(Bucket=S3_BUCKET, Key=uri[len(f"s3://{S3_BUCKET}/"):])
 
 def get_storage():
     if STORAGE_BACKEND == "s3":

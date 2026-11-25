@@ -192,11 +192,8 @@ class ChromaStore(VectorStore):
         self.db.persist()
 
     def delete_by_doc(self, doc_id: str) -> None:
-        try:
-            self.db.delete(where={"doc_id": doc_id, "__ns": VECTOR_NAMESPACE})
-            self.db.persist()
-        except Exception:
-            log.exception("Chroma delete_by_doc failed")
+        self.db.delete(where=_build_where_from_kv({"doc_id": doc_id, "__ns": VECTOR_NAMESPACE}))
+        self.db.persist()
 
     def search(self, query_embedding: List[float], top_k: int = 4,
                filters: Optional[Dict[str, Any]] = None) -> List[Tuple[VectorRecord, float]]:
@@ -549,7 +546,13 @@ def _shadow_compare(query_embedding: List[float], top_k: int, filters: Optional[
             log.exception("Shadow search failed")
 
 # ----------------------- Public API (kept compatible) -----------------------
-def embed_and_store(user_email: str, text: str, metadata: Optional[Dict] = None):
+def embed_and_store(
+    user_email: str,
+    text: str,
+    metadata: Optional[Dict] = None,
+    *,
+    replace_existing: bool = False,
+):
     """
     Splits text, embeds chunks, and writes to the configured vector backend(s).
     Maintains your current signature/behavior and metadata keys (user_email, session_id, etc).
@@ -558,12 +561,16 @@ def embed_and_store(user_email: str, text: str, metadata: Optional[Dict] = None)
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = splitter.split_text(text)
+    if not chunks:
+        raise ValueError("No indexable chunks")
 
     normalized = _normalize_metadata(metadata)
     if user_email:
         normalized = {**normalized, "user_email": user_email}
 
     embeddings = _embed_texts(chunks)
+    if len(embeddings) != len(chunks):
+        raise RuntimeError("Embedding provider returned an incomplete batch")
 
     # We don't generate a doc_id from bytes here because we only have `text`
     doc_id = normalized.get("doc_id") or hashlib.sha256(
@@ -571,7 +578,7 @@ def embed_and_store(user_email: str, text: str, metadata: Optional[Dict] = None)
     ).hexdigest()[:32]
 
     records: List[VectorRecord] = []
-    for i, (txt, emb) in enumerate(zip(chunks, embeddings)):
+    for i, (txt, emb) in enumerate(zip(chunks, embeddings, strict=True)):
         cid = stable_chunk_id(doc_id, i, txt)
         md = {**normalized, "doc_id": doc_id, "chunk_id": cid}
         records.append(VectorRecord(
@@ -582,6 +589,13 @@ def embed_and_store(user_email: str, text: str, metadata: Optional[Dict] = None)
             metadata=md,
         ))
 
+    if replace_existing:
+        PRIMARY.delete_by_doc(doc_id)
+        for shadow in SHADOWS:
+            try:
+                shadow.delete_by_doc(doc_id)
+            except Exception:
+                log.exception("Shadow document cleanup failed")
     _dual_write(records)
 
 def query_user_docs(
@@ -589,7 +603,8 @@ def query_user_docs(
     question: str,
     top_k: int = 4,
     filter_by_user: bool = True,
-    extra_filters: Optional[Dict] = None
+    extra_filters: Optional[Dict] = None,
+    raise_on_error: bool = False,
 ) -> List[Document]:
     """
     Returns a list of LangChain `Document` objects for compatibility with your current call sites.
@@ -613,6 +628,8 @@ def query_user_docs(
             db = PRIMARY.db  # type: ignore[attr-defined]
             return db.similarity_search(question, k=top_k, filter=where)  # List[Document]
         except Exception:
+            if raise_on_error:
+                raise
             return []
 
     # Non-Chroma path: embed query → vector search → convert to Documents
@@ -621,6 +638,8 @@ def query_user_docs(
         hits = PRIMARY.search(qvec, top_k=top_k, filters=filters)
         _shadow_compare(qvec, top_k, filters)
     except Exception:
+        if raise_on_error:
+            raise
         log.exception("Primary search failed")
         return []
 

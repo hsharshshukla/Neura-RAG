@@ -9,7 +9,9 @@ import httpx
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from langchain_core.documents import Document
 from pydantic import SecretStr
+from sqlalchemy import text
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.pool import StaticPool
@@ -30,6 +32,7 @@ from app.models import (
 from app.rate_limit import limiter
 from app.routes import chat as chat_routes
 from app.services.grounded_answer import EvidenceIndex, GroundedAnswer, GroundingError
+from app.services.conversation_attachments import attachment_document_id
 from tests.test_tkp_client import _response
 
 
@@ -40,7 +43,10 @@ def _database() -> tuple[object, Session]:
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    return engine, Session(engine)
+    db = Session(engine)
+    db.exec(text("ATTACH DATABASE ':memory:' AS public"))
+    db.exec(text("CREATE TABLE public.upload_link (user_id INTEGER, session_id INTEGER, sha256 TEXT, doc_id TEXT)"))
+    return engine, db
 
 
 def _settings(workspace_id: UUID) -> TKPSettings:
@@ -102,6 +108,20 @@ def test_stream_releases_only_validated_chunks_then_citations_and_completion(
     engine, db = _database()
     workspace_id = uuid4()
     user = _configured_user(db, workspace_id, "stream@example.test")
+    chat = ChatSession(
+        user_id=user.id,
+        workspace_id=str(workspace_id),
+        title="attachment stream",
+    )
+    db.add(chat)
+    db.commit()
+    db.refresh(chat)
+    sha256 = "b" * 64
+    doc_id = attachment_document_id(user.id, chat.id, sha256)
+    db.exec(text("INSERT INTO public.upload_link VALUES (:u, :s, :h, :d)").bindparams(
+        u=user.id, s=chat.id, h=sha256, d=doc_id
+    ))
+    db.commit()
     calls = 0
 
     async def upstream(request: httpx.Request) -> httpx.Response:
@@ -112,25 +132,59 @@ def test_stream_releases_only_validated_chunks_then_citations_and_completion(
             json=_response(UUID(request.headers["X-Correlation-ID"])),
         )
 
-    async def grounded(*, query, retrieval, model):
-        citation = EvidenceIndex(retrieval).records[0].citation
-        answer = "Validated approved procedure. " * 4 + "[E1]"
+    async def grounded(*, query, retrieval, model, attachments=()):
+        assert [item.content for item in attachments] == ["streamed attachment detail"]
+        citations = tuple(
+            item.citation for item in EvidenceIndex(retrieval, attachments).records
+        )
+        answer = "Validated approved procedure and attachment. " * 4 + "[E1, E2]"
         return GroundedAnswer(
             answer=answer,
             confidence=0.91,
             insufficient_evidence=False,
-            citations=(citation,),
+            citations=citations,
         )
+
+    def attachment_query(user_email, question, **kwargs):
+        return [
+            Document(
+                page_content="streamed attachment detail",
+                metadata={
+                    **kwargs["extra_filters"],
+                    "user_email": user.email,
+                    "sha256": sha256,
+                    "filename": "stream-notes.txt",
+                    "doc_id": doc_id,
+                    "chunk_id": "stream-chunk",
+                },
+            ),
+            Document(
+                page_content="incomplete private detail",
+                metadata={
+                    **kwargs["extra_filters"],
+                    "user_email": user.email,
+                    "sha256": "e" * 64,
+                    "filename": "incomplete.txt",
+                    "doc_id": attachment_document_id(user.id, chat.id, "e" * 64),
+                    "chunk_id": "incomplete-chunk",
+                },
+            ),
+        ]
 
     bridge = TKPClient(_settings(workspace_id), transport=httpx.MockTransport(upstream))
     monkeypatch.setattr(chat_routes, "get_tkp_settings", lambda: _settings(workspace_id))
     monkeypatch.setattr(chat_routes, "generate_grounded_answer", grounded)
+    monkeypatch.setattr(chat_routes, "query_user_docs", attachment_query)
     client = TestClient(_app(db, user, bridge))
     request_id = str(uuid4())
 
     response = client.post(
         "/api/v1/chat/stream",
-        json={"message": "approved procedure", "request_id": request_id},
+        json={
+            "message": "approved procedure",
+            "session_id": chat.id,
+            "request_id": request_id,
+        },
     )
 
     assert response.status_code == 200
@@ -140,10 +194,15 @@ def test_stream_releases_only_validated_chunks_then_citations_and_completion(
     assert names[:-2] and all(name == "answer" for name in names[:-2])
     assert names[-2:] == ["citations", "complete"]
     streamed = "".join(data["chunk"] for name, data in events if name == "answer")
-    assert streamed == "Validated approved procedure. " * 4 + "[E1]"
+    assert streamed == (
+        "Validated approved procedure and attachment. " * 4 + "[E1, E2]"
+    )
     citations = events[-2][1]["citations"]
     assert citations[0]["evidence_id"] == "E1"
     assert citations[0]["title"] == "Approved fix"
+    assert citations[1]["evidence_id"] == "E2"
+    assert citations[1]["title"] == "stream-notes.txt"
+    assert citations[1]["attachment_kind"] == "conversation_attachment"
     assert events[-1][1]["request_id"] == request_id
     assert events[-1][1]["replayed"] is False
 
@@ -162,7 +221,11 @@ def test_stream_releases_only_validated_chunks_then_citations_and_completion(
     monkeypatch.setattr(chat_routes, "plan_limit", lambda tier: 1)
     retry = client.post(
         "/api/v1/chat/stream",
-        json={"message": "approved procedure", "request_id": request_id},
+        json={
+            "message": "approved procedure",
+            "session_id": chat.id,
+            "request_id": request_id,
+        },
     )
     retry_events = _events(retry.text)
     assert retry_events[-1][1]["replayed"] is True
@@ -276,6 +339,45 @@ def test_stream_rejects_foreign_workspace_session_before_retrieval(monkeypatch) 
     assert calls == 0
     assert db.exec(select(AnswerEvidenceAudit)).all() == []
 
+    asyncio.run(bridge.aclose())
+    db.close()
+    engine.dispose()
+
+
+def test_stream_attachment_retrieval_failure_emits_only_error(monkeypatch) -> None:
+    monkeypatch.setenv("ORGANIZATIONAL_RAG_MODE", "tkp")
+    engine, db = _database()
+    workspace_id = uuid4()
+    user = _configured_user(db, workspace_id, "attachment-error@example.test")
+    chat = ChatSession(user_id=user.id, workspace_id=str(workspace_id), title="owned")
+    db.add(chat)
+    db.commit()
+    db.refresh(chat)
+    digest = "d" * 64
+    db.exec(text("INSERT INTO public.upload_link VALUES (:u, :s, :h, :d)").bindparams(
+        u=user.id, s=chat.id, h=digest, d=attachment_document_id(user.id, chat.id, digest)
+    ))
+    db.commit()
+
+    async def upstream(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_response(UUID(request.headers["X-Correlation-ID"])))
+
+    def failed_query(*args, **kwargs):
+        raise RuntimeError("private vector credential")
+
+    bridge = TKPClient(_settings(workspace_id), transport=httpx.MockTransport(upstream))
+    monkeypatch.setattr(chat_routes, "get_tkp_settings", lambda: _settings(workspace_id))
+    monkeypatch.setattr(chat_routes, "query_user_docs", failed_query)
+    response = TestClient(_app(db, user, bridge)).post(
+        "/api/v1/chat/stream",
+        json={"message": "attachment", "session_id": chat.id, "request_id": str(uuid4())},
+    )
+    events = _events(response.text)
+    assert [name for name, _ in events] == ["error"]
+    assert events[0][1]["code"] == "ATTACHMENT_RETRIEVAL_UNAVAILABLE"
+    assert "private vector credential" not in response.text
+    assert db.exec(select(ChatMessage)).all() == []
+    assert db.exec(select(AnswerEvidenceAudit)).all() == []
     asyncio.run(bridge.aclose())
     db.close()
     engine.dispose()
